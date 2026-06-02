@@ -1,16 +1,16 @@
-# 台灣大老二 Big2 TW v0.6.0
+# 台灣大老二 Big2 TW v0.6.1
 
 這是一個可上傳 GitHub Pages 的純前端台灣大老二網頁遊戲，支援單人 AI 對戰、Firebase 多人房間、多人同步牌局、連續對戰、規則設定、計分設定、主題切換、手機 UI、音效與動畫。
 
-## v0.6.0 新增重點
+## v0.6.1 修正重點
 
-- 正式規則設定：梅花 3 / 方塊 3 起手、A2345、順子是否可含 2。
-- 計分規則選擇：標準、8 張雙倍、10 張雙倍、8 張雙倍 10 張三倍。
-- 多人規則與計分會由房主在「開始多人遊戲 / 下一局」時同步套用。
-- 防作弊強化：回合交易、座位驗證、手牌驗證、revision/actionId 追蹤。
-- 手機 UI 優化：操作區 sticky、手牌橫向滑動、按鈕加大、結果表格橫向捲動。
-- 音效：選牌、出牌、Pass、勝利、錯誤提示音。
-- 動畫：發牌感、出牌彈出、選牌浮起；支援降低動態效果。
+- 修正多人遊戲中「已選好牌準備出牌，牌閃一下又變成沒選牌」的問題。
+- Firestore 心跳 / presence 更新時，現在會保留玩家目前選牌。
+- 同一局同步更新時不再清空選牌；只有下一局 / 重新洗牌才會清空。
+- 畫面重繪時只會移除已不在自己手牌裡的失效選牌。
+- 一般心跳不再反覆重寫 `game.history`，降低畫面不必要閃動。
+- 保留 v0.6.0 的正式規則設定、計分規則、防作弊強化、手機 UI、音效與動畫。
+
 
 ## 功能
 
@@ -51,7 +51,7 @@
 docs/FIREBASE_SETUP.md
 ```
 
-v0.6.0 新增 `rules`、`scoringRules`、`securityVersion` 欄位，更新後請務必重新 Publish 新版 `firestore.rules`。
+v0.6.1 新增 `rules`、`scoringRules`、`securityVersion` 欄位，更新後請務必重新 Publish 新版 `firestore.rules`。
 
 ## 文件
 
@@ -91,7 +91,7 @@ package.json
 
 ## GitHub Pages 上傳提醒
 
-請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.6.0` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
+請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.6.1` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
 
 ## 安全提醒
 

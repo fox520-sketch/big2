@@ -299,7 +299,7 @@ export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
     aiLevel: Number(aiLevel) || 8,
     rules: normalizedRules,
     scoringRules: normalizedScoringRules,
-    securityVersion: 'client-validated-v0.6.0',
+    securityVersion: 'client-validated-v0.6.1',
     version: VERSION,
     createdAt: sdk.firestore.serverTimestamp(),
     updatedAt: sdk.firestore.serverTimestamp(),
@@ -483,7 +483,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       aiLevel: Number(aiLevel || room.aiLevel || 8),
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.6.0',
+      securityVersion: 'client-validated-v0.6.1',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
@@ -513,7 +513,7 @@ async function updateMultiplayerGame(roomId, action) {
       lastActorUid: user.uid,
       lastActorSeat: Number.isInteger(seat) ? seat : null,
       updatedAtMs: Date.now(),
-      version: 'client-validated-v0.6.0'
+      version: 'client-validated-v0.6.1'
     };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {
@@ -649,6 +649,7 @@ async function sendHeartbeat(roomId = activeRoomId) {
 
   if (room.game?.players?.[seat] && !room.seats?.[seat]?.isAI && !room.seats?.[String(seat)]?.isAI) {
     const game = cloneGame(room.game);
+    const player = game.players[seat];
     const payload = {
       seat,
       name,
@@ -656,8 +657,25 @@ async function sendHeartbeat(roomId = activeRoomId) {
       isAI: false,
       connected: true
     };
-    restoreGameSeatFromReconnect(game, seat, payload);
-    updates.game = makePlainGame(game);
+
+    // 一般心跳只更新 seats.lastSeen，不要每 15 秒重寫 game。
+    // v0.6.0 會把「已重新連線」重複寫入 game.history，造成所有人畫面重繪，
+    // 玩家剛選好的牌因此看起來會閃一下並被清掉。
+    if (player?.isAI || player?.aiTakingOver || player?.connected === false) {
+      restoreGameSeatFromReconnect(game, seat, payload);
+      updates.game = makePlainGame(game);
+    } else if (player && (player.name !== name || player.uid !== currentUser?.uid || !player.isHuman)) {
+      game.players[seat] = {
+        ...player,
+        name,
+        uid: currentUser?.uid,
+        connected: true,
+        isAI: false,
+        isHuman: true,
+        aiTakingOver: false
+      };
+      updates.game = makePlainGame(game);
+    }
   }
 
   await sdk.firestore.updateDoc(ref, updates);

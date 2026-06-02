@@ -28,6 +28,7 @@ const PLAYER_NAME_KEY = 'big2-player-name';
 const RULE_PRESET_KEY = 'big2-rule-preset';
 const SCORING_PRESET_KEY = 'big2-scoring-preset';
 let lastRenderedActionId = null;
+let lastRenderedMultiplayerGameId = null;
 let gameState = createNewGame({ aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
 let aiTimer = null;
 let multiplayerAiTimer = null;
@@ -120,6 +121,7 @@ function resetGame() {
   const aiLevel = getSavedAILevel();
   gameState = createNewGame({ aiLevel, rules: getSavedRules(), scoringRules: getSavedScoringRules() });
   lastRenderedActionId = null;
+  lastRenderedMultiplayerGameId = null;
   clearSelection();
   render(gameState);
   scheduleAIIfNeeded();
@@ -157,6 +159,8 @@ function renderEmptySeats() {
 function renderRoomGame(room) {
   if (room.status === 'playing' || room.status === 'finished') {
     if (!room.game) return;
+    const incomingGameId = room.game.gameId || `${room.roomId || currentRoomId || 'room'}-${room.gameNo || 0}`;
+    const isNewMultiplayerGame = incomingGameId !== lastRenderedMultiplayerGameId;
     gameState = {
       ...room.game,
       mode: 'multiplayer',
@@ -164,7 +168,15 @@ function renderRoomGame(room) {
       totalScores: room.totalScores || room.game.totalScores || null,
       gameNo: room.gameNo || room.game.gameNo || 0
     };
-    clearSelection();
+
+    // 不要在每次 Firestore 快照更新時清空選牌。
+    // v0.6.0 的心跳 / presence 更新會觸發畫面重繪，導致玩家剛選好的牌閃一下就被取消。
+    // 只有真正換新局時才清空；一般同步更新只會在 render() 內移除已不在手牌中的失效選牌。
+    if (isNewMultiplayerGame) {
+      clearSelection();
+      lastRenderedMultiplayerGameId = incomingGameId;
+    }
+
     const actionId = gameState.security?.lastActionId || `${gameState.gameId || 'game'}:${gameState.history?.[0] || ''}`;
     const shouldPlaySound = actionId && actionId !== lastRenderedActionId;
     render(gameState);

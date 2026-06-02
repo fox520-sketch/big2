@@ -32,6 +32,15 @@ export function clearSelection() {
   selectedCardIds.clear();
 }
 
+function pruneSelectionToCurrentHand(gameState) {
+  const localSeat = getLocalSeat(gameState);
+  const hand = gameState.players[localSeat]?.hand || [];
+  const validCardIds = new Set(hand.map((card) => card.id));
+  for (const cardId of [...selectedCardIds]) {
+    if (!validCardIds.has(cardId)) selectedCardIds.delete(cardId);
+  }
+}
+
 function getLocalSeat(gameState) {
   return Number.isInteger(gameState.localSeat) ? gameState.localSeat : 0;
 }
@@ -263,6 +272,7 @@ export function renderThemeNote(themeName) {
 }
 
 export function render(gameState) {
+  pruneSelectionToCurrentHand(gameState);
   el('statusText').textContent = gameState.message;
   renderPlayerStatus(gameState);
   renderLastPlay(gameState);
