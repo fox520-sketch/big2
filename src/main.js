@@ -122,7 +122,9 @@ function renderRoomGame(room) {
     gameState = {
       ...room.game,
       mode: 'multiplayer',
-      localSeat: Number.isInteger(room.localSeat) ? room.localSeat : 0
+      localSeat: Number.isInteger(room.localSeat) ? room.localSeat : 0,
+      totalScores: room.totalScores || room.game.totalScores || null,
+      gameNo: room.gameNo || room.game.gameNo || 0
     };
     clearSelection();
     render(gameState);
@@ -156,13 +158,13 @@ function renderRoom(room) {
   el('inviteLinkInput').value = latestInviteUrl;
   setRoomControlsConnected(true);
   el('fillAIBtn').disabled = !room.isHost || room.status === 'playing';
-  el('startMultiplayerBtn').disabled = !room.isHost;
-  el('startMultiplayerBtn').textContent = room.status === 'playing' ? '重新發牌' : '開始多人遊戲';
+  el('startMultiplayerBtn').disabled = !room.isHost || room.status === 'playing';
+  el('startMultiplayerBtn').textContent = room.status === 'finished' ? '下一局 / 重新洗牌' : (room.status === 'playing' ? '牌局進行中' : '開始多人遊戲');
 
   const statusText = room.status === 'playing'
     ? `多人牌局進行中。你的座位：${Number.isInteger(room.localSeat) ? room.localSeat + 1 : '未入座'}。`
     : room.status === 'finished'
-      ? '多人牌局已結束，房主可以重新發牌。'
+      ? '多人牌局已結束，房主可以按「下一局 / 重新洗牌」延續同一房間與累計總分。'
       : '房間大廳已連線，房主可補 AI 空位後開始多人遊戲。';
   setRoomMessage(room.lastEvent || statusText, 'ok');
 
@@ -176,8 +178,13 @@ function renderRoom(room) {
       else tags.push('真人');
       if (seat.uid === room.localUid) tags.push('你');
       if (seat.connected) tags.push('已連線');
+      else if (!seat.isAI) tags.push('離線');
+      if (seat.aiTakingOver) tags.push('AI 接管');
       const cardCount = room.game?.players?.[index]?.hand?.length;
       if (Number.isFinite(cardCount)) tags.push(`手牌 ${cardCount} 張`);
+      const total = room.totalScores?.[index] || room.totalScores?.[String(index)];
+      if (total) tags.push(`總分 ${Number(total.totalScore || 0)}`);
+      if (total?.wins) tags.push(`勝場 ${total.wins}`);
       return `
         <div class="seat-card occupied">
           <strong>座位 ${index + 1}｜${seat.name || '玩家'}</strong>
@@ -260,9 +267,9 @@ async function bindRoomEvents() {
 
   el('startMultiplayerBtn').addEventListener('click', async () => {
     try {
-      setRoomMessage('正在同步洗牌、發牌並開始多人遊戲...');
+      setRoomMessage(latestRoom?.status === 'finished' ? '正在開始下一局並保留累計總分...' : '正在同步洗牌、發牌並開始多人遊戲...');
       await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel() });
-      setRoomMessage('多人遊戲已開始。', 'ok');
+      setRoomMessage(latestRoom?.status === 'finished' ? '下一局已開始，累計總分已保留。' : '多人遊戲已開始。', 'ok');
     } catch (error) {
       setRoomMessage(error.message || '開始多人遊戲失敗。', 'warn');
     }

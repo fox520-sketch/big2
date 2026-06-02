@@ -8,25 +8,26 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if signedIn();
 
-      // v0.4.1 休閒測試版規則：
-      // 支援房間大廳與多人同步牌局。這版是朋友休閒版，遊戲邏輯由前端與房主端 AI 接管。
-      // 正式防作弊版建議改用 Cloud Functions 洗牌、發牌與驗證出牌。
+      // v0.5.0 休閒測試版規則：
+      // 支援多人連續對戰、累計總分、玩家離線 AI 接管與房主轉移。
+      // 這是朋友休閒版，遊戲邏輯仍由前端執行；正式防作弊版建議改用 Cloud Functions 洗牌、發牌與驗證出牌。
       allow create: if signedIn()
         && request.resource.data.roomId == roomId
         && request.resource.data.hostUid == request.auth.uid
         && request.resource.data.status == 'waiting'
         && request.resource.data.keys().hasOnly([
           'roomId', 'status', 'hostUid', 'hostName', 'aiLevel', 'version',
-          'createdAt', 'updatedAt', 'invitePath', 'gameNo', 'lastEvent', 'seats'
+          'createdAt', 'updatedAt', 'presenceUpdatedAt', 'invitePath', 'gameNo',
+          'lastEvent', 'seats', 'game', 'totalScores'
         ]);
 
       allow update: if signedIn()
         && resource.data.roomId == roomId
         && request.resource.data.roomId == resource.data.roomId
-        && request.resource.data.hostUid == resource.data.hostUid
         && request.resource.data.keys().hasOnly([
           'roomId', 'status', 'hostUid', 'hostName', 'aiLevel', 'version',
-          'createdAt', 'updatedAt', 'invitePath', 'gameNo', 'lastEvent', 'seats', 'game'
+          'createdAt', 'updatedAt', 'presenceUpdatedAt', 'invitePath', 'gameNo',
+          'lastEvent', 'seats', 'game', 'totalScores'
         ]);
 
       allow delete: if signedIn() && resource.data.hostUid == request.auth.uid;

@@ -35,3 +35,90 @@ export function calculateResults(players, winnerSeat) {
 
   return rows;
 }
+
+export function makeEmptyTotals(players = []) {
+  const totals = {};
+  players.forEach((player, index) => {
+    const seat = Number.isInteger(player.seat) ? player.seat : index;
+    totals[seat] = {
+      seat,
+      name: player.name || `玩家 ${seat + 1}`,
+      uid: player.uid || null,
+      isAI: Boolean(player.isAI),
+      totalScore: 0,
+      wins: 0,
+      games: 0,
+      latestRank: null,
+      latestScore: 0,
+      latestRemaining: null,
+      updatedGameNo: 0
+    };
+  });
+  return totals;
+}
+
+export function mergeSeriesTotals(currentTotals = {}, results = [], players = [], gameNo = 0) {
+  const totals = { ...makeEmptyTotals(players), ...(currentTotals || {}) };
+
+  for (const player of players) {
+    const seat = Number.isInteger(player.seat) ? player.seat : players.indexOf(player);
+    totals[seat] = {
+      ...(totals[seat] || {}),
+      seat,
+      name: player.name || totals[seat]?.name || `玩家 ${seat + 1}`,
+      uid: player.uid || totals[seat]?.uid || null,
+      isAI: Boolean(player.isAI),
+      totalScore: Number(totals[seat]?.totalScore || 0),
+      wins: Number(totals[seat]?.wins || 0),
+      games: Number(totals[seat]?.games || 0),
+      latestRank: totals[seat]?.latestRank ?? null,
+      latestScore: Number(totals[seat]?.latestScore || 0),
+      latestRemaining: totals[seat]?.latestRemaining ?? null,
+      updatedGameNo: Number(totals[seat]?.updatedGameNo || 0)
+    };
+  }
+
+  for (const row of results) {
+    const seat = Number.isInteger(row.seat) ? row.seat : results.indexOf(row);
+    const previous = totals[seat] || {
+      seat,
+      name: row.name || `玩家 ${seat + 1}`,
+      uid: row.uid || null,
+      isAI: Boolean(row.isAI),
+      totalScore: 0,
+      wins: 0,
+      games: 0,
+      updatedGameNo: 0
+    };
+
+    const alreadyApplied = Number(previous.updatedGameNo || 0) === Number(gameNo || 0) && gameNo !== 0;
+    totals[seat] = {
+      ...previous,
+      seat,
+      name: row.name || previous.name,
+      uid: row.uid || previous.uid || null,
+      isAI: Boolean(row.isAI),
+      totalScore: Number(previous.totalScore || 0) + (alreadyApplied ? 0 : Number(row.score || 0)),
+      wins: Number(previous.wins || 0) + (!alreadyApplied && row.rank === 1 ? 1 : 0),
+      games: Number(previous.games || 0) + (alreadyApplied ? 0 : 1),
+      latestRank: row.rank,
+      latestScore: Number(row.score || 0),
+      latestRemaining: Number(row.remaining || 0),
+      updatedGameNo: Number(gameNo || previous.updatedGameNo || 0)
+    };
+  }
+
+  return totals;
+}
+
+export function totalsToSortedRows(totals = {}) {
+  return Object.values(totals || {}).sort((a, b) => {
+    if (Number(b.totalScore || 0) !== Number(a.totalScore || 0)) {
+      return Number(b.totalScore || 0) - Number(a.totalScore || 0);
+    }
+    if (Number(b.wins || 0) !== Number(a.wins || 0)) {
+      return Number(b.wins || 0) - Number(a.wins || 0);
+    }
+    return Number(a.seat || 0) - Number(b.seat || 0);
+  }).map((row, index) => ({ ...row, totalRank: index + 1 }));
+}

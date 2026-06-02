@@ -2,6 +2,7 @@ import { cardLabel, cardLongName, getSuitInfo, sortCards } from './cards.js';
 import { getAILevelDescription, getAILevelLabel } from './ai.js';
 import { THEMES } from './themes.js';
 import { canPass, describePlay, detectHandType } from './rules.js';
+import { totalsToSortedRows } from './scoring.js';
 
 const selectedCardIds = new Set();
 
@@ -147,18 +148,47 @@ function renderResults(gameState) {
   }
 
   panel.classList.remove('hidden');
-  const rows = gameState.results.map((row) => `
+  const totals = gameState.totalScores || gameState.results.reduce((map, row) => {
+    map[row.seat] = {
+      seat: row.seat,
+      name: row.name,
+      totalScore: row.score,
+      wins: row.rank === 1 ? 1 : 0,
+      games: 1,
+      latestRank: row.rank,
+      latestScore: row.score,
+      latestRemaining: row.remaining
+    };
+    return map;
+  }, {});
+
+  const rows = gameState.results.map((row) => {
+    const total = totals[row.seat] || totals[String(row.seat)] || {};
+    return `
+      <tr>
+        <td>第 ${row.rank} 名</td>
+        <td>${row.name}</td>
+        <td>${row.remaining}</td>
+        <td>${row.score > 0 ? '+' : ''}${row.score}</td>
+        <td>${Number(total.totalScore || row.score) > 0 ? '+' : ''}${Number(total.totalScore || row.score)}</td>
+        <td>${Number(total.wins || (row.rank === 1 ? 1 : 0))}</td>
+      </tr>
+    `;
+  }).join('');
+
+  const totalRows = totalsToSortedRows(totals).map((row) => `
     <tr>
-      <td>第 ${row.rank} 名</td>
+      <td>第 ${row.totalRank} 名</td>
       <td>${row.name}</td>
-      <td>${row.remaining}</td>
-      <td>${row.score > 0 ? '+' : ''}${row.score}</td>
+      <td>${Number(row.totalScore || 0) > 0 ? '+' : ''}${Number(row.totalScore || 0)}</td>
+      <td>${Number(row.wins || 0)}</td>
+      <td>${Number(row.games || 0)}</td>
     </tr>
   `).join('');
 
   panel.innerHTML = `
     <div class="panel-heading">
-      <h2>本局結果</h2>
+      <h2>本局結果${gameState.gameNo ? `｜第 ${gameState.gameNo} 局` : ''}</h2>
       <span class="pill">${gameState.players[gameState.winnerSeat].name} 勝出</span>
     </div>
     <table>
@@ -168,9 +198,27 @@ function renderResults(gameState) {
           <th>玩家名稱</th>
           <th>剩餘張數</th>
           <th>本局分數</th>
+          <th>累計總分</th>
+          <th>勝場</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
+    </table>
+    <div class="panel-heading compact total-heading">
+      <h2>累計總排名</h2>
+      <span class="pill">同一房間連續統計</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>總排名</th>
+          <th>玩家名稱</th>
+          <th>累計總分</th>
+          <th>勝場</th>
+          <th>局數</th>
+        </tr>
+      </thead>
+      <tbody>${totalRows}</tbody>
     </table>
   `;
 }

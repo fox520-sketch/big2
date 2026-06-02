@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createGameFromSeats, playCards, passTurn } from '../src/game-state.js';
 import { getLegalMoves } from '../src/rules.js';
-import { calculateResults } from '../src/scoring.js';
+import { calculateResults, mergeSeriesTotals, totalsToSortedRows } from '../src/scoring.js';
 
 const seats = [
   { seat: 0, name: 'Fox', uid: 'u1', isAI: false, connected: true },
@@ -46,5 +46,29 @@ assert.deepEqual(customResults.map((row) => row.name), ['良', 'AI 3', 'Fox', 'A
 assert.equal(customResults[0].score, 6);
 assert.equal(customResults[0].remaining, 0);
 assert.equal(customResults.find((row) => row.name === 'Fox').remaining, 2);
+
+const totalsAfterGame1 = mergeSeriesTotals({}, customResults, seats, 1);
+assert.equal(totalsAfterGame1[1].totalScore, 6);
+assert.equal(totalsAfterGame1[1].wins, 1);
+assert.equal(totalsAfterGame1[0].totalScore, -2);
+assert.equal(totalsAfterGame1[0].games, 1);
+
+const secondResults = calculateResults([
+  { seat: 0, name: 'Fox', uid: 'u1', isAI: false, hand: [] },
+  { seat: 1, name: '良', uid: 'u2', isAI: false, hand: [{ id: 'D3' }] },
+  { seat: 2, name: 'AI 3', uid: 'ai-seat-2', isAI: true, hand: [{ id: 'C5' }, { id: 'C6' }] },
+  { seat: 3, name: 'AI 4', uid: 'ai-seat-3', isAI: true, hand: [{ id: 'S6' }] }
+], 0);
+const totalsAfterGame2 = mergeSeriesTotals(totalsAfterGame1, secondResults, seats, 2);
+assert.equal(totalsAfterGame2[0].wins, 1);
+assert.equal(totalsAfterGame2[1].wins, 1);
+assert.equal(totalsAfterGame2[0].games, 2);
+assert.equal(totalsAfterGame2[1].games, 2);
+assert.ok(totalsToSortedRows(totalsAfterGame2)[0].totalScore >= totalsToSortedRows(totalsAfterGame2)[1].totalScore);
+
+// 同一 gameNo 不應重複灌入累計總分。
+const totalsAfterDuplicateApply = mergeSeriesTotals(totalsAfterGame2, secondResults, seats, 2);
+assert.deepEqual(totalsAfterDuplicateApply[0].totalScore, totalsAfterGame2[0].totalScore);
+assert.deepEqual(totalsAfterDuplicateApply[1].totalScore, totalsAfterGame2[1].totalScore);
 
 console.log('Multiplayer state tests passed.');
