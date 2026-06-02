@@ -1,10 +1,11 @@
 import { createDeck, hasCard, removeCards, shuffleDeck, sortCards } from './cards.js';
-import { DEFAULT_RULES, PLAYERS } from './constants.js';
-import { chooseAIMove } from './ai.js';
+import { DEFAULT_AI_LEVEL, DEFAULT_RULES, PLAYERS } from './constants.js';
+import { chooseAIMove, getAILevelLabel } from './ai.js';
 import { calculateResults } from './scoring.js';
 import { canPass, describePlay, validateHumanPlay } from './rules.js';
 
-export function createNewGame() {
+export function createNewGame(options = {}) {
+  const aiLevel = Number.isFinite(Number(options.aiLevel)) ? Number(options.aiLevel) : DEFAULT_AI_LEVEL;
   const deck = shuffleDeck(createDeck());
   const players = PLAYERS.map((player) => ({
     ...player,
@@ -22,6 +23,7 @@ export function createNewGame() {
   });
 
   const firstSeat = players.find((player) => hasCard(player.hand, DEFAULT_RULES.firstCardId))?.seat ?? 0;
+  const firstMessage = `第 1 輪開始，${players[firstSeat].name} 持有梅花 3，必須先出。`;
 
   return {
     rules: { ...DEFAULT_RULES },
@@ -36,9 +38,9 @@ export function createNewGame() {
     winnerSeat: null,
     results: null,
     roundNo: 1,
-    history: [`第 1 輪開始，${players[firstSeat].name} 持有梅花 3，必須先出。`],
+    history: [firstMessage, `AI 難度：${getAILevelLabel(aiLevel)}。`],
     message: `${players[firstSeat].name} 先出，第一手必須包含梅花 3。`,
-    aiLevel: 1
+    aiLevel
   };
 }
 
@@ -51,7 +53,7 @@ function nextSeat(seat) {
 }
 
 function appendHistory(gameState, text) {
-  gameState.history = [text, ...gameState.history].slice(0, 50);
+  gameState.history = [text, ...gameState.history].slice(0, 60);
 }
 
 function finishGame(gameState, winnerSeat) {
@@ -60,6 +62,17 @@ function finishGame(gameState, winnerSeat) {
   gameState.results = calculateResults(gameState.players, winnerSeat);
   gameState.message = `本局結束，${gameState.players[winnerSeat].name} 第一名！`;
   appendHistory(gameState, `本局結束：${gameState.players[winnerSeat].name} 出完手牌。`);
+  return gameState;
+}
+
+export function setAILevel(gameState, aiLevel) {
+  if (gameState.finished) {
+    gameState.aiLevel = aiLevel;
+    return gameState;
+  }
+  gameState.aiLevel = aiLevel;
+  gameState.message = `AI 難度已調整為 ${getAILevelLabel(aiLevel)}，下一手 AI 會套用新難度。`;
+  appendHistory(gameState, `AI 難度調整：${getAILevelLabel(aiLevel)}。`);
   return gameState;
 }
 

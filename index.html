@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.1.1</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.1.1：規則引擎 + 單人 AI 對戰版｜牌面對比修正版" />
+    <title>台灣大老二 Big2 TW v0.2.0</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.2.0：AI 難度 1～20 級、完整主題風格、UI 對比檢查清單" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,9 +12,34 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.1.1 規則引擎 + 單人 AI 對戰版｜牌面對比修正版</p>
+        <p class="subtitle">v0.2.0 AI 難度 1～20 級｜完整主題風格｜UI 對比檢查版</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
+        <label class="field">
+          <span>AI 難度</span>
+          <select id="aiLevelSelect" aria-label="選擇 AI 難度">
+            <option value="1">Lv.1</option>
+            <option value="2">Lv.2</option>
+            <option value="3">Lv.3</option>
+            <option value="4">Lv.4</option>
+            <option value="5">Lv.5</option>
+            <option value="6">Lv.6</option>
+            <option value="7">Lv.7</option>
+            <option value="8">Lv.8</option>
+            <option value="9">Lv.9</option>
+            <option value="10">Lv.10</option>
+            <option value="11">Lv.11</option>
+            <option value="12">Lv.12</option>
+            <option value="13">Lv.13</option>
+            <option value="14">Lv.14</option>
+            <option value="15">Lv.15</option>
+            <option value="16">Lv.16</option>
+            <option value="17">Lv.17</option>
+            <option value="18">Lv.18</option>
+            <option value="19">Lv.19</option>
+            <option value="20">Lv.20</option>
+          </select>
+        </label>
         <label class="field">
           <span>顯示風格</span>
           <select id="themeSelect" aria-label="選擇顯示風格">
@@ -41,6 +66,23 @@
       <section class="notice" aria-live="polite">
         <strong>目前狀態：</strong>
         <span id="statusText">準備開始遊戲。</span>
+      </section>
+
+      <section class="info-grid" aria-label="AI 與顯示設定說明">
+        <article class="info-card">
+          <div class="panel-heading compact">
+            <h2>AI 難度</h2>
+            <span id="aiLevelBadge" class="pill">Lv.8</span>
+          </div>
+          <p id="aiLevelDescription" class="hint">AI 會依難度調整出牌策略。</p>
+        </article>
+        <article class="info-card">
+          <div class="panel-heading compact">
+            <h2>主題對比</h2>
+            <span class="pill">13 種</span>
+          </div>
+          <p id="themeNote" class="hint">所有主題已檢查文字、按鈕、牌面紅黑花色對比。</p>
+        </article>
       </section>
 
       <section class="score-strip" aria-label="玩家狀態">
@@ -91,6 +133,20 @@
         <ol id="historyList"></ol>
       </section>
 
+      <section class="contrast-panel" aria-label="UI 對比檢查清單摘要">
+        <div class="panel-heading">
+          <h2>UI 對比檢查摘要</h2>
+          <span class="pill">AA 目標</span>
+        </div>
+        <div class="check-grid">
+          <div><strong>文字</strong><span>主要文字、次要文字、狀態文字</span></div>
+          <div><strong>按鈕</strong><span>主按鈕、次按鈕、停用狀態</span></div>
+          <div><strong>牌面</strong><span>紅心/方塊、黑桃/梅花、選取外框</span></div>
+          <div><strong>面板</strong><span>玩家卡、牌桌、紀錄、結算表</span></div>
+        </div>
+        <p class="hint small">完整清單請看 docs/UI_CONTRAST_CHECKLIST.md；可用 npm test 執行自動檢查。</p>
+      </section>
+
       <section class="rules-panel" aria-label="目前規則">
         <h2>目前規則</h2>
         <div class="rules-grid">
@@ -103,7 +159,7 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.1.1</span>
+      <span>Big2 TW v0.2.0</span>
       <span>適合上傳 GitHub Pages 的純前端版本</span>
     </footer>
 

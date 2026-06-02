@@ -1,9 +1,21 @@
-import { createNewGame, passTurn, playCards, runAITurn } from './game-state.js';
+import { DEFAULT_AI_LEVEL } from './constants.js';
+import { createNewGame, passTurn, playCards, runAITurn, setAILevel } from './game-state.js';
 import { applyTheme, getSavedTheme } from './themes.js';
-import { clearSelection, getSelectedCards, render } from './ui.js';
+import { clearSelection, getSelectedCards, render, renderThemeNote } from './ui.js';
 
-let gameState = createNewGame();
+const AI_LEVEL_KEY = 'big2-ai-level';
+let gameState = createNewGame({ aiLevel: getSavedAILevel() });
 let aiTimer = null;
+
+function getSavedAILevel() {
+  const saved = Number(localStorage.getItem(AI_LEVEL_KEY));
+  if (!Number.isFinite(saved)) return DEFAULT_AI_LEVEL;
+  return Math.min(20, Math.max(1, Math.round(saved)));
+}
+
+function saveAILevel(level) {
+  localStorage.setItem(AI_LEVEL_KEY, String(level));
+}
 
 function scheduleAIIfNeeded() {
   window.clearTimeout(aiTimer);
@@ -15,12 +27,13 @@ function scheduleAIIfNeeded() {
       clearSelection();
       render(gameState);
       scheduleAIIfNeeded();
-    }, 650);
+    }, 520);
   }
 }
 
 function resetGame() {
-  gameState = createNewGame();
+  const aiLevel = getSavedAILevel();
+  gameState = createNewGame({ aiLevel });
   clearSelection();
   render(gameState);
   scheduleAIIfNeeded();
@@ -52,9 +65,22 @@ function bindEvents() {
   });
 
   const themeSelect = document.getElementById('themeSelect');
-  themeSelect.value = applyTheme(getSavedTheme());
+  const initialTheme = applyTheme(getSavedTheme());
+  themeSelect.value = initialTheme;
+  renderThemeNote(initialTheme);
   themeSelect.addEventListener('change', (event) => {
-    applyTheme(event.target.value);
+    const applied = applyTheme(event.target.value);
+    renderThemeNote(applied);
+  });
+
+  const aiLevelSelect = document.getElementById('aiLevelSelect');
+  aiLevelSelect.value = String(gameState.aiLevel);
+  aiLevelSelect.addEventListener('change', (event) => {
+    const aiLevel = Number(event.target.value);
+    saveAILevel(aiLevel);
+    gameState = setAILevel(gameState, aiLevel);
+    render(gameState);
+    scheduleAIIfNeeded();
   });
 }
 

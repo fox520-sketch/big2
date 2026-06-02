@@ -1,4 +1,4 @@
-export const VERSION = '0.1.0';
+export const VERSION = '0.2.0';
 
 export const SUITS = [
   { id: 'C', symbol: '♣', name: '梅花', value: 0, color: 'black' },
@@ -41,6 +41,8 @@ export const DEFAULT_RULES = {
   cardOrderText: '2 > A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3',
   suitOrderText: '黑桃 > 紅心 > 方塊 > 梅花'
 };
+
+export const DEFAULT_AI_LEVEL = 8;
 
 export const PLAYERS = [
   { seat: 0, name: '你', isHuman: true },

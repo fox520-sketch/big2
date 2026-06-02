@@ -1,10 +1,13 @@
 {
   "name": "big2-tw",
-  "version": "0.1.1",
-  "description": "台灣大老二網頁遊戲 v0.1.1：規則引擎 + 單人 AI 對戰版｜牌面對比修正版",
+  "version": "0.2.0",
+  "description": "台灣大老二網頁遊戲 v0.2.0：AI 難度 1～20 級 + 完整主題風格 + UI 對比檢查清單",
   "type": "module",
   "scripts": {
-    "test": "node scripts/test-rules.js && node scripts/test-contrast.js"
+    "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-contrast.js",
+    "test:rules": "node scripts/test-rules.js",
+    "test:ai": "node scripts/test-ai.js",
+    "test:contrast": "node scripts/test-contrast.js"
   },
   "keywords": [
     "big-two",

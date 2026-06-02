@@ -1,4 +1,6 @@
 import { cardLabel, cardLongName, getSuitInfo, sortCards } from './cards.js';
+import { getAILevelDescription, getAILevelLabel } from './ai.js';
+import { THEMES } from './themes.js';
 import { canPass, describePlay, detectHandType } from './rules.js';
 
 const selectedCardIds = new Set();
@@ -44,7 +46,7 @@ function renderPlayerStatus(gameState) {
     box.innerHTML = `
       <div class="player-title">
         <span>${player.name}</span>
-        <span class="pill">${player.isHuman ? '玩家' : 'AI'}</span>
+        <span class="pill">${player.isHuman ? '玩家' : `AI Lv.${gameState.aiLevel}`}</span>
       </div>
       <div class="player-meta">
         <span>手牌 ${player.hand.length} 張</span>
@@ -160,6 +162,22 @@ function renderResults(gameState) {
   `;
 }
 
+function renderAIInfo(gameState) {
+  const label = getAILevelLabel(gameState.aiLevel);
+  const desc = getAILevelDescription(gameState.aiLevel);
+  const badge = el('aiLevelBadge');
+  const text = el('aiLevelDescription');
+  if (badge) badge.textContent = label;
+  if (text) text.textContent = desc;
+}
+
+export function renderThemeNote(themeName) {
+  const noteEl = el('themeNote');
+  if (!noteEl) return;
+  const theme = THEMES[themeName] ?? THEMES.dark;
+  noteEl.textContent = `${theme.name}：${theme.note}`;
+}
+
 export function render(gameState) {
   el('statusText').textContent = gameState.message;
   renderPlayerStatus(gameState);
@@ -169,6 +187,7 @@ export function render(gameState) {
   renderControls(gameState);
   renderResults(gameState);
   renderHistory(gameState);
+  renderAIInfo(gameState);
 }
 
 export function describeCurrentSelection(gameState) {
