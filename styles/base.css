@@ -313,7 +313,8 @@ body {
 }
 
 button,
-select {
+select,
+input {
   font: inherit;
 }
 
@@ -418,6 +419,7 @@ h2 {
 }
 
 .notice,
+.room-panel,
 .info-card,
 .player-card,
 .last-play-panel,
@@ -753,5 +755,143 @@ body[data-theme='epaper'] .playing-card {
 
   .playing-card .suit {
     font-size: 1.35rem;
+  }
+}
+
+input {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 0.9rem;
+  padding: 0.65rem 0.8rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-weight: 750;
+}
+
+input::placeholder {
+  color: var(--muted);
+  opacity: 0.82;
+}
+
+input:focus-visible,
+select:focus-visible,
+button:focus-visible {
+  outline: 3px solid var(--warning);
+  outline-offset: 3px;
+}
+
+h3 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.room-panel {
+  border: 2px solid var(--border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.room-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(18rem, 0.9fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.room-controls,
+.invite-card {
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-2);
+  padding: 0.9rem;
+  display: grid;
+  gap: 0.8rem;
+}
+
+.field.full {
+  min-width: 0;
+}
+
+.copy-input {
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
+.seat-grid {
+  margin-top: 1rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.seat-card {
+  min-height: 4.25rem;
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.25rem;
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.seat-card.empty {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.seat-card.occupied {
+  background: color-mix(in srgb, var(--primary) 15%, var(--surface-2));
+}
+
+.seat-card span {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.qr-box {
+  display: grid;
+  place-items: center;
+  gap: 0.55rem;
+  border: 1.5px dashed var(--border);
+  border-radius: 1rem;
+  padding: 0.85rem;
+  background: var(--surface);
+}
+
+.qr-box img {
+  width: 220px;
+  height: 220px;
+  max-width: 100%;
+  border: 8px solid #ffffff;
+  border-radius: 0.6rem;
+  background: #ffffff;
+}
+
+.pill.ok {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 18%, var(--surface-2));
+}
+
+.pill.warn {
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 20%, var(--surface-2));
+}
+
+#roomMessage[data-level='ok'] {
+  color: var(--success);
+}
+
+#roomMessage[data-level='warn'] {
+  color: var(--warning);
+}
+
+@media (max-width: 900px) {
+  .room-grid,
+  .seat-grid {
+    grid-template-columns: 1fr;
   }
 }

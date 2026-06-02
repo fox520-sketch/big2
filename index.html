@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.2.0</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.2.0：AI 難度 1～20 級、完整主題風格、UI 對比檢查清單" />
+    <title>台灣大老二 Big2 TW v0.3.0</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.3.0：Firebase 建立房間、加入房間、邀請連結、QR Code 與自動加入房間" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,32 +12,32 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.2.0 AI 難度 1～20 級｜完整主題風格｜UI 對比檢查版</p>
+        <p class="subtitle">v0.3.0 Firebase 房間 + 單人 AI 對戰版</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field">
           <span>AI 難度</span>
           <select id="aiLevelSelect" aria-label="選擇 AI 難度">
-            <option value="1">Lv.1</option>
-            <option value="2">Lv.2</option>
-            <option value="3">Lv.3</option>
-            <option value="4">Lv.4</option>
-            <option value="5">Lv.5</option>
-            <option value="6">Lv.6</option>
-            <option value="7">Lv.7</option>
-            <option value="8">Lv.8</option>
-            <option value="9">Lv.9</option>
-            <option value="10">Lv.10</option>
-            <option value="11">Lv.11</option>
-            <option value="12">Lv.12</option>
-            <option value="13">Lv.13</option>
-            <option value="14">Lv.14</option>
-            <option value="15">Lv.15</option>
-            <option value="16">Lv.16</option>
-            <option value="17">Lv.17</option>
-            <option value="18">Lv.18</option>
-            <option value="19">Lv.19</option>
-            <option value="20">Lv.20</option>
+            <option value="1">Lv.1 新手隨機</option>
+            <option value="2">Lv.2 新手隨機</option>
+            <option value="3">Lv.3 新手隨機</option>
+            <option value="4">Lv.4 基礎保守</option>
+            <option value="5">Lv.5 基礎保守</option>
+            <option value="6">Lv.6 低牌優先</option>
+            <option value="7">Lv.7 低牌優先</option>
+            <option value="8">Lv.8 低牌優先</option>
+            <option value="9">Lv.9 牌型保留</option>
+            <option value="10">Lv.10 牌型保留</option>
+            <option value="11">Lv.11 節奏控制</option>
+            <option value="12">Lv.12 節奏控制</option>
+            <option value="13">Lv.13 節奏控制</option>
+            <option value="14">Lv.14 攔截防守</option>
+            <option value="15">Lv.15 攔截防守</option>
+            <option value="16">Lv.16 攔截防守</option>
+            <option value="17">Lv.17 高手判斷</option>
+            <option value="18">Lv.18 高手判斷</option>
+            <option value="19">Lv.19 高手判斷</option>
+            <option value="20">Lv.20 高手判斷</option>
           </select>
         </label>
         <label class="field">
@@ -68,20 +68,73 @@
         <span id="statusText">準備開始遊戲。</span>
       </section>
 
-      <section class="info-grid" aria-label="AI 與顯示設定說明">
+      <section class="room-panel" aria-label="Firebase 多人房間">
+        <div class="panel-heading">
+          <div>
+            <h2>Firebase 多人房間</h2>
+            <p class="hint small">v0.3.0 已支援建立房間、加入房間、邀請連結、QR Code 與邀請連結自動加入。</p>
+          </div>
+          <span id="firebaseStatusBadge" class="pill">檢查中</span>
+        </div>
+
+        <div class="room-grid">
+          <div class="room-controls">
+            <label class="field full">
+              <span>你的暱稱</span>
+              <input id="playerNameInput" type="text" maxlength="18" placeholder="例如：Fox" autocomplete="nickname" />
+            </label>
+            <label class="field full">
+              <span>房號</span>
+              <input id="roomCodeInput" type="text" maxlength="6" placeholder="輸入 6 碼房號" inputmode="latin" autocomplete="off" />
+            </label>
+            <div class="button-row">
+              <button id="createRoomBtn" class="primary-btn" type="button">建立房間</button>
+              <button id="joinRoomBtn" class="secondary-btn" type="button">加入房間</button>
+              <button id="fillAIBtn" class="secondary-btn" type="button" disabled>補 AI 空位</button>
+              <button id="leaveRoomBtn" class="secondary-btn" type="button" disabled>離開房間</button>
+            </div>
+            <p id="roomMessage" class="hint small">尚未連線房間。若從邀請連結進入，系統會在 Firebase 初始化後自動加入。</p>
+          </div>
+
+          <div class="invite-card">
+            <div class="panel-heading compact">
+              <h3>邀請朋友</h3>
+              <span id="roomBadge" class="pill">尚未建立</span>
+            </div>
+            <input id="inviteLinkInput" class="copy-input" type="text" readonly placeholder="建立或加入房間後會出現邀請連結" />
+            <div class="button-row">
+              <button id="copyInviteBtn" class="secondary-btn" type="button" disabled>複製邀請連結</button>
+              <button id="showQrBtn" class="secondary-btn" type="button" disabled>顯示 QR Code</button>
+            </div>
+            <div id="qrBox" class="qr-box hidden">
+              <img id="qrCodeImage" alt="房間邀請 QR Code" />
+              <p class="hint small">手機掃描後會開啟同一個房間，並自動加入。</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="seat-grid" id="roomSeatList" aria-label="房間座位">
+          <div class="seat-card empty">座位 1｜等待玩家</div>
+          <div class="seat-card empty">座位 2｜等待玩家</div>
+          <div class="seat-card empty">座位 3｜等待玩家</div>
+          <div class="seat-card empty">座位 4｜等待玩家</div>
+        </div>
+      </section>
+
+      <section class="info-grid" aria-label="AI 與主題資訊">
         <article class="info-card">
           <div class="panel-heading compact">
             <h2>AI 難度</h2>
             <span id="aiLevelBadge" class="pill">Lv.8</span>
           </div>
-          <p id="aiLevelDescription" class="hint">AI 會依難度調整出牌策略。</p>
+          <p id="aiLevelDescription" class="hint">AI 會依照難度選擇出牌策略。</p>
         </article>
         <article class="info-card">
           <div class="panel-heading compact">
-            <h2>主題對比</h2>
-            <span class="pill">13 種</span>
+            <h2>目前主題</h2>
+            <span class="pill">對比已檢查</span>
           </div>
-          <p id="themeNote" class="hint">所有主題已檢查文字、按鈕、牌面紅黑花色對比。</p>
+          <p id="themeNote" class="hint">深色模式：黑底高對比。</p>
         </article>
       </section>
 
@@ -133,20 +186,6 @@
         <ol id="historyList"></ol>
       </section>
 
-      <section class="contrast-panel" aria-label="UI 對比檢查清單摘要">
-        <div class="panel-heading">
-          <h2>UI 對比檢查摘要</h2>
-          <span class="pill">AA 目標</span>
-        </div>
-        <div class="check-grid">
-          <div><strong>文字</strong><span>主要文字、次要文字、狀態文字</span></div>
-          <div><strong>按鈕</strong><span>主按鈕、次按鈕、停用狀態</span></div>
-          <div><strong>牌面</strong><span>紅心/方塊、黑桃/梅花、選取外框</span></div>
-          <div><strong>面板</strong><span>玩家卡、牌桌、紀錄、結算表</span></div>
-        </div>
-        <p class="hint small">完整清單請看 docs/UI_CONTRAST_CHECKLIST.md；可用 npm test 執行自動檢查。</p>
-      </section>
-
       <section class="rules-panel" aria-label="目前規則">
         <h2>目前規則</h2>
         <div class="rules-grid">
@@ -156,11 +195,21 @@
           <div><strong>五張牌型</strong><span>順子 &lt; 同花 &lt; 葫蘆 &lt; 鐵支 &lt; 同花順</span></div>
         </div>
       </section>
+
+      <section class="contrast-panel" aria-label="UI 對比檢查摘要">
+        <h2>UI 對比檢查摘要</h2>
+        <div class="check-grid">
+          <div><strong>牌面</strong><span>紅黑花色固定高對比</span></div>
+          <div><strong>按鈕</strong><span>主按鈕與次按鈕皆達 AA</span></div>
+          <div><strong>房間區</strong><span>輸入框、座位卡、QR 區塊已檢查</span></div>
+          <div><strong>主題</strong><span>13 個主題皆保留清楚文字</span></div>
+        </div>
+      </section>
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.2.0</span>
-      <span>適合上傳 GitHub Pages 的純前端版本</span>
+      <span>Big2 TW v0.3.0</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>

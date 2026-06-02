@@ -1,7 +1,7 @@
 {
   "name": "big2-tw",
-  "version": "0.2.0",
-  "description": "台灣大老二網頁遊戲 v0.2.0：AI 難度 1～20 級 + 完整主題風格 + UI 對比檢查清單",
+  "version": "0.3.0",
+  "description": "台灣大老二網頁遊戲 v0.3.0：Firebase 建立房間 + 加入房間 + 邀請連結 + QR Code + 自動加入房間",
   "type": "module",
   "scripts": {
     "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-contrast.js",
