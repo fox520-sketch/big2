@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.5.0</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.5.0：Firebase 多人連續對戰、下一局、累計總分、玩家離線 AI 接管與房主轉移" />
+    <title>台灣大老二 Big2 TW v0.6.0</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.6.0：Firebase 正式規則設定、計分規則、防作弊強化、手機 UI、音效與動畫" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.5.0 多人連續對戰 + 離線接管版</p>
+        <p class="subtitle">v0.6.0 規則設定 + 手機優化版</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field">
@@ -58,6 +58,7 @@
             <option value="neon">霓虹風</option>
           </select>
         </label>
+        <button id="soundToggleBtn" class="secondary-btn" type="button" aria-pressed="true">音效：開</button>
         <button id="newGameBtn" class="secondary-btn" type="button">重新開局</button>
       </div>
     </header>
@@ -68,11 +69,46 @@
         <span id="statusText">準備開始遊戲。</span>
       </section>
 
+
+      <section class="settings-panel" aria-label="正式規則與計分設定">
+        <div class="panel-heading">
+          <div>
+            <h2>正式規則與計分設定</h2>
+            <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
+          </div>
+          <span class="pill">v0.6.0</span>
+        </div>
+        <div class="settings-grid">
+          <label class="field full">
+            <span>玩法規則</span>
+            <select id="rulePresetSelect" aria-label="選擇大老二玩法規則">
+              <option value="taiwanC3">台灣常用：梅花 3 起手</option>
+              <option value="taiwanD3">台灣變體：方塊 3 起手</option>
+              <option value="friendlyWheel">朋友局：允許 A2345</option>
+              <option value="looseTwoStraight">寬鬆變體：順子可含 2</option>
+            </select>
+          </label>
+          <label class="field full">
+            <span>計分規則</span>
+            <select id="scoringPresetSelect" aria-label="選擇計分規則">
+              <option value="standard">標準：剩幾張扣幾分</option>
+              <option value="double8">8 張以上雙倍</option>
+              <option value="double10">10 張以上雙倍</option>
+              <option value="double8Triple10">8 張雙倍、10 張三倍</option>
+            </select>
+          </label>
+          <div class="settings-summary">
+            <strong>目前套用</strong>
+            <span id="settingsSummary">台灣常用規則；標準計分。</span>
+          </div>
+        </div>
+      </section>
+
       <section class="room-panel" aria-label="Firebase 多人房間">
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.5.0 已支援房間大廳、同步洗牌發牌、真人同步出牌 / Pass、回合同步與 AI 補位接管。</p>
+            <p class="hint small">v0.6.0 已支援房間大廳、同步洗牌發牌、真人同步出牌 / Pass、回合同步與 AI 補位接管。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -165,7 +201,7 @@
             <button id="playBtn" class="primary-btn" type="button">出牌</button>
             <button id="passBtn" class="secondary-btn" type="button">Pass</button>
           </div>
-          <p class="hint small">第一手必須包含梅花 3。輪到你領出時不能 Pass。</p>
+          <p class="hint small">第一手依規則設定決定起手牌。輪到你領出時不能 Pass。</p>
         </div>
       </section>
 
@@ -188,13 +224,25 @@
       </section>
 
       <section class="rules-panel" aria-label="目前規則">
-        <h2>目前規則</h2>
+        <h2>目前規則與計分</h2>
         <div class="rules-grid">
           <div><strong>起手</strong><span>梅花 3</span></div>
           <div><strong>點數</strong><span>2 最大，3 最小</span></div>
           <div><strong>花色</strong><span>黑桃 &gt; 紅心 &gt; 方塊 &gt; 梅花</span></div>
           <div><strong>五張牌型</strong><span>順子 &lt; 同花 &lt; 葫蘆 &lt; 鐵支 &lt; 同花順</span></div>
         </div>
+      </section>
+
+
+      <section class="security-panel" aria-label="防作弊強化摘要">
+        <h2>防作弊強化摘要</h2>
+        <div class="check-grid">
+          <div><strong>回合交易</strong><span>所有多人出牌 / Pass 使用 Firestore transaction 寫入</span></div>
+          <div><strong>座位驗證</strong><span>只有目前輪到的座位可操作，AI 接管座位禁止真人誤送</span></div>
+          <div><strong>手牌驗證</strong><span>出牌前確認選牌存在於該座位手牌，阻擋異常選牌</span></div>
+          <div><strong>版本戳記</strong><span>每次動作更新 revision 與 lastActionId，方便追查同步問題</span></div>
+        </div>
+        <p class="hint small">提醒：這版仍是 GitHub Pages 朋友休閒版。真正嚴格防作弊需升級 Cloud Functions 洗牌、發牌與驗證，避免前端讀到完整牌局資料。</p>
       </section>
 
       <section class="contrast-panel" aria-label="UI 對比檢查摘要">
@@ -209,8 +257,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.5.0</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.5.0 支援連續對戰與離線接管</span>
+      <span>Big2 TW v0.6.0</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.0 支援連續對戰與離線接管</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>

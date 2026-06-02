@@ -895,3 +895,168 @@ h3 {
     grid-template-columns: 1fr;
   }
 }
+
+.settings-panel,
+.security-panel {
+  border: 2px solid var(--border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) minmax(16rem, 1fr);
+  gap: 0.85rem;
+  align-items: end;
+}
+
+.settings-summary {
+  min-height: 4.7rem;
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.75rem;
+  background: var(--surface-2);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.settings-summary span {
+  color: var(--muted);
+  font-weight: 750;
+}
+
+.playing-card {
+  animation: deal-in 0.22s ease both;
+}
+
+.last-play-panel .playing-card {
+  animation: play-pop 0.2s ease both;
+}
+
+@keyframes deal-in {
+  from { opacity: 0; transform: translateY(0.35rem) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes play-pop {
+  0% { opacity: 0; transform: translateY(-0.25rem) scale(0.92); }
+  70% { opacity: 1; transform: translateY(0.05rem) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-header,
+  .game-shell,
+  .app-footer {
+    width: min(100% - 0.75rem, 1180px);
+  }
+
+  .app-header {
+    padding-top: max(0.8rem, env(safe-area-inset-top));
+  }
+
+  h1 {
+    font-size: clamp(2.1rem, 12vw, 3.1rem);
+  }
+
+  select,
+  input,
+  button {
+    font-size: 16px;
+  }
+
+  .settings-grid,
+  .info-grid,
+  .score-strip,
+  .table-area,
+  .rules-grid,
+  .check-grid,
+  .room-grid,
+  .seat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .score-strip {
+    gap: 0.55rem;
+  }
+
+  .player-card,
+  .last-play-panel,
+  .action-panel,
+  .hand-section,
+  .history-panel,
+  .rules-panel,
+  .contrast-panel,
+  .security-panel,
+  .settings-panel,
+  .room-panel,
+  .result-panel {
+    border-radius: 1rem;
+    padding: 0.75rem;
+  }
+
+  .hand,
+  .card-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 0.55rem 0.2rem 0.85rem;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .playing-card {
+    flex: 0 0 auto;
+    width: 3.15rem;
+    height: 4.55rem;
+    scroll-snap-align: start;
+  }
+
+  .playing-card .corner {
+    font-size: 0.66rem;
+  }
+
+  .playing-card .rank {
+    font-size: 1.15rem;
+  }
+
+  .playing-card .suit {
+    font-size: 1.25rem;
+  }
+
+  .action-panel {
+    position: sticky;
+    bottom: max(0.45rem, env(safe-area-inset-bottom));
+    z-index: 10;
+    background: color-mix(in srgb, var(--surface) 96%, transparent);
+  }
+
+  .button-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    min-height: 3rem;
+    padding: 0.75rem 0.8rem;
+  }
+
+  .result-panel {
+    overflow-x: auto;
+  }
+
+  .result-panel table {
+    min-width: 42rem;
+  }
+}

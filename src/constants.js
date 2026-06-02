@@ -1,4 +1,4 @@
-export const VERSION = '0.5.0';
+export const VERSION = '0.6.0';
 
 export const SUITS = [
   { id: 'C', symbol: '♣', name: '梅花', value: 0, color: 'black' },
@@ -35,11 +35,28 @@ export const HAND_TYPES = {
 };
 
 export const DEFAULT_RULES = {
+  id: 'taiwanC3',
+  name: '台灣常用：梅花 3 起手',
+  shortName: '梅花 3',
   firstCardId: 'C3',
+  firstCardName: '梅花 3',
   allowStraightWithTwo: false,
   allowWheelStraight: false,
   cardOrderText: '2 > A > K > Q > J > 10 > 9 > 8 > 7 > 6 > 5 > 4 > 3',
-  suitOrderText: '黑桃 > 紅心 > 方塊 > 梅花'
+  suitOrderText: '黑桃 > 紅心 > 方塊 > 梅花',
+  fiveCardText: '順子 < 同花 < 葫蘆 < 鐵支 < 同花順',
+  note: '第一手必須含梅花 3；順子不含 2。'
+};
+
+export const DEFAULT_SCORING_RULES = {
+  id: 'standard',
+  name: '標準：剩幾張扣幾分',
+  shortName: '標準',
+  mode: 'standard',
+  doubleAt8: false,
+  doubleAt10: false,
+  tripleAt10: false,
+  note: '輸家每剩 1 張扣 1 分，贏家取得所有輸家扣分總和。'
 };
 
 export const DEFAULT_AI_LEVEL = 8;

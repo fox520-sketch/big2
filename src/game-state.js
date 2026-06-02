@@ -1,10 +1,14 @@
 import { createDeck, hasCard, removeCards, shuffleDeck, sortCards } from './cards.js';
-import { DEFAULT_AI_LEVEL, DEFAULT_RULES, PLAYERS } from './constants.js';
+import { DEFAULT_AI_LEVEL, DEFAULT_RULES, DEFAULT_SCORING_RULES, PLAYERS } from './constants.js';
 import { chooseAIMove, getAILevelLabel } from './ai.js';
 import { calculateResults } from './scoring.js';
 import { canPass, describePlay, validateHumanPlay } from './rules.js';
+import { normalizeRules, normalizeScoringRules, ruleSummary, scoringSummary } from './game-settings.js';
 
-function makePlayers(basePlayers, aiLevel) {
+function makePlayers(basePlayers, options = {}) {
+  const aiLevel = Number.isFinite(Number(options.aiLevel)) ? Number(options.aiLevel) : DEFAULT_AI_LEVEL;
+  const rules = normalizeRules(options.rules || DEFAULT_RULES);
+  const scoringRules = normalizeScoringRules(options.scoringRules || DEFAULT_SCORING_RULES);
   const deck = shuffleDeck(createDeck());
   const players = basePlayers.map((player, index) => ({
     seat: index,
@@ -26,11 +30,12 @@ function makePlayers(basePlayers, aiLevel) {
     player.hand = sortCards(player.hand);
   });
 
-  const firstSeat = players.find((player) => hasCard(player.hand, DEFAULT_RULES.firstCardId))?.seat ?? 0;
-  const firstMessage = `第 1 輪開始，${players[firstSeat].name} 持有梅花 3，必須先出。`;
+  const firstSeat = players.find((player) => hasCard(player.hand, rules.firstCardId))?.seat ?? 0;
+  const firstCardName = rules.firstCardName || rules.firstCardId;
+  const firstMessage = `第 1 輪開始，${players[firstSeat].name} 持有${firstCardName}，必須先出。`;
 
   return {
-    rules: { ...DEFAULT_RULES },
+    rules,
     players,
     currentTurnSeat: firstSeat,
     leadSeat: firstSeat,
@@ -42,19 +47,19 @@ function makePlayers(basePlayers, aiLevel) {
     winnerSeat: null,
     results: null,
     roundNo: 1,
-    history: [firstMessage, `AI 難度：${getAILevelLabel(aiLevel)}。`],
-    message: `${players[firstSeat].name} 先出，第一手必須包含梅花 3。`,
+    scoringRules,
+    security: { revision: 0, lastActionId: null, version: 'client-validated-v0.6.0' },
+    history: [firstMessage, `計分：${scoringSummary(scoringRules)}`, `規則：${ruleSummary(rules)}`, `AI 難度：${getAILevelLabel(aiLevel)}。`],
+    message: `${players[firstSeat].name} 先出，第一手必須包含${firstCardName}。`,
     aiLevel
   };
 }
 
 export function createNewGame(options = {}) {
-  const aiLevel = Number.isFinite(Number(options.aiLevel)) ? Number(options.aiLevel) : DEFAULT_AI_LEVEL;
-  return makePlayers(PLAYERS, aiLevel);
+  return makePlayers(PLAYERS, options);
 }
 
 export function createGameFromSeats(seatList = [], options = {}) {
-  const aiLevel = Number.isFinite(Number(options.aiLevel)) ? Number(options.aiLevel) : DEFAULT_AI_LEVEL;
   const basePlayers = [];
   for (let seat = 0; seat < 4; seat += 1) {
     const seatData = seatList[seat] || null;
@@ -67,7 +72,7 @@ export function createGameFromSeats(seatList = [], options = {}) {
       connected: seatData?.connected !== false
     });
   }
-  const game = makePlayers(basePlayers, aiLevel);
+  const game = makePlayers(basePlayers, options);
   game.mode = 'multiplayer';
   game.gameId = options.gameId || `game-${Date.now()}`;
   game.hostUid = options.hostUid || null;
@@ -90,7 +95,7 @@ function appendHistory(gameState, text) {
 function finishGame(gameState, winnerSeat) {
   gameState.finished = true;
   gameState.winnerSeat = winnerSeat;
-  gameState.results = calculateResults(gameState.players, winnerSeat);
+  gameState.results = calculateResults(gameState.players, winnerSeat, gameState.scoringRules);
   gameState.message = `本局結束，${gameState.players[winnerSeat].name} 第一名！`;
   appendHistory(gameState, `本局結束：${gameState.players[winnerSeat].name} 出完手牌。`);
   return gameState;

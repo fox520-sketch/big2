@@ -23,26 +23,33 @@ function countRanks(cards) {
   }));
 }
 
+function isWheelStraight(cards) {
+  const ranks = new Set(cards.map((card) => card.rank));
+  return ranks.size === 5 && ['A', '2', '3', '4', '5'].every((rank) => ranks.has(rank));
+}
+
 function isStraight(cards, rules = DEFAULT_RULES) {
   if (cards.length !== 5) return false;
   const rankValues = sortCards(cards).map((card) => getRankInfo(card).value);
   const uniqueRanks = unique(rankValues);
   if (uniqueRanks.length !== 5) return false;
 
+  const wheelStraight = isWheelStraight(cards);
+  if (wheelStraight) return Boolean(rules.allowWheelStraight);
+
   const hasTwo = cards.some((card) => card.rank === '2');
   if (hasTwo && !rules.allowStraightWithTwo) return false;
 
   const min = Math.min(...uniqueRanks);
   const max = Math.max(...uniqueRanks);
-  const normalStraight = max - min === 4 && uniqueRanks.every((value, index) => value === min + index);
-  if (normalStraight) return true;
-
-  // v0.1.0 預設不開啟 A2345 特殊順，保留給後續規則設定。
-  if (!rules.allowWheelStraight) return false;
-  return false;
+  return max - min === 4 && uniqueRanks.every((value, index) => value === min + index);
 }
 
-function getStraightHigh(cards) {
+function getStraightHigh(cards, rules = DEFAULT_RULES) {
+  if (rules.allowWheelStraight && isWheelStraight(cards)) {
+    const fiveCards = cards.filter((card) => card.rank === '5');
+    return Math.max(...fiveCards.map((card) => cardPower(card)));
+  }
   return Math.max(...cards.map((card) => cardPower(card)));
 }
 
@@ -107,8 +114,8 @@ export function detectHandType(cards, rules = DEFAULT_RULES) {
     return {
       ...HAND_TYPES.STRAIGHT_FLUSH,
       cards: sorted,
-      mainValue: getStraightHigh(sorted),
-      tieValues: [getStraightHigh(sorted)],
+      mainValue: getStraightHigh(sorted, rules),
+      tieValues: [getStraightHigh(sorted, rules)],
       label: HAND_TYPES.STRAIGHT_FLUSH.name
     };
   }
@@ -152,8 +159,8 @@ export function detectHandType(cards, rules = DEFAULT_RULES) {
     return {
       ...HAND_TYPES.STRAIGHT,
       cards: sorted,
-      mainValue: getStraightHigh(sorted),
-      tieValues: [getStraightHigh(sorted)],
+      mainValue: getStraightHigh(sorted, rules),
+      tieValues: [getStraightHigh(sorted, rules)],
       label: HAND_TYPES.STRAIGHT.name
     };
   }
@@ -227,13 +234,23 @@ export function getLegalMoves(hand, lastPlay, options = {}) {
 }
 
 export function validateHumanPlay(cards, gameState) {
+  const uniqueCardIds = new Set(cards.map((card) => card.id));
+  if (uniqueCardIds.size !== cards.length) {
+    return { ok: false, message: '選牌中有重複牌，請重新選擇。' };
+  }
+
+  const currentPlayer = gameState.players?.[gameState.currentTurnSeat];
+  if (currentPlayer?.hand && cards.some((card) => !hasCard(currentPlayer.hand, card.id))) {
+    return { ok: false, message: '選牌不在目前玩家手牌中，已阻擋異常出牌。' };
+  }
+
   const play = detectHandType(cards, gameState.rules);
   if (!play) {
     return { ok: false, message: '這不是合法牌型。' };
   }
 
   if (gameState.isFirstPlay && !hasCard(cards, gameState.rules.firstCardId)) {
-    return { ok: false, message: '第一手必須包含梅花 3。' };
+    return { ok: false, message: `第一手必須包含${gameState.rules.firstCardName || gameState.rules.firstCardId}。` };
   }
 
   if (gameState.lastPlay && !canBeat(play, gameState.lastPlay)) {

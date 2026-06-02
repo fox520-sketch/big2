@@ -1,7 +1,23 @@
-export function calculateResults(players, winnerSeat) {
+import { DEFAULT_SCORING_RULES } from './constants.js';
+import { normalizeScoringRules, scoringMultiplier } from './game-settings.js';
+
+function penaltyForRemaining(remaining, scoringRules = DEFAULT_SCORING_RULES) {
+  const multiplier = scoringMultiplier(remaining, scoringRules);
+  return {
+    multiplier,
+    penalty: remaining * multiplier,
+    label: multiplier > 1 ? `${multiplier} 倍` : '一般'
+  };
+}
+
+export function calculateResults(players, winnerSeat, scoringRules = DEFAULT_SCORING_RULES) {
+  const normalizedScoring = normalizeScoringRules(scoringRules);
   const rows = players.map((player, index) => {
     const remaining = player.hand.length;
     const seat = Number.isInteger(player.seat) ? player.seat : index;
+    const penalty = seat === winnerSeat
+      ? { multiplier: 1, penalty: 0, label: '勝出' }
+      : penaltyForRemaining(remaining, normalizedScoring);
     return {
       seat,
       name: player.name || `玩家 ${seat + 1}`,
@@ -9,14 +25,16 @@ export function calculateResults(players, winnerSeat) {
       isAI: Boolean(player.isAI),
       isWinner: seat === winnerSeat,
       remaining,
-      score: seat === winnerSeat ? 0 : -remaining,
+      multiplier: penalty.multiplier,
+      penaltyLabel: penalty.label,
+      score: seat === winnerSeat ? 0 : -penalty.penalty,
       rank: 0
     };
   });
 
   const loserPenaltyTotal = rows
     .filter((row) => row.seat !== winnerSeat)
-    .reduce((sum, row) => sum + row.remaining, 0);
+    .reduce((sum, row) => sum + Math.abs(row.score), 0);
 
   for (const row of rows) {
     if (row.seat === winnerSeat) row.score = loserPenaltyTotal;

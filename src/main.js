@@ -2,6 +2,8 @@ import { DEFAULT_AI_LEVEL } from './constants.js';
 import { createNewGame, passTurn, playCards, runAITurn, setAILevel } from './game-state.js';
 import { applyTheme, getSavedTheme } from './themes.js';
 import { clearSelection, getSelectedCards, render, renderThemeNote } from './ui.js';
+import { getRulePreset, getScoringPreset, ruleSummary, scoringSummary } from './game-settings.js';
+import { isSoundEnabled, playSound, setSoundEnabled } from './sound.js';
 import {
   buildInviteUrl,
   createRoom,
@@ -23,7 +25,10 @@ import {
 
 const AI_LEVEL_KEY = 'big2-ai-level';
 const PLAYER_NAME_KEY = 'big2-player-name';
-let gameState = createNewGame({ aiLevel: getSavedAILevel() });
+const RULE_PRESET_KEY = 'big2-rule-preset';
+const SCORING_PRESET_KEY = 'big2-scoring-preset';
+let lastRenderedActionId = null;
+let gameState = createNewGame({ aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
 let aiTimer = null;
 let multiplayerAiTimer = null;
 let currentRoomId = null;
@@ -44,6 +49,37 @@ function saveAILevel(level) {
   localStorage.setItem(AI_LEVEL_KEY, String(level));
 }
 
+
+function getSavedRulePresetId() {
+  return localStorage.getItem(RULE_PRESET_KEY) || 'taiwanC3';
+}
+
+function getSavedScoringPresetId() {
+  return localStorage.getItem(SCORING_PRESET_KEY) || 'standard';
+}
+
+function getSavedRules() {
+  return getRulePreset(getSavedRulePresetId());
+}
+
+function getSavedScoringRules() {
+  return getScoringPreset(getSavedScoringPresetId());
+}
+
+function updateSettingsSummary() {
+  const summary = el('settingsSummary');
+  if (!summary) return;
+  summary.textContent = `${ruleSummary(getSavedRules())}｜${scoringSummary(getSavedScoringRules())}`;
+}
+
+function updateSoundButton() {
+  const button = el('soundToggleBtn');
+  if (!button) return;
+  const enabled = isSoundEnabled();
+  button.textContent = enabled ? '音效：開' : '音效：關';
+  button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+}
+
 function getPlayerName() {
   const input = el('playerNameInput');
   return saveLocalPlayerName(input?.value || localStorage.getItem(PLAYER_NAME_KEY) || '玩家');
@@ -57,6 +93,7 @@ function scheduleAIIfNeeded() {
   if (current?.isAI || !current?.isHuman) {
     aiTimer = window.setTimeout(() => {
       gameState = runAITurn(gameState);
+      playSound(gameState.finished ? 'win' : (gameState.lastAction?.type === 'PASS' ? 'pass' : 'play'));
       clearSelection();
       render(gameState);
       scheduleAIIfNeeded();
@@ -81,7 +118,8 @@ function scheduleMultiplayerAIIfNeeded(room = latestRoom) {
 
 function resetGame() {
   const aiLevel = getSavedAILevel();
-  gameState = createNewGame({ aiLevel });
+  gameState = createNewGame({ aiLevel, rules: getSavedRules(), scoringRules: getSavedScoringRules() });
+  lastRenderedActionId = null;
   clearSelection();
   render(gameState);
   scheduleAIIfNeeded();
@@ -127,7 +165,13 @@ function renderRoomGame(room) {
       gameNo: room.gameNo || room.game.gameNo || 0
     };
     clearSelection();
+    const actionId = gameState.security?.lastActionId || `${gameState.gameId || 'game'}:${gameState.history?.[0] || ''}`;
+    const shouldPlaySound = actionId && actionId !== lastRenderedActionId;
     render(gameState);
+    if (shouldPlaySound) {
+      playSound(gameState.finished ? 'win' : (gameState.lastAction?.type === 'PASS' ? 'pass' : 'play'));
+      lastRenderedActionId = actionId;
+    }
     scheduleMultiplayerAIIfNeeded(room);
     return;
   }
@@ -242,7 +286,7 @@ async function bindRoomEvents() {
   el('createRoomBtn').addEventListener('click', async () => {
     try {
       setRoomMessage('正在建立 Firebase 房間...');
-      const result = await createRoom({ playerName: getPlayerName(), aiLevel: getSavedAILevel() });
+      const result = await createRoom({ playerName: getPlayerName(), aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
       currentRoomId = result.roomId;
       latestInviteUrl = result.inviteUrl;
       await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${error.message}`, 'warn'));
@@ -268,7 +312,7 @@ async function bindRoomEvents() {
   el('startMultiplayerBtn').addEventListener('click', async () => {
     try {
       setRoomMessage(latestRoom?.status === 'finished' ? '正在開始下一局並保留累計總分...' : '正在同步洗牌、發牌並開始多人遊戲...');
-      await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel() });
+      await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
       setRoomMessage(latestRoom?.status === 'finished' ? '下一局已開始，累計總分已保留。' : '多人遊戲已開始。', 'ok');
     } catch (error) {
       setRoomMessage(error.message || '開始多人遊戲失敗。', 'warn');
@@ -326,15 +370,18 @@ function bindGameEvents() {
     if (gameState.mode === 'multiplayer' && currentRoomId) {
       try {
         await playMultiplayerCards(currentRoomId, selected);
+        playSound('play');
         clearSelection();
       } catch (error) {
         gameState.message = error.message || '多人出牌失敗。';
+        playSound('error');
         render(gameState);
       }
       return;
     }
 
     gameState = playCards(gameState, 0, selected);
+    playSound(gameState.lastAction?.type === 'PLAY' ? 'play' : 'error');
     if (gameState.lastAction?.type === 'PLAY' && gameState.lastAction.seat === 0) {
       clearSelection();
     }
@@ -346,15 +393,18 @@ function bindGameEvents() {
     if (gameState.mode === 'multiplayer' && currentRoomId) {
       try {
         await passMultiplayerTurn(currentRoomId);
+        playSound('pass');
         clearSelection();
       } catch (error) {
         gameState.message = error.message || '多人 Pass 失敗。';
+        playSound('error');
         render(gameState);
       }
       return;
     }
 
     gameState = passTurn(gameState, 0);
+    playSound(gameState.lastAction?.type === 'PASS' ? 'pass' : 'error');
     clearSelection();
     render(gameState);
     scheduleAIIfNeeded();
@@ -382,9 +432,53 @@ function bindGameEvents() {
       setRoomMessage('AI 難度會在下一次「開始多人遊戲 / 重新發牌」時套用。', 'ok');
     }
   });
+
+  const ruleSelect = el('rulePresetSelect');
+  if (ruleSelect) {
+    ruleSelect.value = getSavedRulePresetId();
+    ruleSelect.addEventListener('change', (event) => {
+      localStorage.setItem(RULE_PRESET_KEY, event.target.value);
+      updateSettingsSummary();
+      if (gameState.mode === 'multiplayer') {
+        setRoomMessage('玩法規則會在下一次「開始多人遊戲 / 重新發牌」時套用。', 'ok');
+      } else {
+        resetGame();
+        gameState.message = '已套用新玩法規則並重新開局。';
+        render(gameState);
+      }
+    });
+  }
+
+  const scoringSelect = el('scoringPresetSelect');
+  if (scoringSelect) {
+    scoringSelect.value = getSavedScoringPresetId();
+    scoringSelect.addEventListener('change', (event) => {
+      localStorage.setItem(SCORING_PRESET_KEY, event.target.value);
+      updateSettingsSummary();
+      if (gameState.mode === 'multiplayer') {
+        setRoomMessage('計分規則會在下一次「開始多人遊戲 / 重新發牌」時套用。', 'ok');
+      } else {
+        gameState.scoringRules = getSavedScoringRules();
+        gameState.message = '已套用新計分規則，本局結束時計算。';
+        render(gameState);
+      }
+    });
+  }
+
+  const soundButton = el('soundToggleBtn');
+  if (soundButton) {
+    updateSoundButton();
+    soundButton.addEventListener('click', () => {
+      setSoundEnabled(!isSoundEnabled());
+      updateSoundButton();
+      playSound('select');
+    });
+  }
 }
+
 
 bindGameEvents();
 bindRoomEvents();
+updateSettingsSummary();
 render(gameState);
 scheduleAIIfNeeded();

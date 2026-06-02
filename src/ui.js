@@ -3,6 +3,8 @@ import { getAILevelDescription, getAILevelLabel } from './ai.js';
 import { THEMES } from './themes.js';
 import { canPass, describePlay, detectHandType } from './rules.js';
 import { totalsToSortedRows } from './scoring.js';
+import { ruleSummary, scoringSummary } from './game-settings.js';
+import { playSound } from './sound.js';
 
 const selectedCardIds = new Set();
 
@@ -94,6 +96,7 @@ function renderHand(gameState) {
     const cardEl = makeCardElement(card, { clickable: true });
     cardEl.addEventListener('click', () => {
       toggleCardSelection(card.id);
+      playSound('select');
       render(gameState);
     });
     hand.appendChild(cardEl);
@@ -170,6 +173,7 @@ function renderResults(gameState) {
         <td>${row.name}</td>
         <td>${row.remaining}</td>
         <td>${row.score > 0 ? '+' : ''}${row.score}</td>
+        <td>${row.penaltyLabel || (row.multiplier > 1 ? `${row.multiplier} 倍` : '一般')}</td>
         <td>${Number(total.totalScore || row.score) > 0 ? '+' : ''}${Number(total.totalScore || row.score)}</td>
         <td>${Number(total.wins || (row.rank === 1 ? 1 : 0))}</td>
       </tr>
@@ -198,6 +202,7 @@ function renderResults(gameState) {
           <th>玩家名稱</th>
           <th>剩餘張數</th>
           <th>本局分數</th>
+          <th>倍率</th>
           <th>累計總分</th>
           <th>勝場</th>
         </tr>
@@ -220,6 +225,24 @@ function renderResults(gameState) {
       </thead>
       <tbody>${totalRows}</tbody>
     </table>
+  `;
+}
+
+
+function renderRulePanel(gameState) {
+  const grid = document.querySelector('.rules-panel .rules-grid');
+  if (!grid) return;
+  const rules = gameState.rules || {};
+  const scoringRules = gameState.scoringRules || {};
+  grid.innerHTML = `
+    <div><strong>起手</strong><span>${rules.firstCardName || rules.firstCardId || '梅花 3'}</span></div>
+    <div><strong>點數</strong><span>${rules.cardOrderText || '2 最大，3 最小'}</span></div>
+    <div><strong>花色</strong><span>${rules.suitOrderText || '黑桃 > 紅心 > 方塊 > 梅花'}</span></div>
+    <div><strong>五張牌型</strong><span>${rules.fiveCardText || '順子 < 同花 < 葫蘆 < 鐵支 < 同花順'}</span></div>
+    <div><strong>順子設定</strong><span>${rules.allowStraightWithTwo ? '可含 2' : '不可含 2'}；${rules.allowWheelStraight ? '允許 A2345' : '不開 A2345'}</span></div>
+    <div><strong>計分</strong><span>${scoringRules.shortName || scoringRules.name || '標準'}</span></div>
+    <div><strong>規則摘要</strong><span>${ruleSummary(rules)}</span></div>
+    <div><strong>計分摘要</strong><span>${scoringSummary(scoringRules)}</span></div>
   `;
 }
 
@@ -249,6 +272,7 @@ export function render(gameState) {
   renderResults(gameState);
   renderHistory(gameState);
   renderAIInfo(gameState);
+  renderRulePanel(gameState);
 }
 
 export function describeCurrentSelection(gameState) {

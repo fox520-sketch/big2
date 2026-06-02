@@ -3,6 +3,7 @@ import { firebaseConfig, hasFirebaseConfig } from './firebase-config.js';
 import { createGameFromSeats, passTurn, playCards, runAITurn } from './game-state.js';
 import { mergeSeriesTotals } from './scoring.js';
 import { canPass, validateHumanPlay } from './rules.js';
+import { normalizeRules, normalizeScoringRules, ruleSummary, scoringSummary } from './game-settings.js';
 
 const ROOM_ID_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const ROOM_ID_LENGTH = 6;
@@ -280,13 +281,15 @@ function applyFinishedGameTotals(room, updatedGame) {
   return mergeSeriesTotals(room.totalScores || {}, updatedGame.results || [], updatedGame.players || [], gameNo);
 }
 
-export async function createRoom({ playerName, aiLevel }) {
+export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
   const { sdk, db, user } = await ensureFirebaseReady();
   const roomId = makeRoomId();
   const name = saveLocalPlayerName(playerName);
   const roomRef = sdk.firestore.doc(db, ROOM_COLLECTION, roomId);
   const inviteUrl = buildInviteUrl(roomId);
   const hostSeat = seatPayload({ seat: 0, name, uid: user.uid, host: true });
+  const normalizedRules = normalizeRules(rules);
+  const normalizedScoringRules = normalizeScoringRules(scoringRules);
 
   const roomData = {
     roomId,
@@ -294,13 +297,16 @@ export async function createRoom({ playerName, aiLevel }) {
     hostUid: user.uid,
     hostName: name,
     aiLevel: Number(aiLevel) || 8,
+    rules: normalizedRules,
+    scoringRules: normalizedScoringRules,
+    securityVersion: 'client-validated-v0.6.0',
     version: VERSION,
     createdAt: sdk.firestore.serverTimestamp(),
     updatedAt: sdk.firestore.serverTimestamp(),
     presenceUpdatedAt: sdk.firestore.serverTimestamp(),
     invitePath: inviteUrl,
     gameNo: 0,
-    lastEvent: `${name} 建立房間。`,
+    lastEvent: `${name} 建立房間。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`,
     totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
     seats: {
       0: hostSeat
@@ -425,7 +431,7 @@ export async function fillAISeats(roomId) {
   await sdk.firestore.updateDoc(ref, updates);
 }
 
-export async function startMultiplayerGame(roomId, { aiLevel } = {}) {
+export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRules } = {}) {
   const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
   const { sdk, db, user } = await ensureFirebaseReady();
   const ref = sdk.firestore.doc(db, ROOM_COLLECTION, normalizedRoomId);
@@ -438,12 +444,16 @@ export async function startMultiplayerGame(roomId, { aiLevel } = {}) {
 
     const filledSeats = ensureFilledSeatList(room);
     const nextGameNo = Number(room.gameNo || 0) + 1;
+    const normalizedRules = normalizeRules(rules || room.rules);
+    const normalizedScoringRules = normalizeScoringRules(scoringRules || room.scoringRules);
     const game = createGameFromSeats(filledSeats, {
       aiLevel: Number(aiLevel || room.aiLevel || 8),
+      rules: normalizedRules,
+      scoringRules: normalizedScoringRules,
       hostUid: room.hostUid,
       gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
     });
-    game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。`);
+    game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
 
     const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
     for (const seat of filledSeats) {
@@ -471,6 +481,9 @@ export async function startMultiplayerGame(roomId, { aiLevel } = {}) {
       gameNo: nextGameNo,
       totalScores,
       aiLevel: Number(aiLevel || room.aiLevel || 8),
+      rules: normalizedRules,
+      scoringRules: normalizedScoringRules,
+      securityVersion: 'client-validated-v0.6.0',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
@@ -493,6 +506,15 @@ async function updateMultiplayerGame(roomId, action) {
     const wasFinished = Boolean(game.finished);
     game.localSeat = seat ?? activeSeat ?? 0;
     const updatedGame = action({ room, game, seat, user });
+    updatedGame.security = {
+      ...(updatedGame.security || {}),
+      revision: Number(game.security?.revision || 0) + 1,
+      lastActionId: `${normalizedRoomId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      lastActorUid: user.uid,
+      lastActorSeat: Number.isInteger(seat) ? seat : null,
+      updatedAtMs: Date.now(),
+      version: 'client-validated-v0.6.0'
+    };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {
       status: roomStatusForGame(updatedGame),
