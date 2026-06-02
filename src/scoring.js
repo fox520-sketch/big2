@@ -1,14 +1,15 @@
-import { PLAYERS } from './constants.js';
-
 export function calculateResults(players, winnerSeat) {
-  const rows = PLAYERS.map((player) => {
-    const remaining = players[player.seat].hand.length;
+  const rows = players.map((player, index) => {
+    const remaining = player.hand.length;
+    const seat = Number.isInteger(player.seat) ? player.seat : index;
     return {
-      seat: player.seat,
-      name: player.name,
-      isWinner: player.seat === winnerSeat,
+      seat,
+      name: player.name || `玩家 ${seat + 1}`,
+      uid: player.uid || null,
+      isAI: Boolean(player.isAI),
+      isWinner: seat === winnerSeat,
       remaining,
-      score: player.seat === winnerSeat ? 0 : -remaining,
+      score: seat === winnerSeat ? 0 : -remaining,
       rank: 0
     };
   });

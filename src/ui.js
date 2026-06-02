@@ -165,7 +165,7 @@ function renderResults(gameState) {
       <thead>
         <tr>
           <th>排名</th>
-          <th>玩家</th>
+          <th>玩家名稱</th>
           <th>剩餘張數</th>
           <th>本局分數</th>
         </tr>

@@ -1,7 +1,7 @@
 {
   "name": "big2-tw",
-  "version": "0.4.0",
-  "description": "台灣大老二網頁遊戲 v0.4.0：Firebase 多人同步洗牌、發牌、出牌、Pass、回合同步與 AI 補位接管",
+  "version": "0.4.1",
+  "description": "台灣大老二網頁遊戲 v0.4.1：修正多人結算排名顯示玩家名稱，保留 Firebase 多人同步牌局功能",
   "type": "module",
   "scripts": {
     "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-contrast.js",

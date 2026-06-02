@@ -8,7 +8,7 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if signedIn();
 
-      // v0.4.0 休閒測試版規則：
+      // v0.4.1 休閒測試版規則：
       // 支援房間大廳與多人同步牌局。這版是朋友休閒版，遊戲邏輯由前端與房主端 AI 接管。
       // 正式防作弊版建議改用 Cloud Functions 洗牌、發牌與驗證出牌。
       allow create: if signedIn()

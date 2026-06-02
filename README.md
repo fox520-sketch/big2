@@ -1,8 +1,14 @@
 # 台灣大老二 Big2 TW
 
-v0.4.0：Firebase 多人同步洗牌、發牌、出牌、Pass、回合同步與 AI 補位接管。
+v0.4.1：修正多人結算排名以 Firebase 座位玩家名稱顯示，保留 Firebase 多人同步洗牌、發牌、出牌、Pass、回合同步與 AI 補位接管。
 
 這是一個可上傳 GitHub Pages 的純前端台灣大老二網頁遊戲。目前已支援單人 AI 對戰、Firebase 房間大廳，以及朋友休閒版多人同步牌局。
+
+## v0.4.1 修正重點
+
+- 多人模式本局結果會顯示實際玩家名稱，例如 `Fox`、`良`、`AI 3`、`AI 4`。
+- 修正舊版結算時誤用單機預設名稱 `AI 左家`、`AI 對家`、`AI 右家` 的問題。
+- 結果表欄位改為「玩家名稱」。
 
 ## 功能
 
@@ -113,7 +119,7 @@ docs/
 錯誤：
 
 ```txt
-big2-tw-v0.4.0/index.html
+big2-tw-v0.4.1/index.html
 ```
 
 ## 不要上傳到 GitHub 的檔案
@@ -130,4 +136,4 @@ firebase-adminsdk.json
 
 ## 注意
 
-v0.4.0 是朋友休閒測試版。為了讓 GitHub Pages 純前端可直接玩，牌局狀態目前存在 Firestore 房間文件中。正式防作弊版建議下一階段改成 Cloud Functions 洗牌、發牌與驗證出牌。
+v0.4.1 是朋友休閒測試版。為了讓 GitHub Pages 純前端可直接玩，牌局狀態目前存在 Firestore 房間文件中。正式防作弊版建議下一階段改成 Cloud Functions 洗牌、發牌與驗證出牌。
