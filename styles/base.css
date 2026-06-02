@@ -1,0 +1,468 @@
+:root {
+  color-scheme: dark;
+  --bg: #060b14;
+  --bg-soft: #0b1324;
+  --surface: #111c31;
+  --surface-2: #17243c;
+  --text: #f7fbff;
+  --muted: #c5d2e8;
+  --primary: #65b5ff;
+  --primary-strong: #9ad0ff;
+  --primary-text: #03111e;
+  --border: #39506f;
+  --danger: #ff7a7a;
+  --success: #8ef0b3;
+  --warning: #ffd166;
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  --card-red: #ffb4b4;
+  --card-black: #f2f6ff;
+  --card-bg: #f9fbff;
+  --card-ink: #0f172a;
+}
+
+body[data-theme='epaper'] {
+  color-scheme: light;
+  --bg: #ffffff;
+  --bg-soft: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f4f4f4;
+  --text: #000000;
+  --muted: #202020;
+  --primary: #000000;
+  --primary-strong: #000000;
+  --primary-text: #ffffff;
+  --border: #000000;
+  --danger: #000000;
+  --success: #000000;
+  --warning: #000000;
+  --shadow: none;
+  --card-red: #000000;
+  --card-black: #000000;
+  --card-bg: #ffffff;
+  --card-ink: #000000;
+}
+
+body[data-theme='ocean'] {
+  color-scheme: dark;
+  --bg: #042333;
+  --bg-soft: #06364e;
+  --surface: #074b67;
+  --surface-2: #0b5d7b;
+  --text: #f2fcff;
+  --muted: #cceef7;
+  --primary: #88e7ff;
+  --primary-strong: #c7f5ff;
+  --primary-text: #03202e;
+  --border: #63cce2;
+  --danger: #ffd1d1;
+  --success: #c7ffd7;
+  --warning: #ffe59a;
+  --shadow: 0 18px 45px rgba(0, 17, 28, 0.45);
+  --card-red: #ef4444;
+  --card-black: #0f172a;
+  --card-bg: #f8fdff;
+  --card-ink: #071923;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, color-mix(in srgb, var(--primary) 18%, transparent), transparent 34rem),
+    linear-gradient(135deg, var(--bg), var(--bg-soft));
+  color: var(--text);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans TC', sans-serif;
+  line-height: 1.5;
+}
+
+button,
+select {
+  font: inherit;
+}
+
+button {
+  border: 2px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 800;
+  transition: transform 0.15s ease, filter 0.15s ease, border-color 0.15s ease;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+select {
+  width: 100%;
+  border: 2px solid var(--border);
+  border-radius: 0.9rem;
+  padding: 0.6rem 0.75rem;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 700;
+}
+
+.app-header,
+.app-footer {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+}
+
+.app-header {
+  padding: 1.5rem 0 1rem;
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.15rem;
+  color: var(--primary-strong);
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0.2rem;
+  font-size: clamp(2rem, 6vw, 4rem);
+  line-height: 1;
+}
+
+h2 {
+  margin-bottom: 0;
+  font-size: 1.15rem;
+}
+
+.subtitle,
+.hint,
+.app-footer {
+  color: var(--muted);
+}
+
+.subtitle {
+  margin-bottom: 0;
+}
+
+.toolbar {
+  display: flex;
+  align-items: end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.field {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 10rem;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.game-shell {
+  width: min(1180px, calc(100% - 2rem));
+  margin: 0 auto;
+  display: grid;
+  gap: 1rem;
+}
+
+.notice,
+.player-card,
+.last-play-panel,
+.action-panel,
+.hand-section,
+.history-panel,
+.rules-panel,
+.result-panel {
+  border: 2px solid var(--border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow);
+}
+
+.notice {
+  padding: 0.85rem 1rem;
+}
+
+.score-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.85rem;
+}
+
+.player-card {
+  padding: 1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.player-card.active {
+  outline: 3px solid var(--primary);
+  background: color-mix(in srgb, var(--primary) 18%, var(--surface));
+}
+
+.player-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  font-weight: 900;
+}
+
+.player-meta {
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.table-area {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr;
+  gap: 1rem;
+}
+
+.last-play-panel,
+.action-panel,
+.hand-section,
+.history-panel,
+.rules-panel,
+.result-panel {
+  padding: 1rem;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.8rem;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  min-height: 1.85rem;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.card-row,
+.hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  min-height: 5.4rem;
+  align-items: center;
+}
+
+.card-row.empty {
+  color: var(--muted);
+  border: 2px dashed var(--border);
+  border-radius: 1rem;
+  justify-content: center;
+}
+
+.playing-card {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 4rem;
+  height: 5.4rem;
+  border: 2px solid #0f172a;
+  border-radius: 0.65rem;
+  background: var(--card-bg);
+  color: var(--card-ink);
+  box-shadow: 0 8px 14px rgba(0, 0, 0, 0.2);
+  font-weight: 1000;
+  user-select: none;
+}
+
+.playing-card.red {
+  color: var(--card-red);
+}
+
+.playing-card.black {
+  color: var(--card-black);
+}
+
+body[data-theme='epaper'] .playing-card {
+  box-shadow: none;
+  border-color: #000000;
+}
+
+.playing-card .rank {
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+.playing-card .suit {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.playing-card .corner {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.35rem;
+  display: grid;
+  line-height: 1;
+  font-size: 0.7rem;
+}
+
+.hand .playing-card {
+  cursor: pointer;
+}
+
+.hand .playing-card.selected {
+  transform: translateY(-0.9rem);
+  outline: 4px solid var(--warning);
+  border-color: var(--warning);
+}
+
+.button-row {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.primary-btn,
+.secondary-btn {
+  min-height: 2.75rem;
+  padding: 0.65rem 1.05rem;
+}
+
+.primary-btn {
+  background: var(--primary);
+  color: var(--primary-text);
+  border-color: var(--primary-strong);
+}
+
+.secondary-btn {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.small {
+  font-size: 0.92rem;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.result-panel table {
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 0.9rem;
+}
+
+.result-panel th,
+.result-panel td {
+  border-bottom: 1.5px solid var(--border);
+  padding: 0.65rem;
+  text-align: left;
+}
+
+.result-panel th {
+  background: var(--surface-2);
+}
+
+.history-panel ol {
+  margin: 0;
+  padding-left: 1.35rem;
+  display: grid;
+  gap: 0.4rem;
+  max-height: 14rem;
+  overflow: auto;
+}
+
+.history-panel li {
+  color: var(--muted);
+}
+
+.rules-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.rules-grid div {
+  padding: 0.8rem;
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-2);
+  display: grid;
+  gap: 0.25rem;
+}
+
+.rules-grid span {
+  color: var(--muted);
+}
+
+.app-footer {
+  padding: 1.2rem 0 2rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 900px) {
+  .app-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .toolbar {
+    justify-content: stretch;
+  }
+
+  .field,
+  .toolbar button {
+    flex: 1 1 12rem;
+  }
+
+  .score-strip,
+  .table-area,
+  .rules-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .playing-card {
+    width: 3.35rem;
+    height: 4.75rem;
+  }
+
+  .playing-card .rank {
+    font-size: 1.25rem;
+  }
+
+  .playing-card .suit {
+    font-size: 1.35rem;
+  }
+}

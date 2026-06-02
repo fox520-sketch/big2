@@ -1,0 +1,16 @@
+{
+  "name": "big2-tw",
+  "version": "0.1.0",
+  "description": "台灣大老二網頁遊戲 v0.1.0：規則引擎 + 單人 AI 對戰版",
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/test-rules.js"
+  },
+  "keywords": [
+    "big-two",
+    "taiwan",
+    "card-game",
+    "github-pages"
+  ],
+  "license": "MIT"
+}

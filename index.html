@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>台灣大老二 Big2 TW v0.1.0</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.1.0：規則引擎 + 單人 AI 對戰版" />
+    <link rel="stylesheet" href="styles/base.css" />
+  </head>
+  <body data-theme="dark">
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Big2 TW</p>
+        <h1>台灣大老二</h1>
+        <p class="subtitle">v0.1.0 規則引擎 + 單人 AI 對戰版</p>
+      </div>
+      <div class="toolbar" aria-label="遊戲工具列">
+        <label class="field">
+          <span>顯示風格</span>
+          <select id="themeSelect" aria-label="選擇顯示風格">
+            <option value="dark">深色模式</option>
+            <option value="epaper">電子紙模式</option>
+            <option value="ocean">海洋風</option>
+          </select>
+        </label>
+        <button id="newGameBtn" class="secondary-btn" type="button">重新開局</button>
+      </div>
+    </header>
+
+    <main class="game-shell">
+      <section class="notice" aria-live="polite">
+        <strong>目前狀態：</strong>
+        <span id="statusText">準備開始遊戲。</span>
+      </section>
+
+      <section class="score-strip" aria-label="玩家狀態">
+        <article class="player-card" id="playerStatus0"></article>
+        <article class="player-card" id="playerStatus1"></article>
+        <article class="player-card" id="playerStatus2"></article>
+        <article class="player-card" id="playerStatus3"></article>
+      </section>
+
+      <section class="table-area" aria-label="牌桌">
+        <div class="last-play-panel">
+          <div class="panel-heading">
+            <h2>上一手</h2>
+            <span id="lastPlayType" class="pill">尚未出牌</span>
+          </div>
+          <div id="lastPlayCards" class="card-row empty">等待梅花 3 起手</div>
+        </div>
+
+        <div class="action-panel">
+          <div class="panel-heading">
+            <h2>操作</h2>
+            <span id="turnBadge" class="pill">等待中</span>
+          </div>
+          <p id="selectedInfo" class="hint">請選擇手牌後出牌。</p>
+          <div class="button-row">
+            <button id="playBtn" class="primary-btn" type="button">出牌</button>
+            <button id="passBtn" class="secondary-btn" type="button">Pass</button>
+          </div>
+          <p class="hint small">第一手必須包含梅花 3。輪到你領出時不能 Pass。</p>
+        </div>
+      </section>
+
+      <section class="hand-section" aria-label="我的手牌">
+        <div class="panel-heading">
+          <h2>我的手牌</h2>
+          <span id="handCount" class="pill">0 張</span>
+        </div>
+        <div id="humanHand" class="hand"></div>
+      </section>
+
+      <section id="resultPanel" class="result-panel hidden" aria-label="本局結果"></section>
+
+      <section class="history-panel" aria-label="遊戲紀錄">
+        <div class="panel-heading">
+          <h2>遊戲紀錄</h2>
+          <span class="pill">最新在上</span>
+        </div>
+        <ol id="historyList"></ol>
+      </section>
+
+      <section class="rules-panel" aria-label="目前規則">
+        <h2>目前規則</h2>
+        <div class="rules-grid">
+          <div><strong>起手</strong><span>梅花 3</span></div>
+          <div><strong>點數</strong><span>2 最大，3 最小</span></div>
+          <div><strong>花色</strong><span>黑桃 &gt; 紅心 &gt; 方塊 &gt; 梅花</span></div>
+          <div><strong>五張牌型</strong><span>順子 &lt; 同花 &lt; 葫蘆 &lt; 鐵支 &lt; 同花順</span></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <span>Big2 TW v0.1.0</span>
+      <span>適合上傳 GitHub Pages 的純前端版本</span>
+    </footer>
+
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
