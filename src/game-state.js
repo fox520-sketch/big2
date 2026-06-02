@@ -4,11 +4,15 @@ import { chooseAIMove, getAILevelLabel } from './ai.js';
 import { calculateResults } from './scoring.js';
 import { canPass, describePlay, validateHumanPlay } from './rules.js';
 
-export function createNewGame(options = {}) {
-  const aiLevel = Number.isFinite(Number(options.aiLevel)) ? Number(options.aiLevel) : DEFAULT_AI_LEVEL;
+function makePlayers(basePlayers, aiLevel) {
   const deck = shuffleDeck(createDeck());
-  const players = PLAYERS.map((player) => ({
-    ...player,
+  const players = basePlayers.map((player, index) => ({
+    seat: index,
+    name: player.name || `玩家 ${index + 1}`,
+    uid: player.uid || null,
+    isAI: Boolean(player.isAI || player.isHuman === false),
+    isHuman: !Boolean(player.isAI || player.isHuman === false),
+    connected: player.connected !== false,
     hand: [],
     score: 0,
     rank: null
@@ -44,6 +48,33 @@ export function createNewGame(options = {}) {
   };
 }
 
+export function createNewGame(options = {}) {
+  const aiLevel = Number.isFinite(Number(options.aiLevel)) ? Number(options.aiLevel) : DEFAULT_AI_LEVEL;
+  return makePlayers(PLAYERS, aiLevel);
+}
+
+export function createGameFromSeats(seatList = [], options = {}) {
+  const aiLevel = Number.isFinite(Number(options.aiLevel)) ? Number(options.aiLevel) : DEFAULT_AI_LEVEL;
+  const basePlayers = [];
+  for (let seat = 0; seat < 4; seat += 1) {
+    const seatData = seatList[seat] || null;
+    basePlayers.push({
+      seat,
+      uid: seatData?.uid || null,
+      name: seatData?.name || `AI ${seat + 1}`,
+      isAI: Boolean(seatData?.isAI || !seatData),
+      isHuman: !Boolean(seatData?.isAI || !seatData),
+      connected: seatData?.connected !== false
+    });
+  }
+  const game = makePlayers(basePlayers, aiLevel);
+  game.mode = 'multiplayer';
+  game.gameId = options.gameId || `game-${Date.now()}`;
+  game.hostUid = options.hostUid || null;
+  game.localSeat = options.localSeat ?? 0;
+  return game;
+}
+
 export function currentPlayer(gameState) {
   return gameState.players[gameState.currentTurnSeat];
 }
@@ -53,7 +84,7 @@ function nextSeat(seat) {
 }
 
 function appendHistory(gameState, text) {
-  gameState.history = [text, ...gameState.history].slice(0, 60);
+  gameState.history = [text, ...gameState.history].slice(0, 80);
 }
 
 function finishGame(gameState, winnerSeat) {
@@ -147,7 +178,7 @@ export function passTurn(gameState, seat) {
 export function runAITurn(gameState) {
   if (gameState.finished) return gameState;
   const player = currentPlayer(gameState);
-  if (player.isHuman) return gameState;
+  if (!player?.isAI && player?.isHuman) return gameState;
 
   const decision = chooseAIMove(gameState, player.hand, gameState.aiLevel);
   if (decision.type === 'PASS') {

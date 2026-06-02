@@ -1,4 +1,4 @@
-// Big2 TW v0.3.0 Firebase 設定檔
+// Big2 TW v0.4.0 Firebase 設定檔
 //
 // 使用方式：
 // 1. 到 Firebase Console 建立 Web App。
@@ -7,12 +7,12 @@
 // 4. 不要放 serviceAccountKey.json 或任何私鑰到 GitHub。
 
 export const firebaseConfig = {
-  apiKey: 'AIzaSyDy8sWFzjOdAtYJUcRuzn3dvyJ0q2swESA',
-  authDomain: 'big2-tw.firebaseapp.com',
-  projectId: 'big2-tw',
-  storageBucket: 'big2-tw.firebasestorage.app',
-  messagingSenderId: '487558943667',
-  appId: '1:487558943667:web:2b916d4ec3561ad15031c6'
+  apiKey: 'PASTE_YOUR_API_KEY',
+  authDomain: 'PASTE_YOUR_PROJECT_ID.firebaseapp.com',
+  projectId: 'PASTE_YOUR_PROJECT_ID',
+  storageBucket: 'PASTE_YOUR_PROJECT_ID.appspot.com',
+  messagingSenderId: 'PASTE_YOUR_MESSAGING_SENDER_ID',
+  appId: 'PASTE_YOUR_APP_ID'
 };
 
 export function hasFirebaseConfig() {

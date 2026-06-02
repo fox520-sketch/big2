@@ -12,17 +12,23 @@ import {
   leaveRoom,
   listenRoom,
   normalizeRoomId,
+  passMultiplayerTurn,
+  playMultiplayerCards,
   qrCodeImageUrl,
+  runMultiplayerAITurn,
   saveLocalPlayerName,
-  shouldAutoJoinFromUrl
+  shouldAutoJoinFromUrl,
+  startMultiplayerGame
 } from './firebase-room.js';
 
 const AI_LEVEL_KEY = 'big2-ai-level';
 const PLAYER_NAME_KEY = 'big2-player-name';
 let gameState = createNewGame({ aiLevel: getSavedAILevel() });
 let aiTimer = null;
+let multiplayerAiTimer = null;
 let currentRoomId = null;
 let latestInviteUrl = '';
+let latestRoom = null;
 
 function el(id) {
   return document.getElementById(id);
@@ -45,9 +51,10 @@ function getPlayerName() {
 
 function scheduleAIIfNeeded() {
   window.clearTimeout(aiTimer);
+  if (gameState.mode === 'multiplayer') return;
   if (gameState.finished) return;
   const current = gameState.players[gameState.currentTurnSeat];
-  if (!current.isHuman) {
+  if (current?.isAI || !current?.isHuman) {
     aiTimer = window.setTimeout(() => {
       gameState = runAITurn(gameState);
       clearSelection();
@@ -55,6 +62,21 @@ function scheduleAIIfNeeded() {
       scheduleAIIfNeeded();
     }, 520);
   }
+}
+
+function scheduleMultiplayerAIIfNeeded(room = latestRoom) {
+  window.clearTimeout(multiplayerAiTimer);
+  if (!room || !room.isHost || room.status !== 'playing' || !room.game || room.game.finished) return;
+  const current = room.game.players?.[room.game.currentTurnSeat];
+  if (!current?.isAI) return;
+
+  multiplayerAiTimer = window.setTimeout(async () => {
+    try {
+      await runMultiplayerAITurn(room.roomId);
+    } catch (error) {
+      setRoomMessage(error.message || 'AI 接管出牌失敗。', 'warn');
+    }
+  }, 680);
 }
 
 function resetGame() {
@@ -85,6 +107,7 @@ function setRoomControlsConnected(connected) {
   el('showQrBtn').disabled = !connected;
   el('leaveRoomBtn').disabled = !connected;
   el('fillAIBtn').disabled = !connected;
+  el('startMultiplayerBtn').disabled = !connected;
 }
 
 function renderEmptySeats() {
@@ -93,7 +116,27 @@ function renderEmptySeats() {
     .join('');
 }
 
+function renderRoomGame(room) {
+  if (room.status === 'playing' || room.status === 'finished') {
+    if (!room.game) return;
+    gameState = {
+      ...room.game,
+      mode: 'multiplayer',
+      localSeat: Number.isInteger(room.localSeat) ? room.localSeat : 0
+    };
+    clearSelection();
+    render(gameState);
+    scheduleMultiplayerAIIfNeeded(room);
+    return;
+  }
+
+  if (gameState.mode === 'multiplayer') {
+    resetGame();
+  }
+}
+
 function renderRoom(room) {
+  latestRoom = room;
   if (!room) {
     currentRoomId = null;
     latestInviteUrl = '';
@@ -112,7 +155,16 @@ function renderRoom(room) {
   el('roomBadge').textContent = `房號 ${room.roomId}`;
   el('inviteLinkInput').value = latestInviteUrl;
   setRoomControlsConnected(true);
-  setRoomMessage(room.lastEvent || `已連線房間 ${room.roomId}。`, 'ok');
+  el('fillAIBtn').disabled = !room.isHost || room.status === 'playing';
+  el('startMultiplayerBtn').disabled = !room.isHost;
+  el('startMultiplayerBtn').textContent = room.status === 'playing' ? '重新發牌' : '開始多人遊戲';
+
+  const statusText = room.status === 'playing'
+    ? `多人牌局進行中。你的座位：${Number.isInteger(room.localSeat) ? room.localSeat + 1 : '未入座'}。`
+    : room.status === 'finished'
+      ? '多人牌局已結束，房主可以重新發牌。'
+      : '房間大廳已連線，房主可補 AI 空位後開始多人遊戲。';
+  setRoomMessage(room.lastEvent || statusText, 'ok');
 
   const seats = room.seatList || [];
   el('roomSeatList').innerHTML = seats
@@ -122,7 +174,10 @@ function renderRoom(room) {
       if (seat.host || seat.uid === room.hostUid) tags.push('房主');
       if (seat.isAI) tags.push('AI');
       else tags.push('真人');
+      if (seat.uid === room.localUid) tags.push('你');
       if (seat.connected) tags.push('已連線');
+      const cardCount = room.game?.players?.[index]?.hand?.length;
+      if (Number.isFinite(cardCount)) tags.push(`手牌 ${cardCount} 張`);
       return `
         <div class="seat-card occupied">
           <strong>座位 ${index + 1}｜${seat.name || '玩家'}</strong>
@@ -131,6 +186,8 @@ function renderRoom(room) {
       `;
     })
     .join('');
+
+  renderRoomGame(room);
 }
 
 async function connectRoom(roomId, mode = 'join') {
@@ -201,16 +258,28 @@ async function bindRoomEvents() {
     }
   });
 
+  el('startMultiplayerBtn').addEventListener('click', async () => {
+    try {
+      setRoomMessage('正在同步洗牌、發牌並開始多人遊戲...');
+      await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel() });
+      setRoomMessage('多人遊戲已開始。', 'ok');
+    } catch (error) {
+      setRoomMessage(error.message || '開始多人遊戲失敗。', 'warn');
+    }
+  });
+
   el('leaveRoomBtn').addEventListener('click', async () => {
     try {
       await leaveRoom(currentRoomId);
       currentRoomId = null;
       latestInviteUrl = '';
+      latestRoom = null;
       el('inviteLinkInput').value = '';
       el('roomBadge').textContent = '尚未建立';
       el('qrBox').classList.add('hidden');
       setRoomControlsConnected(false);
       renderEmptySeats();
+      resetGame();
       setRoomMessage('已離開房間。');
     } catch (error) {
       setRoomMessage(error.message || '離開房間失敗。', 'warn');
@@ -239,13 +308,25 @@ async function bindRoomEvents() {
 function bindGameEvents() {
   el('newGameBtn').addEventListener('click', resetGame);
 
-  el('playBtn').addEventListener('click', () => {
+  el('playBtn').addEventListener('click', async () => {
     const selected = getSelectedCards(gameState);
     if (!selected.length) {
       gameState.message = '請先選擇要出的牌。';
       render(gameState);
       return;
     }
+
+    if (gameState.mode === 'multiplayer' && currentRoomId) {
+      try {
+        await playMultiplayerCards(currentRoomId, selected);
+        clearSelection();
+      } catch (error) {
+        gameState.message = error.message || '多人出牌失敗。';
+        render(gameState);
+      }
+      return;
+    }
+
     gameState = playCards(gameState, 0, selected);
     if (gameState.lastAction?.type === 'PLAY' && gameState.lastAction.seat === 0) {
       clearSelection();
@@ -254,7 +335,18 @@ function bindGameEvents() {
     scheduleAIIfNeeded();
   });
 
-  el('passBtn').addEventListener('click', () => {
+  el('passBtn').addEventListener('click', async () => {
+    if (gameState.mode === 'multiplayer' && currentRoomId) {
+      try {
+        await passMultiplayerTurn(currentRoomId);
+        clearSelection();
+      } catch (error) {
+        gameState.message = error.message || '多人 Pass 失敗。';
+        render(gameState);
+      }
+      return;
+    }
+
     gameState = passTurn(gameState, 0);
     clearSelection();
     render(gameState);
@@ -275,9 +367,13 @@ function bindGameEvents() {
   aiLevelSelect.addEventListener('change', (event) => {
     const aiLevel = Number(event.target.value);
     saveAILevel(aiLevel);
-    gameState = setAILevel(gameState, aiLevel);
-    render(gameState);
-    scheduleAIIfNeeded();
+    if (gameState.mode !== 'multiplayer') {
+      gameState = setAILevel(gameState, aiLevel);
+      render(gameState);
+      scheduleAIIfNeeded();
+    } else {
+      setRoomMessage('AI 難度會在下一次「開始多人遊戲 / 重新發牌」時套用。', 'ok');
+    }
   });
 }
 

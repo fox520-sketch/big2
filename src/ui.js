@@ -29,8 +29,14 @@ export function clearSelection() {
   selectedCardIds.clear();
 }
 
+function getLocalSeat(gameState) {
+  return Number.isInteger(gameState.localSeat) ? gameState.localSeat : 0;
+}
+
 export function getSelectedCards(gameState) {
-  return sortCards(gameState.players[0].hand.filter((card) => selectedCardIds.has(card.id)));
+  const localSeat = getLocalSeat(gameState);
+  const hand = gameState.players[localSeat]?.hand || [];
+  return sortCards(hand.filter((card) => selectedCardIds.has(card.id)));
 }
 
 export function toggleCardSelection(cardId) {
@@ -39,14 +45,15 @@ export function toggleCardSelection(cardId) {
 }
 
 function renderPlayerStatus(gameState) {
+  const localSeat = getLocalSeat(gameState);
   for (const player of gameState.players) {
     const box = el(`playerStatus${player.seat}`);
     const active = player.seat === gameState.currentTurnSeat && !gameState.finished;
     box.classList.toggle('active', active);
     box.innerHTML = `
       <div class="player-title">
-        <span>${player.name}</span>
-        <span class="pill">${player.isHuman ? '玩家' : `AI Lv.${gameState.aiLevel}`}</span>
+        <span>${player.name}${player.seat === localSeat ? '（你）' : ''}</span>
+        <span class="pill">${player.isAI ? `AI Lv.${gameState.aiLevel}` : (player.seat === localSeat ? '玩家' : '真人')}</span>
       </div>
       <div class="player-meta">
         <span>手牌 ${player.hand.length} 張</span>
@@ -78,9 +85,11 @@ function renderLastPlay(gameState) {
 
 function renderHand(gameState) {
   const hand = el('humanHand');
+  const localSeat = getLocalSeat(gameState);
+  const localPlayer = gameState.players[localSeat] || gameState.players[0];
   hand.innerHTML = '';
 
-  for (const card of gameState.players[0].hand) {
+  for (const card of localPlayer.hand) {
     const cardEl = makeCardElement(card, { clickable: true });
     cardEl.addEventListener('click', () => {
       toggleCardSelection(card.id);
@@ -89,7 +98,9 @@ function renderHand(gameState) {
     hand.appendChild(cardEl);
   }
 
-  el('handCount').textContent = `${gameState.players[0].hand.length} 張`;
+  el('handCount').textContent = `${localPlayer.hand.length} 張`;
+  const title = document.querySelector('.hand-section h2');
+  if (title) title.textContent = gameState.mode === 'multiplayer' ? `我的手牌｜座位 ${localSeat + 1}` : '我的手牌';
 }
 
 function renderSelectedInfo(gameState) {
@@ -107,7 +118,9 @@ function renderSelectedInfo(gameState) {
 }
 
 function renderControls(gameState) {
-  const isHumanTurn = gameState.currentTurnSeat === 0 && !gameState.finished;
+  const localSeat = getLocalSeat(gameState);
+  const localPlayer = gameState.players[localSeat];
+  const isHumanTurn = gameState.currentTurnSeat === localSeat && !gameState.finished && !localPlayer?.isAI;
   el('playBtn').disabled = !isHumanTurn;
   el('passBtn').disabled = !isHumanTurn || !canPass(gameState);
   el('turnBadge').textContent = gameState.finished

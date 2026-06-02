@@ -1,18 +1,20 @@
 {
   "name": "big2-tw",
-  "version": "0.3.0",
-  "description": "台灣大老二網頁遊戲 v0.3.0：Firebase 建立房間 + 加入房間 + 邀請連結 + QR Code + 自動加入房間",
+  "version": "0.4.0",
+  "description": "台灣大老二網頁遊戲 v0.4.0：Firebase 多人同步洗牌、發牌、出牌、Pass、回合同步與 AI 補位接管",
   "type": "module",
   "scripts": {
-    "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-contrast.js",
+    "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-contrast.js",
     "test:rules": "node scripts/test-rules.js",
     "test:ai": "node scripts/test-ai.js",
+    "test:multiplayer": "node scripts/test-multiplayer-state.js",
     "test:contrast": "node scripts/test-contrast.js"
   },
   "keywords": [
     "big-two",
     "taiwan",
     "card-game",
+    "firebase",
     "github-pages"
   ],
   "license": "MIT"

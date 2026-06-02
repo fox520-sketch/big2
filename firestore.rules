@@ -8,15 +8,16 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if signedIn();
 
-      // v0.3.0 休閒測試版房間規則：
-      // 只儲存房間座位、房主、邀請連結與 AI 補位，不儲存玩家手牌。
+      // v0.4.0 休閒測試版規則：
+      // 支援房間大廳與多人同步牌局。這版是朋友休閒版，遊戲邏輯由前端與房主端 AI 接管。
+      // 正式防作弊版建議改用 Cloud Functions 洗牌、發牌與驗證出牌。
       allow create: if signedIn()
         && request.resource.data.roomId == roomId
         && request.resource.data.hostUid == request.auth.uid
         && request.resource.data.status == 'waiting'
         && request.resource.data.keys().hasOnly([
           'roomId', 'status', 'hostUid', 'hostName', 'aiLevel', 'version',
-          'createdAt', 'updatedAt', 'invitePath', 'lastEvent', 'seats'
+          'createdAt', 'updatedAt', 'invitePath', 'gameNo', 'lastEvent', 'seats'
         ]);
 
       allow update: if signedIn()
@@ -25,7 +26,7 @@ service cloud.firestore {
         && request.resource.data.hostUid == resource.data.hostUid
         && request.resource.data.keys().hasOnly([
           'roomId', 'status', 'hostUid', 'hostName', 'aiLevel', 'version',
-          'createdAt', 'updatedAt', 'invitePath', 'lastEvent', 'seats'
+          'createdAt', 'updatedAt', 'invitePath', 'gameNo', 'lastEvent', 'seats', 'game'
         ]);
 
       allow delete: if signedIn() && resource.data.hostUid == request.auth.uid;

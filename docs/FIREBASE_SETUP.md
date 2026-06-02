@@ -1,8 +1,8 @@
-# Firebase 設定教學：Big2 TW v0.3.0
+# Firebase 設定教學：Big2 TW v0.4.0
 
-本版使用 Firebase Authentication 匿名登入 + Cloud Firestore 房間同步。
+本版使用 Firebase Authentication 匿名登入 + Cloud Firestore 同步多人房間與牌局狀態。
 
-> v0.3.0 是休閒測試版，只同步房間座位、房號、邀請連結與 AI 補位，不把手牌放到 Firestore。完整多人出牌同步會在後續版本處理。
+> v0.4.0 是朋友休閒測試版：可同步洗牌、發牌、出牌、Pass、回合與 AI 補位接管。正式防作弊版建議改用 Cloud Functions 由伺服器洗牌、發牌與驗證出牌。
 
 ---
 
@@ -89,7 +89,7 @@ firebase-adminsdk.json
 4. 複製專案根目錄的 `firestore.rules` 內容貼上。
 5. 點「Publish」。
 
-目前規則只允許已登入使用者讀寫 `rooms/{roomId}`，而且 create/update 欄位有限制。這是 v0.3.0 休閒測試版規則，後續正式多人出牌同步要再強化。
+v0.4.0 的規則允許已匿名登入的玩家讀寫 `rooms/{roomId}`，並限制欄位只能是房間、座位與 game 牌局狀態相關欄位。這是休閒測試規則，不是正式防作弊規則。
 
 ---
 
@@ -121,14 +121,18 @@ http://localhost:8080
 4. 按「複製邀請連結」。
 5. 開另一個無痕視窗貼上連結。
 6. 確認會顯示「正在自動加入房間...」。
-7. 確認座位列表會新增玩家。
-8. 按「顯示 QR Code」，手機掃描測試。
+7. 確認座位列表會新增真人玩家。
+8. 房主按「補 AI 空位」。
+9. 房主按「開始多人遊戲」。
+10. 確認每個視窗都進入同一局，且只操作自己的座位。
+11. 輪到真人時出牌或 Pass。
+12. 輪到 AI 時，由房主瀏覽器自動接管 AI 出牌。
 
 ---
 
 ## 8. GitHub Pages 上傳
 
-請把壓縮檔解開後，將 `big2-tw-v0.3.0` 資料夾內的檔案全部放到 GitHub repository 根目錄。
+請把壓縮檔解開後，將 `big2-tw-v0.4.0` 資料夾內的檔案全部放到 GitHub repository 根目錄。
 
 正確：
 
@@ -146,7 +150,7 @@ package.json
 不要變成：
 
 ```txt
-big2-tw-v0.3.0/index.html
+big2-tw-v0.4.0/index.html
 ```
 
 否則 GitHub Pages 可能找不到首頁。
