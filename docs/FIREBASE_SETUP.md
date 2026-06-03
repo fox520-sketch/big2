@@ -1,8 +1,8 @@
-# Firebase 設定教學：Big2 TW v0.6.2
+# Firebase 設定教學：Big2 TW v0.6.3
 
 本版使用 Firebase Authentication 匿名登入 + Cloud Firestore 同步多人房間與牌局狀態。
 
-> v0.6.2 是朋友休閒測試版：可同步洗牌、發牌、出牌、Pass、回合、AI 補位接管、下一局、累計總分、離線 AI 接管與房主轉移，並加入出牌防連點、revision 檢查與偵錯面板。正式防作弊版建議改用 Cloud Functions 由伺服器洗牌、發牌與驗證出牌。
+> v0.6.3 是免 Cloud Functions 的朋友休閒測試版：可同步洗牌、發牌、出牌、Pass、回合、AI 補位接管、下一局、累計總分、離線 AI 接管與房主轉移，並加入出牌防連點、revision 檢查、偵錯面板與 Firebase 設定檢查面板。不需要 Blaze，也不需要部署 `functions/`。
 
 ---
 
@@ -89,11 +89,11 @@ firebase-adminsdk.json
 4. 複製專案根目錄的 `firestore.rules` 內容貼上。
 5. 點「Publish」。
 
-v0.6.2 的規則允許已匿名登入的玩家讀寫 `rooms/{roomId}`，並限制欄位只能是房間、座位、`game` 牌局狀態、`totalScores` 累計分數與 `presenceUpdatedAt` 連線狀態相關欄位。這是休閒測試規則，不是正式防作弊規則。
+v0.6.3 的規則允許已匿名登入的玩家讀寫 `rooms/{roomId}`，並限制欄位只能是房間、座位、`game` 牌局狀態、`totalScores` 累計分數與 `presenceUpdatedAt` 連線狀態相關欄位。這是休閒測試規則，不是正式防作弊規則。
 
 ---
 
-## v0.6.2 實戰測試重點
+## v0.6.3 實戰測試重點
 
 多人測試時請特別看「多人同步偵錯面板」：若發生卡住或不同步，請截圖保留房號、我的座位、目前回合、Revision、LastAction、GameId 與最後同步時間。
 
@@ -122,23 +122,25 @@ http://localhost:8080
 測試流程：
 
 1. 輸入暱稱。
-2. 按「建立房間」。
-3. 看到 6 碼房號。
-4. 按「複製邀請連結」。
-5. 開另一個無痕視窗貼上連結。
-6. 確認會顯示「正在自動加入房間...」。
-7. 確認座位列表會新增真人玩家。
-8. 房主按「補 AI 空位」。
-9. 房主按「開始多人遊戲」。
-10. 確認每個視窗都進入同一局，且只操作自己的座位。
-11. 輪到真人時出牌或 Pass。
-12. 輪到 AI 時，由房主瀏覽器自動接管 AI 出牌。
+2. 按「執行 Firebase 檢查」。
+3. 確認 Firebase Config、匿名登入、Firestore 寫入都通過。
+4. 按「建立房間」。
+5. 看到 6 碼房號。
+6. 按「複製邀請連結」。
+7. 開另一個無痕視窗貼上連結。
+8. 確認會顯示「正在自動加入房間...」。
+9. 確認座位列表會新增真人玩家。
+10. 房主按「補 AI 空位」。
+11. 房主按「開始多人遊戲」。
+12. 確認每個視窗都進入同一局，且只操作自己的座位。
+13. 輪到真人時出牌或 Pass。
+14. 輪到 AI 時，由房主瀏覽器自動接管 AI 出牌。
 
 ---
 
 ## 8. GitHub Pages 上傳
 
-請把壓縮檔解開後，將 `big2-tw-v0.6.2` 資料夾內的檔案全部放到 GitHub repository 根目錄。
+請把壓縮檔解開後，將 `big2-tw-v0.6.3` 資料夾內的檔案全部放到 GitHub repository 根目錄。
 
 正確：
 
@@ -156,7 +158,7 @@ package.json
 不要變成：
 
 ```txt
-big2-tw-v0.6.2/index.html
+big2-tw-v0.6.3/index.html
 ```
 
 否則 GitHub Pages 可能找不到首頁。
@@ -179,12 +181,32 @@ https://fox520-sketch.github.io/big2/?room=ABC123&join=1
 這次不只是帶入房號，會真的呼叫加入房間流程。
 
 
-## v0.6.2 需要重新 Publish firestore.rules
+## v0.6.3 需要重新 Publish firestore.rules
 
-v0.6.2 新增 `rules`、`scoringRules`、`securityVersion` 欄位，請務必將新版 `firestore.rules` 貼到：
+如果你曾經貼過 v0.7.0 的 Cloud Functions 版 Rules，請務必改貼回 v0.6.3 的 `firestore.rules`：
 
 ```txt
 Firebase Console → Firestore Database → Rules → Publish
 ```
 
-否則建立房間或開始多人遊戲時，可能因為新欄位無法寫入而失敗。
+否則建立房間時可能出現 permission-denied，畫面會提示 Rules 版本不相容。
+
+
+## v0.6.3 不需要 Cloud Functions
+
+本版不需要執行：
+
+```bash
+firebase deploy --only functions
+```
+
+也不需要上傳：
+
+```txt
+functions/
+firebase.json
+.firebaserc
+.firebaserc.example
+```
+
+如果你不想升級 Blaze，請維持 v0.6.3。

@@ -9,6 +9,7 @@ import {
   createRoom,
   fillAISeats,
   getFirebaseSetupState,
+  explainFirebaseError,
   getRoomIdFromUrl,
   joinRoom,
   leaveRoom,
@@ -18,6 +19,7 @@ import {
   playMultiplayerCards,
   qrCodeImageUrl,
   runMultiplayerAITurn,
+  runFirebaseDiagnostics,
   saveLocalPlayerName,
   shouldAutoJoinFromUrl,
   startMultiplayerGame
@@ -96,7 +98,7 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.6.2'}`],
+    ['版本', `v${game?.version || room?.version || '0.6.3'}`],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
@@ -164,7 +166,7 @@ function scheduleMultiplayerAIIfNeeded(room = latestRoom) {
     try {
       await runMultiplayerAITurn(room.roomId);
     } catch (error) {
-      setRoomMessage(error.message || 'AI 接管出牌失敗。', 'warn');
+      setRoomMessage(makeFriendlyError(error) || 'AI 接管出牌失敗。', 'warn');
     }
   }, 680);
 }
@@ -192,6 +194,47 @@ function setRoomMessage(message, level = 'info') {
   const roomMessage = el('roomMessage');
   roomMessage.textContent = message;
   roomMessage.dataset.level = level;
+}
+
+
+function makeFriendlyError(error) {
+  return explainFirebaseError(error);
+}
+
+function renderFirebaseDiagnosticPanel(result = null) {
+  const grid = el('firebaseCheckGrid');
+  const summary = el('firebaseCheckSummary');
+  if (!grid || !summary) return;
+
+  if (!result) {
+    const setup = getFirebaseSetupState();
+    const rows = [
+      { label: 'Firebase Config', ok: setup.ok, text: setup.text },
+      { label: '匿名登入', ok: null, text: '按「執行檢查」後確認。' },
+      { label: 'Firestore 寫入', ok: null, text: '按「執行檢查」後建立暫存房間測試。' },
+      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.3 不需要 functions/，也不需要 Blaze。' }
+    ];
+    grid.innerHTML = rows.map(renderFirebaseCheckItem).join('');
+    summary.textContent = setup.ok ? '已偵測到 Firebase Config。可按「執行檢查」確認 Auth 與 Firestore Rules。' : '尚未填入 Firebase Config。';
+    summary.dataset.level = setup.ok ? 'ok' : 'warn';
+    return;
+  }
+
+  grid.innerHTML = result.checks.map(renderFirebaseCheckItem).join('');
+  summary.textContent = result.summary;
+  summary.dataset.level = result.ok ? 'ok' : 'warn';
+}
+
+function renderFirebaseCheckItem(item) {
+  const stateClass = item.ok === true ? 'ok' : item.ok === false ? 'warn' : 'neutral';
+  const stateText = item.ok === true ? '通過' : item.ok === false ? '需處理' : '未檢查';
+  return `
+    <div class="firebase-check-item ${stateClass}">
+      <strong>${item.label}</strong>
+      <span class="pill ${stateClass === 'neutral' ? '' : stateClass}">${stateText}</span>
+      <p>${item.text}</p>
+    </div>
+  `;
 }
 
 function setRoomControlsConnected(connected) {
@@ -320,15 +363,16 @@ async function connectRoom(roomId, mode = 'join') {
     const result = await joinRoom(normalized, { playerName: getPlayerName() });
     currentRoomId = result.roomId;
     latestInviteUrl = result.inviteUrl;
-    await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${error.message}`, 'warn'));
+    await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${makeFriendlyError(error)}`, 'warn'));
     setRoomMessage(mode === 'auto' ? `已自動加入房間 ${result.roomId}。` : `已加入房間 ${result.roomId}。`, 'ok');
   } catch (error) {
-    setRoomMessage(error.message || '加入房間失敗。', 'warn');
+    setRoomMessage(makeFriendlyError(error) || '加入房間失敗。', 'warn');
   }
 }
 
 async function bindRoomEvents() {
   setFirebaseBadge();
+  renderFirebaseDiagnosticPanel();
   renderEmptySeats();
 
   const savedName = localStorage.getItem(PLAYER_NAME_KEY) || '';
@@ -356,10 +400,10 @@ async function bindRoomEvents() {
       const result = await createRoom({ playerName: getPlayerName(), aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
       currentRoomId = result.roomId;
       latestInviteUrl = result.inviteUrl;
-      await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${error.message}`, 'warn'));
+      await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${makeFriendlyError(error)}`, 'warn'));
       setRoomMessage(`已建立房間 ${result.roomId}，可以複製連結或顯示 QR Code。`, 'ok');
     } catch (error) {
-      setRoomMessage(error.message || '建立房間失敗，請檢查 Firebase 設定。', 'warn');
+      setRoomMessage(makeFriendlyError(error) || '建立房間失敗，請檢查 Firebase 設定。', 'warn');
     }
   });
 
@@ -372,7 +416,7 @@ async function bindRoomEvents() {
       await fillAISeats(currentRoomId || el('roomCodeInput').value);
       setRoomMessage('已補滿 AI 空位。', 'ok');
     } catch (error) {
-      setRoomMessage(error.message || '補 AI 空位失敗。', 'warn');
+      setRoomMessage(makeFriendlyError(error) || '補 AI 空位失敗。', 'warn');
     }
   });
 
@@ -382,7 +426,7 @@ async function bindRoomEvents() {
       await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
       setRoomMessage(latestRoom?.status === 'finished' ? '下一局已開始，累計總分已保留。' : '多人遊戲已開始。', 'ok');
     } catch (error) {
-      setRoomMessage(error.message || '開始多人遊戲失敗。', 'warn');
+      setRoomMessage(makeFriendlyError(error) || '開始多人遊戲失敗。', 'warn');
     }
   });
 
@@ -400,7 +444,7 @@ async function bindRoomEvents() {
       resetGame();
       setRoomMessage('已離開房間。');
     } catch (error) {
-      setRoomMessage(error.message || '離開房間失敗。', 'warn');
+      setRoomMessage(makeFriendlyError(error) || '離開房間失敗。', 'warn');
     }
   });
 
@@ -421,6 +465,35 @@ async function bindRoomEvents() {
     el('qrBox').classList.remove('hidden');
     setRoomMessage('已顯示 QR Code，手機掃描後會自動加入房間。', 'ok');
   });
+
+
+  const firebaseCheckBtn = el('runFirebaseCheckBtn');
+  if (firebaseCheckBtn) {
+    firebaseCheckBtn.addEventListener('click', async () => {
+      firebaseCheckBtn.disabled = true;
+      firebaseCheckBtn.textContent = '檢查中...';
+      setRoomMessage('正在檢查 Firebase Config、匿名登入與 Firestore Rules...');
+      try {
+        const result = await runFirebaseDiagnostics();
+        renderFirebaseDiagnosticPanel(result);
+        setRoomMessage(result.summary, result.ok ? 'ok' : 'warn');
+      } catch (error) {
+        const result = {
+          ok: false,
+          summary: makeFriendlyError(error),
+          checks: [
+            { label: 'Firebase 設定檢查', ok: false, text: makeFriendlyError(error) },
+            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.3 不需要 functions/，也不需要 Blaze。' }
+          ]
+        };
+        renderFirebaseDiagnosticPanel(result);
+        setRoomMessage(result.summary, 'warn');
+      } finally {
+        firebaseCheckBtn.disabled = false;
+        firebaseCheckBtn.textContent = '執行 Firebase 檢查';
+      }
+    });
+  }
 }
 
 function bindGameEvents() {
@@ -446,7 +519,7 @@ function bindGameEvents() {
           playSound('play');
           clearSelection();
         } catch (error) {
-          gameState.message = error.message || '多人出牌失敗。';
+          gameState.message = makeFriendlyError(error) || '多人出牌失敗。';
           playSound('error');
           render(gameState);
         }
@@ -476,7 +549,7 @@ function bindGameEvents() {
           playSound('pass');
           clearSelection();
         } catch (error) {
-          gameState.message = error.message || '多人 Pass 失敗。';
+          gameState.message = makeFriendlyError(error) || '多人 Pass 失敗。';
           playSound('error');
           render(gameState);
         }

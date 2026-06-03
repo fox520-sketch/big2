@@ -897,7 +897,8 @@ h3 {
 }
 
 .settings-panel,
-.security-panel {
+.security-panel,
+.firebase-check-panel {
   border: 2px solid var(--border);
   border-radius: 1.35rem;
   background: color-mix(in srgb, var(--surface) 92%, transparent);
@@ -1103,6 +1104,61 @@ button[aria-busy='true'] {
 
 @media (max-width: 560px) {
   .debug-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.firebase-check-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.firebase-check-item {
+  padding: 0.75rem;
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-2);
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.firebase-check-item p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.firebase-check-item.ok {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, var(--surface-2));
+}
+
+.firebase-check-item.warn {
+  border-color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface-2));
+}
+
+#firebaseCheckSummary[data-level='ok'] {
+  color: var(--success);
+}
+
+#firebaseCheckSummary[data-level='warn'] {
+  color: var(--warning);
+}
+
+@media (max-width: 900px) {
+  .firebase-check-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .firebase-check-grid {
     grid-template-columns: 1fr;
   }
 }

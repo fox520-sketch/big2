@@ -47,6 +47,78 @@ export function getFirebaseSetupState() {
     : { ok: false, text: '尚未填入 Firebase 設定，請先編輯 src/firebase-config.js。' };
 }
 
+
+export function explainFirebaseError(error) {
+  const code = error?.code || '';
+  const message = error?.message || String(error || '未知錯誤');
+  if (code.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
+    return 'Firestore 寫入被拒絕。通常是 Firebase Console 仍套用 v0.7.0 Cloud Functions 版 Rules，請改貼 v0.6.3 的 firestore.rules 後 Publish。';
+  }
+  if (code.includes('unauthenticated') || message.includes('auth')) {
+    return '匿名登入失敗。請到 Firebase Console → Authentication → Sign-in method 啟用 Anonymous。';
+  }
+  if (message.includes('PASTE_') || message.includes('尚未填入 Firebase')) {
+    return 'Firebase Config 尚未填入。請編輯 src/firebase-config.js。';
+  }
+  if (message.includes('Failed to fetch') || message.includes('network')) {
+    return '連線 Firebase 失敗，請檢查網路、Firebase 專案 ID 與瀏覽器是否封鎖第三方服務。';
+  }
+  return message;
+}
+
+export async function runFirebaseDiagnostics() {
+  const checks = [];
+  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.6.3 是免 Cloud Functions 休閒版，不需要 Blaze。' });
+
+  if (!hasFirebaseConfig()) {
+    checks.push({ label: 'Firebase Config', ok: false, text: '尚未填入 src/firebase-config.js。' });
+    checks.push({ label: '匿名登入', ok: false, text: '未檢查。' });
+    checks.push({ label: 'Firestore 寫入', ok: false, text: '未檢查。' });
+    return { ok: false, checks, summary: 'Firebase 設定未完成，請先填入 firebaseConfig。' };
+  }
+
+  checks.push({ label: 'Firebase Config', ok: true, text: `已設定 projectId：${firebaseConfig.projectId}` });
+
+  try {
+    const { sdk, db, user } = await ensureFirebaseReady();
+    checks.push({ label: '匿名登入', ok: true, text: `成功，UID：${user.uid.slice(0, 8)}...` });
+
+    const testRoomId = `T${makeRoomId().slice(1)}`;
+    const ref = sdk.firestore.doc(db, ROOM_COLLECTION, testRoomId);
+    const name = getLocalPlayerName();
+    const hostSeat = seatPayload({ seat: 0, name, uid: user.uid, host: true });
+    const testData = {
+      roomId: testRoomId,
+      status: 'waiting',
+      hostUid: user.uid,
+      hostName: name,
+      aiLevel: 8,
+      rules: normalizeRules(),
+      scoringRules: normalizeScoringRules(),
+      securityVersion: 'client-validated-v0.6.3',
+      version: VERSION,
+      createdAt: sdk.firestore.serverTimestamp(),
+      updatedAt: sdk.firestore.serverTimestamp(),
+      presenceUpdatedAt: sdk.firestore.serverTimestamp(),
+      invitePath: buildInviteUrl(testRoomId),
+      gameNo: 0,
+      lastEvent: 'v0.6.3 Firebase 設定檢查用暫存房間。',
+      totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
+      seats: { 0: hostSeat }
+    };
+
+    await sdk.firestore.setDoc(ref, testData);
+    const snap = await sdk.firestore.getDoc(ref);
+    if (!snap.exists()) throw new Error('測試房間建立後讀取失敗。');
+    await sdk.firestore.deleteDoc(ref);
+    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.6.3。' });
+    return { ok: true, checks, summary: 'Firebase 設定檢查通過，可以建立房間。' };
+  } catch (error) {
+    checks.push({ label: 'Firestore 寫入', ok: false, text: explainFirebaseError(error) });
+    return { ok: false, checks, summary: 'Firebase 設定檢查未通過，請依提示修正。' };
+  }
+}
+
 async function loadFirebaseSdk() {
   if (!sdkPromise) {
     sdkPromise = Promise.all([
@@ -320,7 +392,7 @@ export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
     aiLevel: Number(aiLevel) || 8,
     rules: normalizedRules,
     scoringRules: normalizedScoringRules,
-    securityVersion: 'client-validated-v0.6.2',
+    securityVersion: 'client-validated-v0.6.3',
     version: VERSION,
     createdAt: sdk.firestore.serverTimestamp(),
     updatedAt: sdk.firestore.serverTimestamp(),
@@ -475,7 +547,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
     });
     game.version = VERSION;
-    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.6.2' };
+    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.6.3' };
     game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
 
     const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
@@ -506,7 +578,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       aiLevel: Number(aiLevel || room.aiLevel || 8),
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.6.2',
+      securityVersion: 'client-validated-v0.6.3',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
@@ -566,7 +638,7 @@ async function updateMultiplayerGame(roomId, action, options = {}) {
       lastActorUid: user.uid,
       lastActorSeat: Number.isInteger(seat) ? seat : null,
       updatedAtMs: Date.now(),
-      version: 'client-validated-v0.6.2'
+      version: 'client-validated-v0.6.3'
     };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {

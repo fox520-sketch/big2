@@ -1,5 +1,23 @@
 # 版本說明
 
+## v0.6.3 - 2026-06-03
+### 修正
+- 改為免 Cloud Functions 穩定強化版：建立房間、加入房間、補 AI、開始多人遊戲都維持 Firestore 前端 transaction，不需要 Blaze。
+- 新增 Firebase 設定檢查面板：可檢查 Firebase Config、匿名登入、Firestore 建立 / 讀取 / 刪除暫存房間是否正常。
+- 建立房間失敗時提供更明確提示：若 Firestore Rules 還停在 v0.7.0 Cloud Functions 版，會提醒改貼 v0.6.3 的 `firestore.rules`。
+- 修正房間操作區重複顯示「開始多人遊戲」按鈕。
+- 修正安全摘要內重複的「版本戳記」項目。
+- 強化 GitHub 上傳說明：此版不需要 `functions/`、`firebase.json`、`.firebaserc`，也不需要部署 Cloud Functions。
+
+### 保留
+- 保留 v0.6.2 的回合同步、防連點、下一局穩定、斷線重連與偵錯面板。
+- 保留 v0.6.1 的選牌穩定修正。
+
+### 測試
+- 規則、AI、多人狀態、設定計分、主題對比測試通過。
+
+---
+
 ## v0.6.2 - 2026-06-02
 ### 修正
 - 強化多人回合同步檢查：出牌 / Pass 會比對 gameId、目前回合與 revision，避免舊畫面或重複點擊送出過期動作。

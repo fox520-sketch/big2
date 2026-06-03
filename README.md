@@ -1,14 +1,16 @@
-# 台灣大老二 Big2 TW v0.6.2
+# 台灣大老二 Big2 TW v0.6.3
 
 這是一個可上傳 GitHub Pages 的純前端台灣大老二網頁遊戲，支援單人 AI 對戰、Firebase 多人房間、多人同步牌局、連續對戰、規則設定、計分設定、主題切換、手機 UI、音效與動畫。
 
-## v0.6.2 修正重點
+## v0.6.3 修正重點
 
-- 強化多人回合同步：出牌 / Pass 會檢查 gameId、目前回合座位與 revision。
-- 新增出牌 / Pass 防連點：Firebase transaction 完成前鎖定按鈕，避免手機連點重複送出。
-- 強化下一局穩定：下一局會重新建立 gameId，上一局 lastPlay、passCount、winner、results 不會殘留。
-- 強化斷線重連：離線玩家可由 AI 暫時接管，同 UID 回來可取回座位。
-- 新增「多人同步偵錯面板」：截圖時可看到房號、座位、回合、revision、lastActionId 與最後同步時間。
+- 免 Cloud Functions：此版不需要 `functions/`，也不需要 Firebase Blaze 付費方案。
+- 移除 v0.7.0 殘留疑慮：建立房間、加入房間、補 AI、開始多人遊戲都走 Firestore 前端 transaction。
+- 新增「Firebase 設定檢查面板」：可檢查 Firebase Config、匿名登入、Firestore 建立 / 讀取 / 刪除暫存房間是否正常。
+- 建立房間錯誤訊息更清楚：若 Rules 還停在 v0.7.0 Cloud Functions 版，會提示改貼 v0.6.3 的 `firestore.rules`。
+- 修正房間區重複的「開始多人遊戲」按鈕。
+- 修正重複的安全摘要項目。
+- 保留 v0.6.2 的多人實戰穩定修正：回合同步、防連點、下一局穩定、斷線重連、偵錯面板。
 - 保留 v0.6.1 的選牌穩定修正：Firestore 心跳 / presence 更新不會清空已選牌。
 
 ## 功能
@@ -32,15 +34,17 @@
 
 ## 多人遊戲使用流程
 
-1. 房主輸入暱稱後按「建立房間」。
-2. 房主選擇玩法規則、計分規則、AI 難度。
-3. 房主複製邀請連結或顯示 QR Code。
-4. 朋友開啟連結後會自動加入房間。
-5. 房主按「補 AI 空位」。
-6. 房主按「開始多人遊戲」。
-7. 輪到真人玩家時，該玩家才能出牌或 Pass。
-8. 輪到 AI 座位時，由房主瀏覽器自動接管 AI 出牌。
-9. 本局結束後，房主按「下一局 / 重新洗牌」即可保留同房間、總分與勝場繼續玩。
+1. 房主輸入暱稱後按「執行 Firebase 檢查」。
+2. 確認 Firebase Config、匿名登入、Firestore 寫入都通過。
+3. 房主按「建立房間」。
+4. 房主選擇玩法規則、計分規則、AI 難度。
+5. 房主複製邀請連結或顯示 QR Code。
+6. 朋友開啟連結後會自動加入房間。
+7. 房主按「補 AI 空位」。
+8. 房主按「開始多人遊戲」。
+9. 輪到真人玩家時，該玩家才能出牌或 Pass。
+10. 輪到 AI 座位時，由房主瀏覽器自動接管 AI 出牌。
+11. 本局結束後，房主按「下一局 / 重新洗牌」即可保留同房間、總分與勝場繼續玩。
 
 ## Firebase 設定
 
@@ -50,7 +54,7 @@
 docs/FIREBASE_SETUP.md
 ```
 
-v0.6.2 新增 `rules`、`scoringRules`、`securityVersion` 欄位，更新後請務必重新 Publish 新版 `firestore.rules`。
+v0.6.3 是免 Cloud Functions 版。請勿使用 v0.7.0 的 Firestore Rules；更新後請務必把本版 `firestore.rules` 貼到 Firebase Console → Firestore Database → Rules → Publish。
 
 ## 文件
 
@@ -91,7 +95,19 @@ package.json
 
 ## GitHub Pages 上傳提醒
 
-請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.6.2` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
+請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.6.3` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
+
+v0.6.3 不需要上傳：
+
+```txt
+functions/
+firebase.json
+.firebaserc
+.firebaserc.example
+node_modules/
+```
+
+如果你的 repository 裡還有 v0.7.0 的 `functions/`，可以刪掉，因為此版不使用 Cloud Functions。
 
 ## 安全提醒
 

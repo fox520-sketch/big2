@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.6.2</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.6.2：多人實戰穩定修正、出牌防連點、斷線重連、下一局穩定與偵錯面板" />
+    <title>台灣大老二 Big2 TW v0.6.3</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.6.3：免 Cloud Functions 穩定強化、Firebase 設定檢查、建立房間可用性提示與多人實測修正" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.6.2 多人實戰穩定修正版</p>
+        <p class="subtitle">v0.6.3 免 Cloud Functions 穩定強化版</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field">
@@ -76,7 +76,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.6.2</span>
+          <span class="pill">v0.6.3</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -108,7 +108,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.6.2 強化回合同步、出牌 / Pass 防連點、下一局穩定、斷線重連與偵錯面板。</p>
+            <p class="hint small">v0.6.3 免 Cloud Functions 版：確認建立房間、加入房間、補 AI 與多人同步仍走 Firestore transaction，不需要 Blaze。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -158,6 +158,22 @@
         </div>
       </section>
 
+      <section class="firebase-check-panel" aria-label="Firebase 設定檢查面板">
+        <div class="panel-heading">
+          <div>
+            <h2>Firebase 設定檢查面板</h2>
+            <p class="hint small">用來確認 v0.6.3 是否已完全退回免 Cloud Functions 版：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+          </div>
+          <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
+        </div>
+        <p id="firebaseCheckSummary" class="hint small" data-level="info">尚未執行檢查。</p>
+        <div id="firebaseCheckGrid" class="firebase-check-grid">
+          <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
+          <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.6.3。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.6.3 不需要 functions/，也不需要 Blaze。</p></div>
+        </div>
+      </section>
 
       <section class="debug-panel" aria-label="多人同步偵錯面板">
         <div class="panel-heading">
@@ -165,10 +181,10 @@
             <h2>多人同步偵錯面板</h2>
             <p class="hint small">截圖回報問題時，請一併截到這一區，方便判斷房號、座位、回合、revision 與最後同步狀態。</p>
           </div>
-          <span class="pill">v0.6.2</span>
+          <span class="pill">v0.6.3</span>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.6.2</span></div>
+          <div><strong>版本</strong><span>v0.6.3</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -259,7 +275,7 @@
           <div><strong>手牌驗證</strong><span>出牌前確認選牌存在於該座位手牌，阻擋異常選牌</span></div>
           <div><strong>版本戳記</strong><span>每次動作更新 revision 與 lastActionId，方便追查同步問題</span></div>
         </div>
-        <p class="hint small">提醒：這版仍是 GitHub Pages 朋友休閒版。真正嚴格防作弊需升級 Cloud Functions 洗牌、發牌與驗證，避免前端讀到完整牌局資料。</p>
+        <p class="hint small">提醒：這版是 GitHub Pages + Firestore 朋友休閒版，不需要 Blaze。若未來要嚴格防作弊，才需要另行升級 Cloud Functions。</p>
       </section>
 
       <section class="contrast-panel" aria-label="UI 對比檢查摘要">
@@ -274,8 +290,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.6.2</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.2 強化多人實戰穩定性</span>
+      <span>Big2 TW v0.6.3</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.3 免 Cloud Functions 穩定強化版</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>
