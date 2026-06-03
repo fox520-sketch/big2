@@ -1,4 +1,4 @@
-export const VERSION = '0.6.3';
+export const VERSION = '0.6.4';
 
 export const SUITS = [
   { id: 'C', symbol: '♣', name: '梅花', value: 0, color: 'black' },

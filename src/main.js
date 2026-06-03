@@ -3,7 +3,9 @@ import { createNewGame, passTurn, playCards, runAITurn, setAILevel } from './gam
 import { applyTheme, getSavedTheme } from './themes.js';
 import { clearSelection, getSelectedCards, render, renderThemeNote, setActionLock } from './ui.js';
 import { getRulePreset, getScoringPreset, ruleSummary, scoringSummary } from './game-settings.js';
-import { isSoundEnabled, playSound, setSoundEnabled } from './sound.js';
+import { getSoundPreferences, isSoundEnabled, playSound, setSoundEnabled, setSoundPreference } from './sound.js';
+import { applyAnimationPreference, clearRecentRooms, getRecentRooms, isAnimationEnabled, rememberRecentRoom, roomStatusLabel, setAnimationEnabled } from './experience.js';
+import { totalsToSortedRows } from './scoring.js';
 import {
   buildInviteUrl,
   createRoom,
@@ -13,6 +15,7 @@ import {
   getRoomIdFromUrl,
   joinRoom,
   leaveRoom,
+  listRecentRoomsFromFirestore,
   listenRoom,
   normalizeRoomId,
   passMultiplayerTurn,
@@ -85,6 +88,127 @@ function updateSoundButton() {
   button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
 }
 
+function renderExperienceSettings() {
+  const prefs = getSoundPreferences();
+  const volumeInput = el('soundVolumeInput');
+  if (volumeInput) volumeInput.value = String(Math.round(Number(prefs.masterVolume ?? 0.75) * 100));
+  document.querySelectorAll('.sound-option').forEach((input) => {
+    input.checked = prefs[input.dataset.soundType] !== false;
+  });
+  const animationToggle = el('animationToggle');
+  if (animationToggle) animationToggle.checked = isAnimationEnabled();
+  const badge = el('experienceBadge');
+  if (badge) badge.textContent = `${isSoundEnabled() ? '音效開' : '音效關'}｜${isAnimationEnabled() ? '動畫開' : '動畫關'}`;
+}
+
+function renderLeaderboard() {
+  const box = el('leaderboardRows');
+  const badge = el('leaderboardBadge');
+  if (!box || !badge) return;
+  let totals = latestRoom?.totalScores || gameState.totalScores || null;
+  if (!totals && gameState.finished && Array.isArray(gameState.results)) {
+    totals = gameState.results.reduce((map, row) => {
+      map[row.seat] = {
+        seat: row.seat,
+        name: row.name,
+        totalScore: Number(row.score || 0),
+        wins: row.rank === 1 ? 1 : 0,
+        games: 1,
+        latestRank: row.rank,
+        latestScore: Number(row.score || 0),
+        latestRemaining: Number(row.remaining || 0)
+      };
+      return map;
+    }, {});
+  }
+  if (!totals) {
+    badge.textContent = '等待資料';
+    box.textContent = '完成一局或加入房間後會顯示排行榜。';
+    return;
+  }
+  const rows = totalsToSortedRows(totals).filter((row) => row.name);
+  if (!rows.length) {
+    badge.textContent = '尚無排名';
+    box.textContent = '尚無可顯示的排行榜資料。';
+    return;
+  }
+  badge.textContent = latestRoom?.roomId ? `房間 ${latestRoom.roomId}` : '本機統計';
+  box.innerHTML = rows.map((row) => `
+    <div class="leaderboard-row">
+      <strong>第 ${row.totalRank} 名｜${row.name}</strong>
+      <span>總分 ${Number(row.totalScore || 0) > 0 ? '+' : ''}${Number(row.totalScore || 0)}｜勝場 ${Number(row.wins || 0)}｜局數 ${Number(row.games || 0)}</span>
+    </div>
+  `).join('');
+}
+
+function roomListRow(room, source = 'recent') {
+  const updated = room.updatedAtMs ? new Date(room.updatedAtMs).toLocaleString() : '時間未記錄';
+  const host = room.hostName ? `房主 ${room.hostName}` : '房主未記錄';
+  const seatInfo = Number.isFinite(room.humanCount) ? `真人 ${room.humanCount}｜AI ${room.aiCount || 0}` : `第 ${room.gameNo || 0} 局`;
+  return `
+    <div class="room-list-row">
+      <div>
+        <strong>${room.roomId}</strong>
+        <span>${roomStatusLabel(room.status)}｜${host}｜${seatInfo}</span>
+        <small>${room.lastEvent || updated}</small>
+      </div>
+      <button class="secondary-btn room-join-btn" type="button" data-room-id="${room.roomId}" data-source="${source}">加入</button>
+    </div>
+  `;
+}
+
+function bindRoomJoinButtons() {
+  document.querySelectorAll('.room-join-btn').forEach((button) => {
+    button.addEventListener('click', async () => {
+      el('roomCodeInput').value = button.dataset.roomId || '';
+      await connectRoom(button.dataset.roomId || '', 'join');
+    });
+  });
+}
+
+function renderRoomDirectory(publicRooms = null, message = '') {
+  const recentBox = el('recentRoomsList');
+  const publicBox = el('publicRoomsList');
+  if (recentBox) {
+    const recent = getRecentRooms();
+    recentBox.innerHTML = recent.length ? recent.map((room) => roomListRow(room, 'recent')).join('') : '尚無最近房號。';
+  }
+  if (publicBox && publicRooms) {
+    publicBox.innerHTML = publicRooms.length ? publicRooms.map((room) => roomListRow(room, 'public')).join('') : '目前沒有可顯示的最近房間。';
+  } else if (publicBox && message) {
+    publicBox.textContent = message;
+  }
+  bindRoomJoinButtons();
+}
+
+async function refreshPublicRooms() {
+  const button = el('refreshRoomsBtn');
+  if (button) {
+    button.disabled = true;
+    button.textContent = '讀取中...';
+  }
+  try {
+    const rooms = await listRecentRoomsFromFirestore(12);
+    renderRoomDirectory(rooms);
+    setRoomMessage(`已讀取 ${rooms.length} 個最近房間。`, 'ok');
+  } catch (error) {
+    renderRoomDirectory(null, makeFriendlyError(error) || '無法讀取房間列表，仍可用最近房號或手動輸入房號加入。');
+    setRoomMessage(makeFriendlyError(error) || '讀取房間列表失敗。', 'warn');
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = '刷新房間列表';
+    }
+  }
+}
+
+function updateAllExperienceViews() {
+  updateSoundButton();
+  renderExperienceSettings();
+  renderLeaderboard();
+  renderRoomDirectory();
+}
+
 
 function formatDebugValue(value) {
   if (value === null || value === undefined || value === '') return '—';
@@ -98,7 +222,7 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.6.3'}`],
+    ['版本', `v${game?.version || room?.version || '0.6.4'}`],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
@@ -151,6 +275,7 @@ function scheduleAIIfNeeded() {
       playSound(gameState.finished ? 'win' : (gameState.lastAction?.type === 'PASS' ? 'pass' : 'play'));
       clearSelection();
       render(gameState);
+      renderLeaderboard();
       scheduleAIIfNeeded();
     }, 520);
   }
@@ -178,6 +303,7 @@ function resetGame() {
   lastRenderedMultiplayerGameId = null;
   clearSelection();
   render(gameState);
+  renderLeaderboard();
   scheduleAIIfNeeded();
 }
 
@@ -212,7 +338,7 @@ function renderFirebaseDiagnosticPanel(result = null) {
       { label: 'Firebase Config', ok: setup.ok, text: setup.text },
       { label: '匿名登入', ok: null, text: '按「執行檢查」後確認。' },
       { label: 'Firestore 寫入', ok: null, text: '按「執行檢查」後建立暫存房間測試。' },
-      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.3 不需要 functions/，也不需要 Blaze。' }
+      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.4 不需要 functions/，也不需要 Blaze。' }
     ];
     grid.innerHTML = rows.map(renderFirebaseCheckItem).join('');
     summary.textContent = setup.ok ? '已偵測到 Firebase Config。可按「執行檢查」確認 Auth 與 Firestore Rules。' : '尚未填入 Firebase Config。';
@@ -275,6 +401,7 @@ function renderRoomGame(room) {
     const actionId = gameState.security?.lastActionId || `${gameState.gameId || 'game'}:${gameState.history?.[0] || ''}`;
     const shouldPlaySound = actionId && actionId !== lastRenderedActionId;
     render(gameState);
+    renderLeaderboard();
     if (shouldPlaySound) {
       playSound(gameState.finished ? 'win' : (gameState.lastAction?.type === 'PASS' ? 'pass' : 'play'));
       lastRenderedActionId = actionId;
@@ -305,6 +432,8 @@ function renderRoom(room) {
   }
 
   currentRoomId = room.roomId;
+  rememberRecentRoom({ ...room, inviteUrl: buildInviteUrl(room.roomId) });
+  renderRoomDirectory();
   latestInviteUrl = buildInviteUrl(room.roomId);
   el('roomCodeInput').value = room.roomId;
   el('roomBadge').textContent = `房號 ${room.roomId}`;
@@ -349,6 +478,7 @@ function renderRoom(room) {
 
   renderRoomGame(room);
   renderDebugPanel(room);
+  renderLeaderboard();
 }
 
 async function connectRoom(roomId, mode = 'join') {
@@ -483,7 +613,7 @@ async function bindRoomEvents() {
           summary: makeFriendlyError(error),
           checks: [
             { label: 'Firebase 設定檢查', ok: false, text: makeFriendlyError(error) },
-            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.3 不需要 functions/，也不需要 Blaze。' }
+            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.4 不需要 functions/，也不需要 Blaze。' }
           ]
         };
         renderFirebaseDiagnosticPanel(result);
@@ -533,6 +663,7 @@ function bindGameEvents() {
       clearSelection();
     }
     render(gameState);
+    renderLeaderboard();
     scheduleAIIfNeeded();
   });
 
@@ -561,6 +692,7 @@ function bindGameEvents() {
     playSound(gameState.lastAction?.type === 'PASS' ? 'pass' : 'error');
     clearSelection();
     render(gameState);
+    renderLeaderboard();
     scheduleAIIfNeeded();
   });
 
@@ -581,6 +713,7 @@ function bindGameEvents() {
     if (gameState.mode !== 'multiplayer') {
       gameState = setAILevel(gameState, aiLevel);
       render(gameState);
+      renderLeaderboard();
       scheduleAIIfNeeded();
     } else {
       setRoomMessage('AI 難度會在下一次「開始多人遊戲 / 重新發牌」時套用。', 'ok');
@@ -623,17 +756,56 @@ function bindGameEvents() {
   if (soundButton) {
     updateSoundButton();
     soundButton.addEventListener('click', () => {
-      setSoundEnabled(!isSoundEnabled());
+      const enabled = setSoundEnabled(!isSoundEnabled());
       updateSoundButton();
-      playSound('select');
+      renderExperienceSettings();
+      if (enabled) playSound('select');
+    });
+  }
+
+  const volumeInput = el('soundVolumeInput');
+  if (volumeInput) {
+    volumeInput.addEventListener('input', (event) => {
+      setSoundPreference('masterVolume', Number(event.target.value) / 100);
+      renderExperienceSettings();
+    });
+  }
+
+  document.querySelectorAll('.sound-option').forEach((input) => {
+    input.addEventListener('change', () => {
+      setSoundPreference(input.dataset.soundType, input.checked);
+      renderExperienceSettings();
+      if (input.checked) playSound(input.dataset.soundType || 'select');
+    });
+  });
+
+  const animationToggle = el('animationToggle');
+  if (animationToggle) {
+    animationToggle.addEventListener('change', () => {
+      setAnimationEnabled(animationToggle.checked);
+      renderExperienceSettings();
+    });
+  }
+
+  const refreshRoomsBtn = el('refreshRoomsBtn');
+  if (refreshRoomsBtn) refreshRoomsBtn.addEventListener('click', refreshPublicRooms);
+
+  const clearRecentBtn = el('clearRecentRoomsBtn');
+  if (clearRecentBtn) {
+    clearRecentBtn.addEventListener('click', () => {
+      clearRecentRooms();
+      renderRoomDirectory();
+      setRoomMessage('已清除本機最近房號。', 'ok');
     });
   }
 }
 
 
+applyAnimationPreference();
 bindGameEvents();
 bindRoomEvents();
 updateSettingsSummary();
 renderDebugPanel(null);
 render(gameState);
+updateAllExperienceViews();
 scheduleAIIfNeeded();

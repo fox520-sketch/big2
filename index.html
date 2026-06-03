@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.6.3</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.6.3：免 Cloud Functions 穩定強化、Firebase 設定檢查、建立房間可用性提示與多人實測修正" />
+    <title>台灣大老二 Big2 TW v0.6.4</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.6.4：遊戲體驗優化、Firebase 設定檢查、建立房間可用性提示與多人實測修正" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.6.3 免 Cloud Functions 穩定強化版</p>
+        <p class="subtitle">v0.6.4 遊戲體驗優化版</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field">
@@ -69,6 +69,11 @@
         <span id="statusText">準備開始遊戲。</span>
       </section>
 
+      <section class="mobile-orientation-tip" aria-label="手機橫向提示">
+        <strong>手機提示：</strong>
+        <span>若手牌或結果表太寬，可以把手機轉成橫向，手牌也可左右滑動。</span>
+      </section>
+
 
       <section class="settings-panel" aria-label="正式規則與計分設定">
         <div class="panel-heading">
@@ -76,7 +81,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.6.3</span>
+          <span class="pill">v0.6.4</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -108,7 +113,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.6.3 免 Cloud Functions 版：確認建立房間、加入房間、補 AI 與多人同步仍走 Firestore transaction，不需要 Blaze。</p>
+            <p class="hint small">v0.6.4 免 Cloud Functions 版：確認建立房間、加入房間、補 AI 與多人同步仍走 Firestore transaction，不需要 Blaze。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -158,11 +163,34 @@
         </div>
       </section>
 
+      <section class="room-directory-panel" aria-label="房間列表與最近房號">
+        <div class="panel-heading">
+          <div>
+            <h2>房間列表 / 最近房號</h2>
+            <p class="hint small">可快速回到最近玩過的房間，也可刷新 Firestore 最近房間列表。若 Rules 不允許列表讀取，仍可用最近房號加入。</p>
+          </div>
+          <div class="button-row compact-actions">
+            <button id="refreshRoomsBtn" class="secondary-btn" type="button">刷新房間列表</button>
+            <button id="clearRecentRoomsBtn" class="secondary-btn" type="button">清除最近房號</button>
+          </div>
+        </div>
+        <div class="room-directory-grid">
+          <article>
+            <h3>最近房號</h3>
+            <div id="recentRoomsList" class="room-list compact-list">尚無最近房號。</div>
+          </article>
+          <article>
+            <h3>Firestore 最近房間</h3>
+            <div id="publicRoomsList" class="room-list compact-list">按「刷新房間列表」讀取。</div>
+          </article>
+        </div>
+      </section>
+
       <section class="firebase-check-panel" aria-label="Firebase 設定檢查面板">
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.6.3 是否已完全退回免 Cloud Functions 版：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.6.4 是否已完全退回免 Cloud Functions 版：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -170,8 +198,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.6.3。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.6.3 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.6.4。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.6.4 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -181,10 +209,10 @@
             <h2>多人同步偵錯面板</h2>
             <p class="hint small">截圖回報問題時，請一併截到這一區，方便判斷房號、座位、回合、revision 與最後同步狀態。</p>
           </div>
-          <span class="pill">v0.6.3</span>
+          <span class="pill">v0.6.4</span>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.6.3</span></div>
+          <div><strong>版本</strong><span>v0.6.4</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -206,6 +234,25 @@
           </div>
           <p id="themeNote" class="hint">深色模式：黑底高對比。</p>
         </article>
+      </section>
+
+      <section class="experience-panel" aria-label="音效與動畫設定">
+        <div class="panel-heading">
+          <div>
+            <h2>音效與動畫</h2>
+            <p class="hint small">可分別關閉選牌、出牌、Pass、勝利、錯誤提示音；手機覺得閃動太多時可關閉動畫。</p>
+          </div>
+          <span id="experienceBadge" class="pill">體驗設定</span>
+        </div>
+        <div class="experience-grid">
+          <label class="toggle-line"><input id="animationToggle" type="checkbox" checked /> <span>啟用動畫效果</span></label>
+          <label class="field volume-field"><span>音量</span><input id="soundVolumeInput" type="range" min="0" max="100" value="75" /></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="select" type="checkbox" checked /> <span>選牌音</span></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="play" type="checkbox" checked /> <span>出牌音</span></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="pass" type="checkbox" checked /> <span>Pass 音</span></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="win" type="checkbox" checked /> <span>勝利音</span></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="error" type="checkbox" checked /> <span>錯誤提示音</span></label>
+        </div>
       </section>
 
       <section class="score-strip" aria-label="玩家狀態">
@@ -247,6 +294,17 @@
       </section>
 
       <section id="resultPanel" class="result-panel hidden" aria-label="本局結果"></section>
+
+      <section class="leaderboard-panel" aria-label="排行榜">
+        <div class="panel-heading">
+          <div>
+            <h2>排行榜</h2>
+            <p class="hint small">顯示目前房間累計總分；單人模式會顯示本機最近一局統計。</p>
+          </div>
+          <span id="leaderboardBadge" class="pill">等待資料</span>
+        </div>
+        <div id="leaderboardRows" class="leaderboard-list compact-list">完成一局或加入房間後會顯示排行榜。</div>
+      </section>
 
       <section class="history-panel" aria-label="遊戲紀錄">
         <div class="panel-heading">
@@ -290,8 +348,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.6.3</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.3 免 Cloud Functions 穩定強化版</span>
+      <span>Big2 TW v0.6.4</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.4 遊戲體驗優化版</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>

@@ -1,7 +1,7 @@
 {
   "name": "big2-tw",
-  "version": "0.6.3",
-  "description": "台灣大老二網頁遊戲 v0.6.3：免 Cloud Functions 穩定強化、Firebase 設定檢查與多人實測修正",
+  "version": "0.6.4",
+  "description": "台灣大老二網頁遊戲 v0.6.4：遊戲體驗優化、Firebase 設定檢查與多人實測修正",
   "type": "module",
   "scripts": {
     "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js",
