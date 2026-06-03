@@ -1,0 +1,22 @@
+{
+  "name": "big2-tw",
+  "version": "0.6.2",
+  "description": "台灣大老二網頁遊戲 v0.6.2：多人實戰穩定修正、出牌防連點、下一局穩定、斷線重連與偵錯面板",
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js",
+    "test:rules": "node scripts/test-rules.js",
+    "test:ai": "node scripts/test-ai.js",
+    "test:multiplayer": "node scripts/test-multiplayer-state.js",
+    "test:settings": "node scripts/test-settings.js",
+    "test:contrast": "node scripts/test-contrast.js"
+  },
+  "keywords": [
+    "big-two",
+    "taiwan",
+    "card-game",
+    "firebase",
+    "github-pages"
+  ],
+  "license": "MIT"
+}
