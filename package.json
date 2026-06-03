@@ -1,23 +1,19 @@
 {
-  "name": "big2-tw",
+  "name": "big2-tw-functions",
   "version": "0.7.0",
-  "description": "台灣大老二網頁遊戲 v0.7.0：Cloud Functions 正式防作弊版，後端洗牌、發牌、驗證出牌與強化 Firestore Rules",
+  "description": "Big2 TW Cloud Functions backend for server-authoritative anti-cheat gameplay",
   "type": "module",
-  "scripts": {
-    "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-cloud-functions-logic.js && node scripts/test-contrast.js",
-    "test:rules": "node scripts/test-rules.js",
-    "test:ai": "node scripts/test-ai.js",
-    "test:multiplayer": "node scripts/test-multiplayer-state.js",
-    "test:settings": "node scripts/test-settings.js",
-    "test:contrast": "node scripts/test-contrast.js",
-    "test:functions-logic": "node scripts/test-cloud-functions-logic.js"
+  "main": "index.js",
+  "engines": {
+    "node": "20"
   },
-  "keywords": [
-    "big-two",
-    "taiwan",
-    "card-game",
-    "firebase",
-    "github-pages"
-  ],
-  "license": "MIT"
+  "scripts": {
+    "lint": "node --check index.js && node --check lib/game-engine.js",
+    "test": "node --test ../scripts/test-cloud-functions-logic.js"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.7.0",
+    "firebase-functions": "^6.1.0"
+  },
+  "private": true
 }
