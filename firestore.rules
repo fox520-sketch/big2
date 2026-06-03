@@ -5,37 +5,18 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function sameRoomId(roomId) {
-      return request.resource.data.roomId == roomId && resource.data.roomId == roomId;
-    }
-
-    function validRoomKeys() {
-      return request.resource.data.keys().hasOnly([
-        'roomId', 'status', 'hostUid', 'hostName', 'aiLevel', 'rules', 'scoringRules',
-        'securityVersion', 'version', 'createdAt', 'updatedAt', 'presenceUpdatedAt',
-        'invitePath', 'gameNo', 'lastEvent', 'seats', 'game', 'totalScores'
-      ]);
-    }
-
     match /rooms/{roomId} {
+      // v0.7.0 正式防作弊版：
+      // 用戶端只能讀取房間狀態；建立房間、加入房間、補 AI、開始遊戲、出牌、Pass、AI 接管、離線處理，全部必須透過 Cloud Functions。
+      // Cloud Functions 使用 Admin SDK 寫入 Firestore，不受這份用戶端規則限制。
       allow read: if signedIn();
+      allow create, update, delete: if false;
 
-      // v0.6.2 朋友休閒版安全規則：
-      // 1. 僅允許登入玩家讀寫房間。
-      // 2. 限制房間文件欄位，避免寫入未預期資料。
-      // 3. 前端交易會再驗證目前座位、回合、手牌與 revision。
-      // 4. 若要正式防作弊，請改用 Cloud Functions 洗牌、發牌與驗證出牌。
-      allow create: if signedIn()
-        && request.resource.data.roomId == roomId
-        && request.resource.data.hostUid == request.auth.uid
-        && request.resource.data.status == 'waiting'
-        && validRoomKeys();
-
-      allow update: if signedIn()
-        && sameRoomId(roomId)
-        && validRoomKeys();
-
-      allow delete: if signedIn() && resource.data.hostUid == request.auth.uid;
+      match /actions/{actionId} {
+        // 只允許登入玩家查看後端審計紀錄，不能由前端直接寫入。
+        allow read: if signedIn();
+        allow create, update, delete: if false;
+      }
     }
   }
 }

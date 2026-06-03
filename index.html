@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.6.2</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.6.2：多人實戰穩定修正、出牌防連點、斷線重連、下一局穩定與偵錯面板" />
+    <title>台灣大老二 Big2 TW v0.7.0</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.7.0：Cloud Functions 正式防作弊版，後端洗牌、發牌與驗證出牌" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.6.2 多人實戰穩定修正版</p>
+        <p class="subtitle">v0.7.0 Cloud Functions 正式防作弊版</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field">
@@ -76,7 +76,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.6.2</span>
+          <span class="pill">v0.7.0</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -108,7 +108,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.6.2 強化回合同步、出牌 / Pass 防連點、下一局穩定、斷線重連與偵錯面板。</p>
+            <p class="hint small">v0.7.0 改由 Cloud Functions 後端洗牌、發牌、驗證出牌與更新分數，前端不能直接改牌局狀態。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -165,10 +165,10 @@
             <h2>多人同步偵錯面板</h2>
             <p class="hint small">截圖回報問題時，請一併截到這一區，方便判斷房號、座位、回合、revision 與最後同步狀態。</p>
           </div>
-          <span class="pill">v0.6.2</span>
+          <span class="pill">v0.7.0</span>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.6.2</span></div>
+          <div><strong>版本</strong><span>v0.7.0</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -254,12 +254,12 @@
       <section class="security-panel" aria-label="防作弊強化摘要">
         <h2>防作弊強化摘要</h2>
         <div class="check-grid">
-          <div><strong>回合交易</strong><span>所有多人出牌 / Pass 使用 Firestore transaction 寫入</span></div>
-          <div><strong>座位驗證</strong><span>只有目前輪到的座位可操作，AI 接管座位禁止真人誤送</span></div>
-          <div><strong>手牌驗證</strong><span>出牌前確認選牌存在於該座位手牌，阻擋異常選牌</span></div>
-          <div><strong>版本戳記</strong><span>每次動作更新 revision 與 lastActionId，方便追查同步問題</span></div>
+          <div><strong>回合交易</strong><span>所有多人出牌 / Pass 由 Cloud Functions 後端 transaction 寫入</span></div>
+          <div><strong>座位驗證</strong><span>Cloud Functions 驗證目前回合、真人座位與 AI 接管狀態</span></div>
+          <div><strong>手牌驗證</strong><span>Cloud Functions 確認選牌存在於該座位手牌，阻擋異常選牌</span></div>
+          <div><strong>版本戳記</strong><span>後端每次動作更新 revision、lastActionId，並寫入 actions 審計紀錄</span></div>
         </div>
-        <p class="hint small">提醒：這版仍是 GitHub Pages 朋友休閒版。真正嚴格防作弊需升級 Cloud Functions 洗牌、發牌與驗證，避免前端讀到完整牌局資料。</p>
+        <p class="hint small">提醒：v0.7.0 需要先部署 Cloud Functions；Firestore Rules 會禁止前端直接寫入牌局狀態。</p>
       </section>
 
       <section class="contrast-panel" aria-label="UI 對比檢查摘要">
@@ -274,8 +274,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.6.2</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.2 強化多人實戰穩定性</span>
+      <span>Big2 TW v0.7.0</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.0 Cloud Functions 正式防作弊版</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>
