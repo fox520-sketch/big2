@@ -4,7 +4,7 @@ import { applyTheme, getSavedTheme } from './themes.js';
 import { clearSelection, getSelectedCards, render, renderThemeNote, setActionLock } from './ui.js';
 import { getRulePreset, getScoringPreset, ruleSummary, scoringSummary } from './game-settings.js';
 import { getSoundPreferences, isSoundEnabled, playDealSound, playSound, setSoundEnabled, setSoundPreference } from './sound.js';
-import { applyAnimationPreference, clearRecentRooms, getRecentRooms, isAnimationEnabled, rememberRecentRoom, roomStatusLabel, setAnimationEnabled } from './experience.js';
+import { applyAnimationPreference, clearGameRecords, clearRecentRooms, getAchievements, getDailyStats, getGameRecords, getRecentRooms, isAnimationEnabled, recordFinishedGame, rememberRecentRoom, roomStatusLabel, setAnimationEnabled } from './experience.js';
 import { totalsToSortedRows } from './scoring.js';
 import {
   buildInviteUrl,
@@ -14,8 +14,10 @@ import {
   explainFirebaseError,
   getRoomIdFromUrl,
   joinRoom,
+  kickSeat,
   leaveRoom,
   listRecentRoomsFromFirestore,
+  moveSeat,
   listenRoom,
   normalizeRoomId,
   passMultiplayerTurn,
@@ -34,6 +36,7 @@ const RULE_PRESET_KEY = 'big2-rule-preset';
 const SCORING_PRESET_KEY = 'big2-scoring-preset';
 let lastRenderedActionId = null;
 let lastRenderedMultiplayerGameId = null;
+let lastRecordedFinishedGameId = null;
 let gameState = createNewGame({ aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
 let aiTimer = null;
 let multiplayerAiTimer = null;
@@ -144,16 +147,128 @@ function renderLeaderboard() {
   `).join('');
 }
 
+
+function renderProgressAndRecords() {
+  const daily = getDailyStats().today;
+  const dailyBadge = el('dailyStatsBadge');
+  const dailyGrid = el('dailyStatsGrid');
+  const achievementList = el('achievementList');
+  const recordsList = el('gameRecordsList');
+  if (dailyBadge) dailyBadge.textContent = `${daily.date || ''}｜${Number(daily.games || 0)} 局`;
+  if (dailyGrid) {
+    const rows = [
+      ['今日局數', Number(daily.games || 0)],
+      ['今日勝場', Number(daily.wins || 0)],
+      ['今日分數', `${Number(daily.score || 0) > 0 ? '+' : ''}${Number(daily.score || 0)}`],
+      ['最佳單局', `${Number(daily.bestScore || 0) > 0 ? '+' : ''}${Number(daily.bestScore || 0)}`],
+      ['多人局數', Number(daily.multiplayerGames || 0)]
+    ];
+    dailyGrid.innerHTML = rows.map(([label, value]) => `<div class="stat-card"><strong>${label}</strong><span>${value}</span></div>`).join('');
+  }
+  if (achievementList) {
+    const achievements = getAchievements();
+    achievementList.innerHTML = achievements.map((item) => `
+      <div class="achievement-row ${item.unlocked ? 'unlocked' : 'locked'}">
+        <strong>${item.unlocked ? '🏅' : '🔒'} ${item.title}</strong>
+        <span>${item.text}${item.unlockedAt ? `｜${new Date(item.unlockedAt).toLocaleDateString()} 解鎖` : ''}</span>
+      </div>
+    `).join('');
+  }
+  if (recordsList) {
+    const records = getGameRecords();
+    recordsList.innerHTML = records.length ? records.map((record) => `
+      <div class="record-row">
+        <strong>${new Date(record.playedAt).toLocaleString()}｜${record.mode === 'multiplayer' ? `房間 ${record.roomId || '多人'}` : '單人'}</strong>
+        <span>你第 ${record.localRank || '-'} 名｜本局 ${Number(record.localScore || 0) > 0 ? '+' : ''}${Number(record.localScore || 0)}｜勝者 ${record.winnerName || '-'}</span>
+        <small>${record.resultSummary || ''}</small>
+      </div>
+    `).join('') : '尚無遊戲紀錄。';
+  }
+}
+
+function maybeRecordFinishedGame(room = latestRoom) {
+  if (!gameState?.finished || !Array.isArray(gameState.results)) return;
+  const recordId = gameState.gameId || `${room?.roomId || 'local'}-${gameState.gameNo || 0}-${gameState.history?.[0] || ''}`;
+  if (recordId === lastRecordedFinishedGameId) return;
+  const before = getAchievements().filter((item) => item.unlocked).length;
+  const result = recordFinishedGame(gameState, room);
+  if (result.added) {
+    lastRecordedFinishedGameId = recordId;
+    const after = getAchievements().filter((item) => item.unlocked).length;
+    if (after > before) playSound('achievement');
+  }
+  renderProgressAndRecords();
+}
+
+function renderRoomManagement(room = latestRoom) {
+  const badge = el('roomManageBadge');
+  const box = el('roomManagementList');
+  if (!badge || !box) return;
+  if (!room) {
+    badge.textContent = '尚未連線';
+    box.textContent = '建立或加入房間後會顯示座位管理。';
+    return;
+  }
+  badge.textContent = room.isHost ? '房主可管理' : '只有房主可管理';
+  const seats = room.seatList || [];
+  box.innerHTML = seats.map((seat, index) => {
+    const name = seat?.name || '空位';
+    const disabled = !room.isHost ? 'disabled' : '';
+    const canKick = room.isHost && seat && seat.uid !== room.localUid;
+    const targetOptions = [0, 1, 2, 3].filter((target) => target !== index).map((target) => `<option value="${target}">移到座位 ${target + 1}</option>`).join('');
+    return `
+      <div class="management-row ${seat ? 'occupied' : 'empty'}">
+        <div>
+          <strong>座位 ${index + 1}｜${name}</strong>
+          <span>${seat ? [seat.isAI ? 'AI' : '真人', seat.host || seat.uid === room.hostUid ? '房主' : '', seat.connected ? '已連線' : (seat.isAI ? '' : '離線')].filter(Boolean).join('｜') : '等待玩家'}</span>
+        </div>
+        <select class="seat-move-select" data-from-seat="${index}" ${!room.isHost || !seat ? 'disabled' : ''}>
+          <option value="">重新安排座位</option>${targetOptions}
+        </select>
+        <button class="secondary-btn seat-kick-btn" type="button" data-seat="${index}" ${canKick ? '' : 'disabled'}>踢除</button>
+      </div>
+    `;
+  }).join('');
+
+  box.querySelectorAll('.seat-kick-btn').forEach((button) => {
+    button.addEventListener('click', async () => {
+      if (!confirm('確定要踢除這個座位的玩家嗎？')) return;
+      try {
+        await kickSeat(currentRoomId, Number(button.dataset.seat));
+        playSound('move');
+        setRoomMessage('已更新座位。', 'ok');
+      } catch (error) {
+        setRoomMessage(makeFriendlyError(error) || '踢除玩家失敗。', 'warn');
+      }
+    });
+  });
+  box.querySelectorAll('.seat-move-select').forEach((select) => {
+    select.addEventListener('change', async () => {
+      if (select.value === '') return;
+      try {
+        await moveSeat(currentRoomId, Number(select.dataset.fromSeat), Number(select.value));
+        playSound('move');
+        setRoomMessage('已重新安排座位。', 'ok');
+      } catch (error) {
+        setRoomMessage(makeFriendlyError(error) || '重新安排座位失敗。', 'warn');
+      } finally {
+        select.value = '';
+      }
+    });
+  });
+}
+
 function roomListRow(room, source = 'recent') {
   const updated = room.updatedAtMs ? new Date(room.updatedAtMs).toLocaleString() : '時間未記錄';
   const host = room.hostName ? `房主 ${room.hostName}` : '房主未記錄';
   const seatInfo = Number.isFinite(room.humanCount) ? `真人 ${room.humanCount}｜AI ${room.aiCount || 0}` : `第 ${room.gameNo || 0} 局`;
+  const lockText = room.passwordEnabled ? '｜有密碼' : '';
   const joinText = room.status === 'playing' ? '回房' : '加入';
   return `
     <div class="room-list-row">
       <div>
         <strong>${room.roomId}</strong>
-        <span>${roomStatusLabel(room.status)}｜${host}｜${seatInfo}</span>
+        <span>${roomStatusLabel(room.status)}${lockText}｜${host}｜${seatInfo}</span>
         <small>${room.lastEvent || updated}</small>
       </div>
       <button class="secondary-btn room-join-btn" type="button" data-room-id="${room.roomId}" data-source="${source}">${joinText}</button>
@@ -212,6 +327,8 @@ function updateAllExperienceViews() {
   updateSoundButton();
   renderExperienceSettings();
   renderLeaderboard();
+  renderProgressAndRecords();
+  renderRoomManagement();
   renderRoomDirectory();
 }
 
@@ -228,7 +345,7 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.6.5'}`],
+    ['版本', `v${game?.version || room?.version || '0.6.6'}`],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
@@ -292,6 +409,7 @@ function scheduleAIIfNeeded() {
       clearSelection();
       render(gameState);
       renderLeaderboard();
+      maybeRecordFinishedGame();
       scheduleAIIfNeeded();
     }, 520);
   }
@@ -355,7 +473,7 @@ function renderFirebaseDiagnosticPanel(result = null) {
       { label: 'Firebase Config', ok: setup.ok, text: setup.text },
       { label: '匿名登入', ok: null, text: '按「執行檢查」後確認。' },
       { label: 'Firestore 寫入', ok: null, text: '按「執行檢查」後建立暫存房間測試。' },
-      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.5 不需要 functions/，也不需要 Blaze。' }
+      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.6 不需要 functions/，也不需要 Blaze。' }
     ];
     grid.innerHTML = rows.map(renderFirebaseCheckItem).join('');
     summary.textContent = setup.ok ? '已偵測到 Firebase Config。可按「執行檢查」確認 Auth 與 Firestore Rules。' : '尚未填入 Firebase Config。';
@@ -420,6 +538,7 @@ function renderRoomGame(room) {
     const shouldPlaySound = actionId && actionId !== lastRenderedActionId;
     render(gameState);
     renderLeaderboard();
+    maybeRecordFinishedGame(room);
     if (shouldPlaySound) {
       playSound(gameState.finished ? 'win' : (gameState.lastAction?.type === 'PASS' ? 'pass' : 'play'));
       lastRenderedActionId = actionId;
@@ -497,6 +616,7 @@ function renderRoom(room) {
   renderRoomGame(room);
   renderDebugPanel(room);
   renderLeaderboard();
+  renderRoomManagement(room);
 }
 
 async function connectRoom(roomId, mode = 'join') {
@@ -508,10 +628,11 @@ async function connectRoom(roomId, mode = 'join') {
 
   try {
     setRoomMessage(mode === 'auto' ? `偵測邀請連結，正在自動加入房間 ${normalized}...` : `正在加入房間 ${normalized}...`);
-    const result = await joinRoom(normalized, { playerName: getPlayerName() });
+    const result = await joinRoom(normalized, { playerName: getPlayerName(), roomPassword: el('roomPasswordInput')?.value || '' });
     currentRoomId = result.roomId;
     latestInviteUrl = result.inviteUrl;
     await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${makeFriendlyError(error)}`, 'warn'));
+    playSound('join');
     setRoomMessage(mode === 'auto' ? `已自動加入房間 ${result.roomId}。` : `已加入房間 ${result.roomId}。`, 'ok');
   } catch (error) {
     setRoomMessage(makeFriendlyError(error) || '加入房間失敗。', 'warn');
@@ -545,10 +666,11 @@ async function bindRoomEvents() {
   el('createRoomBtn').addEventListener('click', async () => {
     try {
       setRoomMessage('正在建立 Firebase 房間...');
-      const result = await createRoom({ playerName: getPlayerName(), aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
+      const result = await createRoom({ playerName: getPlayerName(), aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules(), roomPassword: el('roomPasswordInput')?.value || '' });
       currentRoomId = result.roomId;
       latestInviteUrl = result.inviteUrl;
       await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${makeFriendlyError(error)}`, 'warn'));
+      playSound('join');
       setRoomMessage(`已建立房間 ${result.roomId}，可以複製連結或顯示 QR Code。`, 'ok');
     } catch (error) {
       setRoomMessage(makeFriendlyError(error) || '建立房間失敗，請檢查 Firebase 設定。', 'warn');
@@ -572,6 +694,7 @@ async function bindRoomEvents() {
     try {
       setRoomMessage(latestRoom?.status === 'finished' ? '正在開始下一局並保留累計總分...' : '正在同步洗牌、發牌並開始多人遊戲...');
       await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
+      playSound('start');
       setRoomMessage(latestRoom?.status === 'finished' ? '下一局已開始，累計總分已保留。' : '多人遊戲已開始。', 'ok');
     } catch (error) {
       setRoomMessage(makeFriendlyError(error) || '開始多人遊戲失敗。', 'warn');
@@ -631,7 +754,7 @@ async function bindRoomEvents() {
           summary: makeFriendlyError(error),
           checks: [
             { label: 'Firebase 設定檢查', ok: false, text: makeFriendlyError(error) },
-            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.5 不需要 functions/，也不需要 Blaze。' }
+            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.6 不需要 functions/，也不需要 Blaze。' }
           ]
         };
         renderFirebaseDiagnosticPanel(result);
@@ -682,6 +805,7 @@ function bindGameEvents() {
     }
     render(gameState);
     renderLeaderboard();
+    maybeRecordFinishedGame();
     scheduleAIIfNeeded();
   });
 
@@ -711,6 +835,7 @@ function bindGameEvents() {
     clearSelection();
     render(gameState);
     renderLeaderboard();
+    maybeRecordFinishedGame();
     scheduleAIIfNeeded();
   });
 
@@ -814,6 +939,16 @@ function bindGameEvents() {
       clearRecentRooms();
       renderRoomDirectory();
       setRoomMessage('已清除本機最近房號。', 'ok');
+    });
+  }
+
+  const clearRecordsBtn = el('clearGameRecordsBtn');
+  if (clearRecordsBtn) {
+    clearRecordsBtn.addEventListener('click', () => {
+      if (!confirm('確定要清除本機遊戲紀錄與每日戰績嗎？')) return;
+      clearGameRecords();
+      renderProgressAndRecords();
+      setRoomMessage('已清除本機遊戲紀錄與每日戰績。', 'ok');
     });
   }
 }

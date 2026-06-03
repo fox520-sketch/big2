@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.6.5</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.6.5：實機測試修正版，強化排行榜、最近房號、房間列表、手機操作、音效動畫開關與多人出牌穩定性" />
+    <title>台灣大老二 Big2 TW v0.6.6</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.6.6：遊戲內容強化版，強化排行榜、最近房號、房間列表、手機操作、音效動畫開關與多人出牌穩定性" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.6.5 實機測試修正版</p>
+        <p class="subtitle">v0.6.6 遊戲內容強化版</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field">
@@ -81,7 +81,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.6.5</span>
+          <span class="pill">v0.6.6</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -113,7 +113,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.6.5 免 Cloud Functions 版：建立房間、加入房間、補 AI、多人同步與出牌防連點皆走 Firestore 休閒版流程，不需要 Blaze。</p>
+            <p class="hint small">v0.6.6 免 Cloud Functions 版：建立房間、加入房間、補 AI、多人同步與出牌防連點皆走 Firestore 休閒版流程，不需要 Blaze。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -127,6 +127,10 @@
             <label class="field full">
               <span>房號</span>
               <input id="roomCodeInput" type="text" maxlength="6" placeholder="輸入 6 碼房號" inputmode="latin" autocomplete="off" />
+            </label>
+            <label class="field full">
+              <span>房間密碼（可空白）</span>
+              <input id="roomPasswordInput" type="password" maxlength="20" placeholder="建立房間時可設定；加入私人房需輸入" autocomplete="current-password" />
             </label>
             <div class="button-row">
               <button id="createRoomBtn" class="primary-btn" type="button">建立房間</button>
@@ -163,6 +167,17 @@
         </div>
       </section>
 
+      <section class="room-management-panel" aria-label="房主管理">
+        <div class="panel-heading">
+          <div>
+            <h2>房主管理</h2>
+            <p class="hint small">房主可在等待中或本局結束時重新安排座位；牌局中踢除玩家會改由 AI 接管到本局結束。</p>
+          </div>
+          <span id="roomManageBadge" class="pill">尚未連線</span>
+        </div>
+        <div id="roomManagementList" class="management-list compact-list">建立或加入房間後會顯示座位管理。</div>
+      </section>
+
       <section class="room-directory-panel" aria-label="房間列表與最近房號">
         <div class="panel-heading">
           <div>
@@ -190,7 +205,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.6.5 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.6.6 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -198,8 +213,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.6.5。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.6.5 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.6.6。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.6.6 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -209,10 +224,10 @@
             <h2>多人同步偵錯面板</h2>
             <p class="hint small">截圖回報問題時，請一併截到這一區，方便判斷房號、座位、回合、revision 與最後同步狀態。</p>
           </div>
-          <span class="pill">v0.6.5</span>
+          <span class="pill">v0.6.6</span>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.6.5</span></div>
+          <div><strong>版本</strong><span>v0.6.6</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -253,6 +268,10 @@
           <label class="toggle-line"><input class="sound-option" data-sound-type="deal" type="checkbox" checked /> <span>發牌音</span></label>
           <label class="toggle-line"><input class="sound-option" data-sound-type="win" type="checkbox" checked /> <span>勝利音</span></label>
           <label class="toggle-line"><input class="sound-option" data-sound-type="error" type="checkbox" checked /> <span>錯誤提示音</span></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="start" type="checkbox" checked /> <span>開局音</span></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="join" type="checkbox" checked /> <span>加入房間音</span></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="achievement" type="checkbox" checked /> <span>成就音</span></label>
+          <label class="toggle-line"><input class="sound-option" data-sound-type="move" type="checkbox" checked /> <span>座位調整音</span></label>
         </div>
       </section>
 
@@ -305,6 +324,29 @@
           <span id="leaderboardBadge" class="pill">等待資料</span>
         </div>
         <div id="leaderboardRows" class="leaderboard-list compact-list">完成一局或加入房間後會顯示排行榜。</div>
+      </section>
+
+      <section class="progress-panel" aria-label="成就徽章與每日戰績">
+        <div class="panel-heading">
+          <div>
+            <h2>成就徽章 / 每日戰績</h2>
+            <p class="hint small">本機保存個人戰績，不會上傳私人資料；更換瀏覽器或清除資料後會重新計算。</p>
+          </div>
+          <span id="dailyStatsBadge" class="pill">今日戰績</span>
+        </div>
+        <div id="dailyStatsGrid" class="stats-grid"></div>
+        <div id="achievementList" class="achievement-list compact-list"></div>
+      </section>
+
+      <section class="game-records-panel" aria-label="遊戲紀錄">
+        <div class="panel-heading">
+          <div>
+            <h2>遊戲紀錄</h2>
+            <p class="hint small">保留最近 40 局本機紀錄，可用來回顧排名與分數。</p>
+          </div>
+          <button id="clearGameRecordsBtn" class="secondary-btn" type="button">清除遊戲紀錄</button>
+        </div>
+        <div id="gameRecordsList" class="record-list compact-list">尚無遊戲紀錄。</div>
       </section>
 
       <section class="history-panel" aria-label="遊戲紀錄">
@@ -373,8 +415,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.6.5</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.5 實機測試修正版</span>
+      <span>Big2 TW v0.6.6</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.6 遊戲內容強化版</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>

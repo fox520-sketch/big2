@@ -1,7 +1,7 @@
 {
   "name": "big2-tw",
-  "version": "0.6.5",
-  "description": "台灣大老二網頁遊戲 v0.6.5：實機測試修正、排行榜/房間列表/手機操作與多人穩定強化",
+  "version": "0.6.6",
+  "description": "台灣大老二網頁遊戲 v0.6.6：成就徽章、每日戰績、房間密碼、座位管理、遊戲紀錄與音效強化",
   "type": "module",
   "scripts": {
     "test": "node scripts/test-rules.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js",

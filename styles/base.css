@@ -1169,7 +1169,7 @@ button[aria-busy='true'] {
   }
 }
 
-/* v0.6.5 實機測試修正 */
+/* v0.6.x 實機測試修正 */
 .mobile-orientation-tip,
 .room-directory-panel,
 .experience-panel,
@@ -1352,7 +1352,7 @@ body[data-motion='on'] .player-card.active {
 }
 
 
-/* v0.6.5 實機修正：手機操作與列表可讀性 */
+/* v0.6.x 實機修正：手機操作與列表可讀性 */
 @media (max-width: 720px) {
   .panel-heading {
     align-items: flex-start;
@@ -1375,5 +1375,128 @@ body[data-motion='on'] .player-card.active {
 
   .hand-section {
     scroll-margin-bottom: 8rem;
+  }
+}
+
+/* v0.6.6 遊戲內容強化 */
+.room-management-panel,
+.progress-panel,
+.game-records-panel {
+  border: 2px solid var(--border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.management-list,
+.achievement-list,
+.record-list {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.management-row,
+.achievement-row,
+.record-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(9rem, auto) auto;
+  gap: 0.65rem;
+  align-items: center;
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-2);
+  padding: 0.75rem;
+}
+
+.achievement-row,
+.record-row {
+  grid-template-columns: 1fr;
+}
+
+.management-row.empty {
+  opacity: 0.78;
+}
+
+.management-row strong,
+.achievement-row strong,
+.record-row strong {
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.management-row span,
+.achievement-row span,
+.record-row span,
+.record-row small {
+  display: block;
+  color: var(--muted);
+  font-weight: 750;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.achievement-row.unlocked {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--surface-2) 78%, var(--success) 22%);
+}
+
+.achievement-row.locked {
+  opacity: 0.78;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.8rem;
+}
+
+.stat-card {
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-2);
+  padding: 0.75rem;
+}
+
+.stat-card strong,
+.stat-card span {
+  display: block;
+}
+
+.stat-card strong {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.stat-card span {
+  color: var(--text);
+  font-size: 1.25rem;
+  font-weight: 950;
+  margin-top: 0.25rem;
+}
+
+.seat-move-select {
+  min-height: 2.6rem;
+  border: 1.5px solid var(--border);
+  border-radius: 0.8rem;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 800;
+  padding: 0.4rem 0.6rem;
+}
+
+@media (max-width: 900px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .management-row {
+    grid-template-columns: 1fr;
+  }
+
+  .management-row .secondary-btn,
+  .management-row .seat-move-select {
+    width: 100%;
   }
 }

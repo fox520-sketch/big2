@@ -9,7 +9,11 @@ export const SOUND_LABELS = {
   pass: 'Pass 音',
   deal: '發牌音',
   win: '勝利音',
-  error: '錯誤提示音'
+  error: '錯誤提示音',
+  start: '開局音',
+  join: '加入房間音',
+  achievement: '成就音',
+  move: '座位調整音'
 };
 
 const DEFAULT_PREFERENCES = {
@@ -19,7 +23,11 @@ const DEFAULT_PREFERENCES = {
   pass: true,
   deal: true,
   win: true,
-  error: true
+  error: true,
+  start: true,
+  join: true,
+  achievement: true,
+  move: true
 };
 
 const SOUND_MAP = {
@@ -28,7 +36,11 @@ const SOUND_MAP = {
   pass: { frequency: 220, duration: 0.09, type: 'sawtooth', gain: 0.025 },
   deal: { frequency: 392, duration: 0.07, type: 'triangle', gain: 0.022 },
   win: { frequency: 784, duration: 0.18, type: 'sine', gain: 0.05 },
-  error: { frequency: 130, duration: 0.16, type: 'square', gain: 0.026 }
+  error: { frequency: 130, duration: 0.16, type: 'square', gain: 0.026 },
+  start: { frequency: 494, duration: 0.12, type: 'triangle', gain: 0.034 },
+  join: { frequency: 587, duration: 0.09, type: 'sine', gain: 0.03 },
+  achievement: { frequency: 880, duration: 0.2, type: 'sine', gain: 0.045 },
+  move: { frequency: 330, duration: 0.08, type: 'triangle', gain: 0.028 }
 };
 
 function readPreferences() {

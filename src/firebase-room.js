@@ -52,7 +52,7 @@ export function explainFirebaseError(error) {
   const code = error?.code || '';
   const message = error?.message || String(error || '未知錯誤');
   if (code.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
-    return 'Firestore 寫入被拒絕。通常是 Firebase Console 仍套用 v0.7.0 Cloud Functions 版 Rules，請改貼 v0.6.5 的 firestore.rules 後 Publish。';
+    return 'Firestore 寫入被拒絕。通常是 Firebase Console 仍套用 v0.7.0 Cloud Functions 版 Rules，請改貼 v0.6.6 的 firestore.rules 後 Publish。';
   }
   if (code.includes('unauthenticated') || message.includes('auth')) {
     return '匿名登入失敗。請到 Firebase Console → Authentication → Sign-in method 啟用 Anonymous。';
@@ -68,7 +68,7 @@ export function explainFirebaseError(error) {
 
 export async function runFirebaseDiagnostics() {
   const checks = [];
-  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.6.5 是免 Cloud Functions 休閒版，不需要 Blaze。' });
+  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.6.6 是免 Cloud Functions 休閒版，不需要 Blaze。' });
 
   if (!hasFirebaseConfig()) {
     checks.push({ label: 'Firebase Config', ok: false, text: '尚未填入 src/firebase-config.js。' });
@@ -95,14 +95,17 @@ export async function runFirebaseDiagnostics() {
       aiLevel: 8,
       rules: normalizeRules(),
       scoringRules: normalizeScoringRules(),
-      securityVersion: 'client-validated-v0.6.5',
+      securityVersion: 'client-validated-v0.6.6',
       version: VERSION,
+      passwordEnabled: false,
+      passwordHash: '',
+      passwordHint: '',
       createdAt: sdk.firestore.serverTimestamp(),
       updatedAt: sdk.firestore.serverTimestamp(),
       presenceUpdatedAt: sdk.firestore.serverTimestamp(),
       invitePath: buildInviteUrl(testRoomId),
       gameNo: 0,
-      lastEvent: 'v0.6.5 Firebase 設定檢查用暫存房間。',
+      lastEvent: 'v0.6.6 Firebase 設定檢查用暫存房間。',
       totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
       seats: { 0: hostSeat }
     };
@@ -111,7 +114,7 @@ export async function runFirebaseDiagnostics() {
     const snap = await sdk.firestore.getDoc(ref);
     if (!snap.exists()) throw new Error('測試房間建立後讀取失敗。');
     await sdk.firestore.deleteDoc(ref);
-    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.6.5。' });
+    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.6.6。' });
     return { ok: true, checks, summary: 'Firebase 設定檢查通過，可以建立房間。' };
   } catch (error) {
     checks.push({ label: 'Firestore 寫入', ok: false, text: explainFirebaseError(error) });
@@ -167,6 +170,26 @@ export function normalizeRoomId(roomId) {
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, '')
     .slice(0, ROOM_ID_LENGTH);
+}
+
+
+function simplePasswordHash(password = '') {
+  const text = String(password || '').trim();
+  if (!text) return '';
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `pw-${(hash >>> 0).toString(36)}`;
+}
+
+function assertRoomPassword(room, password = '') {
+  if (!room.passwordEnabled) return;
+  const provided = simplePasswordHash(password);
+  if (!provided || provided !== room.passwordHash) {
+    throw new Error('房間密碼不正確。');
+  }
 }
 
 export function getRoomIdFromUrl() {
@@ -404,17 +427,19 @@ export async function listRecentRoomsFromFirestore(maxRooms = 12) {
       aiCount,
       seatCount: seats.filter(Boolean).length,
       lastEvent: data.lastEvent || '',
+      passwordEnabled: Boolean(data.passwordEnabled),
       updatedAtMs,
       inviteUrl: buildInviteUrl(data.roomId || docSnap.id)
     };
   });
 }
 
-export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
+export async function createRoom({ playerName, aiLevel, rules, scoringRules, roomPassword = '' }) {
   const { sdk, db, user } = await ensureFirebaseReady();
   const name = saveLocalPlayerName(playerName);
   const normalizedRules = normalizeRules(rules);
   const normalizedScoringRules = normalizeScoringRules(scoringRules);
+  const passwordHash = simplePasswordHash(roomPassword);
   let roomId = '';
   let inviteUrl = '';
 
@@ -431,8 +456,11 @@ export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
       aiLevel: Number(aiLevel) || 8,
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.6.5',
+      securityVersion: 'client-validated-v0.6.6',
       version: VERSION,
+      passwordEnabled: Boolean(passwordHash),
+      passwordHash,
+      passwordHint: passwordHash ? '已設定房間密碼' : '',
       createdAt: sdk.firestore.serverTimestamp(),
       updatedAt: sdk.firestore.serverTimestamp(),
       presenceUpdatedAt: sdk.firestore.serverTimestamp(),
@@ -464,7 +492,7 @@ export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
   throw new Error('房號產生重複，請再按一次建立房間。');
 }
 
-export async function joinRoom(roomId, { playerName } = {}) {
+export async function joinRoom(roomId, { playerName, roomPassword = '' } = {}) {
   const normalizedRoomId = normalizeRoomId(roomId);
   if (!normalizedRoomId || normalizedRoomId.length !== ROOM_ID_LENGTH) {
     throw new Error('請輸入 6 碼房號。');
@@ -481,6 +509,7 @@ export async function joinRoom(roomId, { playerName } = {}) {
     }
 
     const room = snap.data();
+    assertRoomPassword(room, roomPassword);
     const existingSeat = findSeatForUid(room, user.uid);
     const emptySeat = findEmptySeat(room);
     const replaceAISeat = emptySeat === null ? findReplaceableAISeat(room) : null;
@@ -598,7 +627,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
     });
     game.version = VERSION;
-    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.6.5' };
+    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.6.6' };
     game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
 
     const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
@@ -629,7 +658,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       aiLevel: Number(aiLevel || room.aiLevel || 8),
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.6.5',
+      securityVersion: 'client-validated-v0.6.6',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
@@ -689,7 +718,7 @@ async function updateMultiplayerGame(roomId, action, options = {}) {
       lastActorUid: user.uid,
       lastActorSeat: Number.isInteger(seat) ? seat : null,
       updatedAtMs: Date.now(),
-      version: 'client-validated-v0.6.5'
+      version: 'client-validated-v0.6.6'
     };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {
@@ -880,6 +909,86 @@ function stopPresenceTimers() {
   if (reconcileTimer) window.clearInterval(reconcileTimer);
   heartbeatTimer = null;
   reconcileTimer = null;
+}
+
+
+export async function kickSeat(roomId, seatIndex) {
+  const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
+  const seatToKick = Number(seatIndex);
+  if (!Number.isInteger(seatToKick) || seatToKick < 0 || seatToKick > 3) throw new Error('座位資料不正確。');
+  const { sdk, db, user } = await ensureFirebaseReady();
+  const ref = sdk.firestore.doc(db, ROOM_COLLECTION, normalizedRoomId);
+
+  await sdk.firestore.runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(ref);
+    if (!snap.exists()) throw new Error('找不到房間。');
+    const room = snap.data();
+    if (room.hostUid !== user.uid) throw new Error('只有房主可以踢除玩家。');
+    const seats = normalizeSeats(room.seats);
+    const target = seats[seatToKick];
+    if (!target) throw new Error('該座位目前沒有人。');
+    if (target.uid === user.uid) throw new Error('房主不能踢除自己。');
+
+    if (room.status === 'playing' && room.game) {
+      const game = markGameSeatAsAITakeover(cloneGame(room.game), seatToKick, target);
+      seats[seatToKick] = {
+        ...target,
+        isAI: true,
+        uid: `ai-seat-${seatToKick}`,
+        name: `AI ${seatToKick + 1}`,
+        connected: false,
+        aiTakingOver: false
+      };
+      transaction.update(ref, {
+        seats: seatsToObject(seats),
+        game: makePlainGame(game),
+        updatedAt: sdk.firestore.serverTimestamp(),
+        lastEvent: `房主已將 ${target.name || '玩家'} 移出，改由 AI ${seatToKick + 1} 接手。`
+      });
+      return;
+    }
+
+    seats[seatToKick] = null;
+    transaction.update(ref, {
+      seats: seatsToObject(seats),
+      updatedAt: sdk.firestore.serverTimestamp(),
+      lastEvent: `房主已將 ${target.name || '玩家'} 移出房間。`
+    });
+  });
+}
+
+export async function moveSeat(roomId, fromSeat, toSeat) {
+  const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
+  const from = Number(fromSeat);
+  const to = Number(toSeat);
+  if (![from, to].every((seat) => Number.isInteger(seat) && seat >= 0 && seat <= 3)) throw new Error('座位資料不正確。');
+  if (from === to) return;
+  const { sdk, db, user } = await ensureFirebaseReady();
+  const ref = sdk.firestore.doc(db, ROOM_COLLECTION, normalizedRoomId);
+
+  await sdk.firestore.runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(ref);
+    if (!snap.exists()) throw new Error('找不到房間。');
+    const room = snap.data();
+    if (room.hostUid !== user.uid) throw new Error('只有房主可以重新安排座位。');
+    if (room.status === 'playing') throw new Error('牌局進行中不能重新安排座位，請等本局結束。');
+    const seats = normalizeSeats(room.seats);
+    const source = seats[from];
+    if (!source) throw new Error('來源座位沒有人。');
+    const target = seats[to];
+    seats[to] = { ...source, seat: to };
+    seats[from] = target ? { ...target, seat: from } : null;
+    seats.forEach((seatData, index) => {
+      if (seatData) seats[index] = { ...seatData, seat: index, host: seatData.uid === room.hostUid };
+    });
+    transaction.update(ref, {
+      seats: seatsToObject(seats),
+      updatedAt: sdk.firestore.serverTimestamp(),
+      lastEvent: target
+        ? `房主交換座位 ${from + 1} 與座位 ${to + 1}。`
+        : `房主將 ${source.name || '玩家'} 移到座位 ${to + 1}。`
+    });
+  });
 }
 
 export async function leaveRoom(roomId) {
