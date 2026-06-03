@@ -1,7 +1,7 @@
 import { DEFAULT_AI_LEVEL } from './constants.js';
 import { createNewGame, passTurn, playCards, runAITurn, setAILevel } from './game-state.js';
 import { applyTheme, getSavedTheme } from './themes.js';
-import { clearSelection, getSelectedCards, render, renderThemeNote } from './ui.js';
+import { clearSelection, getSelectedCards, render, renderThemeNote, setActionLock } from './ui.js';
 import { getRulePreset, getScoringPreset, ruleSummary, scoringSummary } from './game-settings.js';
 import { isSoundEnabled, playSound, setSoundEnabled } from './sound.js';
 import {
@@ -35,6 +35,8 @@ let multiplayerAiTimer = null;
 let currentRoomId = null;
 let latestInviteUrl = '';
 let latestRoom = null;
+let multiplayerActionSubmitting = false;
+let latestSnapshotAt = null;
 
 function el(id) {
   return document.getElementById(id);
@@ -79,6 +81,56 @@ function updateSoundButton() {
   const enabled = isSoundEnabled();
   button.textContent = enabled ? '音效：開' : '音效：關';
   button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+}
+
+
+function formatDebugValue(value) {
+  if (value === null || value === undefined || value === '') return '—';
+  return String(value);
+}
+
+function renderDebugPanel(room = latestRoom) {
+  const panel = el('debugPanel');
+  if (!panel) return;
+  const localSeatText = Number.isInteger(room?.localSeat) ? `座位 ${room.localSeat + 1}` : '未入座';
+  const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
+  const game = room?.game || null;
+  const items = [
+    ['版本', `v${game?.version || room?.version || '0.6.2'}`],
+    ['房號', room?.roomId || currentRoomId || '—'],
+    ['狀態', room?.status || '尚未連線'],
+    ['我的座位', localSeatText],
+    ['我的 UID', room?.localUid ? `${room.localUid.slice(0, 8)}...` : '—'],
+    ['房主座位', hostSeat >= 0 ? `座位 ${hostSeat + 1}` : '—'],
+    ['目前回合', Number.isInteger(game?.currentTurnSeat) ? `座位 ${game.currentTurnSeat + 1}` : '—'],
+    ['領出座位', Number.isInteger(game?.leadSeat) ? `座位 ${game.leadSeat + 1}` : '—'],
+    ['第幾局', room?.gameNo || game?.gameNo || 0],
+    ['Revision', game?.security?.revision ?? 0],
+    ['LastAction', game?.security?.lastActionId ? game.security.lastActionId.slice(-10) : '—'],
+    ['GameId', game?.gameId ? game.gameId.slice(-18) : '—'],
+    ['本機送出鎖', multiplayerActionSubmitting ? '鎖定中' : '可操作'],
+    ['最後同步', latestSnapshotAt ? latestSnapshotAt.toLocaleTimeString() : '—']
+  ];
+  panel.innerHTML = items.map(([label, value]) => `
+    <div><strong>${label}</strong><span>${formatDebugValue(value)}</span></div>
+  `).join('');
+}
+
+function setMultiplayerActionSubmitting(locked, label = '同步中') {
+  multiplayerActionSubmitting = Boolean(locked);
+  setActionLock(multiplayerActionSubmitting, label);
+  render(gameState);
+  renderDebugPanel(latestRoom);
+}
+
+async function runLockedMultiplayerAction(label, action) {
+  if (multiplayerActionSubmitting) return;
+  setMultiplayerActionSubmitting(true, label);
+  try {
+    await action();
+  } finally {
+    setMultiplayerActionSubmitting(false);
+  }
 }
 
 function getPlayerName() {
@@ -195,6 +247,7 @@ function renderRoomGame(room) {
 
 function renderRoom(room) {
   latestRoom = room;
+  latestSnapshotAt = new Date();
   if (!room) {
     currentRoomId = null;
     latestInviteUrl = '';
@@ -204,6 +257,7 @@ function renderRoom(room) {
     setRoomControlsConnected(false);
     renderEmptySeats();
     setRoomMessage('房間不存在或已被刪除。', 'warn');
+    renderDebugPanel(null);
     return;
   }
 
@@ -251,6 +305,7 @@ function renderRoom(room) {
     .join('');
 
   renderRoomGame(room);
+  renderDebugPanel(room);
 }
 
 async function connectRoom(roomId, mode = 'join') {
@@ -380,15 +435,22 @@ function bindGameEvents() {
     }
 
     if (gameState.mode === 'multiplayer' && currentRoomId) {
-      try {
-        await playMultiplayerCards(currentRoomId, selected);
-        playSound('play');
-        clearSelection();
-      } catch (error) {
-        gameState.message = error.message || '多人出牌失敗。';
-        playSound('error');
-        render(gameState);
-      }
+      await runLockedMultiplayerAction('出牌同步中', async () => {
+        try {
+          const precondition = {
+            expectedRevision: Number(gameState.security?.revision || 0),
+            expectedTurnSeat: gameState.currentTurnSeat,
+            expectedGameId: gameState.gameId || null
+          };
+          await playMultiplayerCards(currentRoomId, selected, precondition);
+          playSound('play');
+          clearSelection();
+        } catch (error) {
+          gameState.message = error.message || '多人出牌失敗。';
+          playSound('error');
+          render(gameState);
+        }
+      });
       return;
     }
 
@@ -403,15 +465,22 @@ function bindGameEvents() {
 
   el('passBtn').addEventListener('click', async () => {
     if (gameState.mode === 'multiplayer' && currentRoomId) {
-      try {
-        await passMultiplayerTurn(currentRoomId);
-        playSound('pass');
-        clearSelection();
-      } catch (error) {
-        gameState.message = error.message || '多人 Pass 失敗。';
-        playSound('error');
-        render(gameState);
-      }
+      await runLockedMultiplayerAction('Pass 同步中', async () => {
+        try {
+          const precondition = {
+            expectedRevision: Number(gameState.security?.revision || 0),
+            expectedTurnSeat: gameState.currentTurnSeat,
+            expectedGameId: gameState.gameId || null
+          };
+          await passMultiplayerTurn(currentRoomId, precondition);
+          playSound('pass');
+          clearSelection();
+        } catch (error) {
+          gameState.message = error.message || '多人 Pass 失敗。';
+          playSound('error');
+          render(gameState);
+        }
+      });
       return;
     }
 
@@ -492,5 +561,6 @@ function bindGameEvents() {
 bindGameEvents();
 bindRoomEvents();
 updateSettingsSummary();
+renderDebugPanel(null);
 render(gameState);
 scheduleAIIfNeeded();

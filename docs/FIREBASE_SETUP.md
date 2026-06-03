@@ -1,8 +1,8 @@
-# Firebase 設定教學：Big2 TW v0.6.1
+# Firebase 設定教學：Big2 TW v0.6.2
 
 本版使用 Firebase Authentication 匿名登入 + Cloud Firestore 同步多人房間與牌局狀態。
 
-> v0.6.1 是朋友休閒測試版：可同步洗牌、發牌、出牌、Pass、回合、AI 補位接管、下一局、累計總分、離線 AI 接管與房主轉移。正式防作弊版建議改用 Cloud Functions 由伺服器洗牌、發牌與驗證出牌。
+> v0.6.2 是朋友休閒測試版：可同步洗牌、發牌、出牌、Pass、回合、AI 補位接管、下一局、累計總分、離線 AI 接管與房主轉移，並加入出牌防連點、revision 檢查與偵錯面板。正式防作弊版建議改用 Cloud Functions 由伺服器洗牌、發牌與驗證出牌。
 
 ---
 
@@ -89,7 +89,13 @@ firebase-adminsdk.json
 4. 複製專案根目錄的 `firestore.rules` 內容貼上。
 5. 點「Publish」。
 
-v0.6.1 的規則允許已匿名登入的玩家讀寫 `rooms/{roomId}`，並限制欄位只能是房間、座位、`game` 牌局狀態、`totalScores` 累計分數與 `presenceUpdatedAt` 連線狀態相關欄位。這是休閒測試規則，不是正式防作弊規則。
+v0.6.2 的規則允許已匿名登入的玩家讀寫 `rooms/{roomId}`，並限制欄位只能是房間、座位、`game` 牌局狀態、`totalScores` 累計分數與 `presenceUpdatedAt` 連線狀態相關欄位。這是休閒測試規則，不是正式防作弊規則。
+
+---
+
+## v0.6.2 實戰測試重點
+
+多人測試時請特別看「多人同步偵錯面板」：若發生卡住或不同步，請截圖保留房號、我的座位、目前回合、Revision、LastAction、GameId 與最後同步時間。
 
 ---
 
@@ -132,7 +138,7 @@ http://localhost:8080
 
 ## 8. GitHub Pages 上傳
 
-請把壓縮檔解開後，將 `big2-tw-v0.6.1` 資料夾內的檔案全部放到 GitHub repository 根目錄。
+請把壓縮檔解開後，將 `big2-tw-v0.6.2` 資料夾內的檔案全部放到 GitHub repository 根目錄。
 
 正確：
 
@@ -150,7 +156,7 @@ package.json
 不要變成：
 
 ```txt
-big2-tw-v0.6.1/index.html
+big2-tw-v0.6.2/index.html
 ```
 
 否則 GitHub Pages 可能找不到首頁。
@@ -173,9 +179,9 @@ https://fox520-sketch.github.io/big2/?room=ABC123&join=1
 這次不只是帶入房號，會真的呼叫加入房間流程。
 
 
-## v0.6.1 需要重新 Publish firestore.rules
+## v0.6.2 需要重新 Publish firestore.rules
 
-v0.6.1 新增 `rules`、`scoringRules`、`securityVersion` 欄位，請務必將新版 `firestore.rules` 貼到：
+v0.6.2 新增 `rules`、`scoringRules`、`securityVersion` 欄位，請務必將新版 `firestore.rules` 貼到：
 
 ```txt
 Firebase Console → Firestore Database → Rules → Publish

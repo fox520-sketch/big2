@@ -161,6 +161,27 @@ function ensureFilledSeatList(room) {
   return seats;
 }
 
+
+function prepareSeatListForGame(room) {
+  return ensureFilledSeatList(room).map((seat, index) => {
+    if (!seat) return seatPayload({ seat: index, name: `AI ${index + 1}`, isAI: true, connected: false });
+    if (seat.isAI) {
+      return { ...seat, isAI: true, connected: false, aiTakingOver: false };
+    }
+    if (seat.connected === false || isSeatStale(seat)) {
+      return {
+        ...seat,
+        name: seat.name || `玩家 ${index + 1}`,
+        isAI: true,
+        connected: false,
+        aiTakingOver: true,
+        disconnectedAt: seat.disconnectedAt || nowMs()
+      };
+    }
+    return { ...seat, isAI: false, connected: true, aiTakingOver: false, lastSeen: nowMs() };
+  });
+}
+
 function findSeatForUid(room, uid) {
   const seats = normalizeSeats(room.seats);
   const index = seats.findIndex((seat) => seat?.uid === uid);
@@ -299,7 +320,7 @@ export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
     aiLevel: Number(aiLevel) || 8,
     rules: normalizedRules,
     scoringRules: normalizedScoringRules,
-    securityVersion: 'client-validated-v0.6.1',
+    securityVersion: 'client-validated-v0.6.2',
     version: VERSION,
     createdAt: sdk.firestore.serverTimestamp(),
     updatedAt: sdk.firestore.serverTimestamp(),
@@ -442,7 +463,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
     const room = snap.data();
     if (room.hostUid !== user.uid) throw new Error('只有房主可以開始多人遊戲 / 下一局。');
 
-    const filledSeats = ensureFilledSeatList(room);
+    const filledSeats = prepareSeatListForGame(room);
     const nextGameNo = Number(room.gameNo || 0) + 1;
     const normalizedRules = normalizeRules(rules || room.rules);
     const normalizedScoringRules = normalizeScoringRules(scoringRules || room.scoringRules);
@@ -453,6 +474,8 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       hostUid: room.hostUid,
       gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
     });
+    game.version = VERSION;
+    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.6.2' };
     game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
 
     const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
@@ -483,14 +506,41 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       aiLevel: Number(aiLevel || room.aiLevel || 8),
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.6.1',
+      securityVersion: 'client-validated-v0.6.2',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
   });
 }
 
-async function updateMultiplayerGame(roomId, action) {
+function assertGameTurnIntegrity(game) {
+  if (!Array.isArray(game.players) || game.players.length !== 4) {
+    throw new Error('牌局玩家狀態異常，請請房主重新開局。');
+  }
+  if (!Number.isInteger(game.currentTurnSeat) || game.currentTurnSeat < 0 || game.currentTurnSeat > 3) {
+    throw new Error('回合座位狀態異常，請請房主重新開局。');
+  }
+  if (!game.players[game.currentTurnSeat]) {
+    throw new Error('目前回合玩家不存在，請請房主重新開局。');
+  }
+}
+
+function validateActionPreconditions(game, options = {}) {
+  if (options.expectedGameId && game.gameId && options.expectedGameId !== game.gameId) {
+    throw new Error('牌局已換新局，請依最新手牌重新操作。');
+  }
+  if (Number.isFinite(Number(options.expectedRevision))) {
+    const currentRevision = Number(game.security?.revision || 0);
+    if (currentRevision !== Number(options.expectedRevision)) {
+      throw new Error('牌局已更新，請確認最新回合後再出牌。');
+    }
+  }
+  if (Number.isInteger(options.expectedTurnSeat) && game.currentTurnSeat !== options.expectedTurnSeat) {
+    throw new Error('回合已更新，現在輪到其他玩家。');
+  }
+}
+
+async function updateMultiplayerGame(roomId, action, options = {}) {
   const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
   const { sdk, db, user } = await ensureFirebaseReady();
   const ref = sdk.firestore.doc(db, ROOM_COLLECTION, normalizedRoomId);
@@ -505,7 +555,10 @@ async function updateMultiplayerGame(roomId, action) {
     const game = cloneGame(room.game);
     const wasFinished = Boolean(game.finished);
     game.localSeat = seat ?? activeSeat ?? 0;
+    assertGameTurnIntegrity(game);
+    validateActionPreconditions(game, options);
     const updatedGame = action({ room, game, seat, user });
+    assertGameTurnIntegrity(updatedGame);
     updatedGame.security = {
       ...(updatedGame.security || {}),
       revision: Number(game.security?.revision || 0) + 1,
@@ -513,7 +566,7 @@ async function updateMultiplayerGame(roomId, action) {
       lastActorUid: user.uid,
       lastActorSeat: Number.isInteger(seat) ? seat : null,
       updatedAtMs: Date.now(),
-      version: 'client-validated-v0.6.1'
+      version: 'client-validated-v0.6.2'
     };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {
@@ -534,7 +587,7 @@ async function updateMultiplayerGame(roomId, action) {
   });
 }
 
-export async function playMultiplayerCards(roomId, cards) {
+export async function playMultiplayerCards(roomId, cards, options = {}) {
   await updateMultiplayerGame(roomId, ({ game, seat }) => {
     if (seat === null || seat === undefined) throw new Error('你不在這個房間座位內。');
     if (game.currentTurnSeat !== seat) throw new Error('現在還沒輪到你。');
@@ -542,17 +595,17 @@ export async function playMultiplayerCards(roomId, cards) {
     const validation = validateHumanPlay(cards, game);
     if (!validation.ok) throw new Error(validation.message);
     return playCards(game, seat, cards);
-  });
+  }, options);
 }
 
-export async function passMultiplayerTurn(roomId) {
+export async function passMultiplayerTurn(roomId, options = {}) {
   await updateMultiplayerGame(roomId, ({ game, seat }) => {
     if (seat === null || seat === undefined) throw new Error('你不在這個房間座位內。');
     if (game.currentTurnSeat !== seat) throw new Error('現在還沒輪到你。');
     if (game.players[seat]?.isAI) throw new Error('這個座位目前由 AI 接管，請等待回合更新。');
     if (!canPass(game)) throw new Error('現在不能 Pass，請領出一手牌。');
     return passTurn(game, seat);
-  });
+  }, options);
 }
 
 export async function runMultiplayerAITurn(roomId) {

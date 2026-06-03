@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.6.1</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.6.1：Firebase 選牌穩定性修正、正式規則設定、計分規則、防作弊強化、手機 UI、音效與動畫" />
+    <title>台灣大老二 Big2 TW v0.6.2</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.6.2：多人實戰穩定修正、出牌防連點、斷線重連、下一局穩定與偵錯面板" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.6.1 選牌穩定修正版</p>
+        <p class="subtitle">v0.6.2 多人實戰穩定修正版</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field">
@@ -76,7 +76,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.6.1</span>
+          <span class="pill">v0.6.2</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -108,7 +108,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.6.1 已支援房間大廳、同步洗牌發牌、真人同步出牌 / Pass、回合同步與 AI 補位接管。</p>
+            <p class="hint small">v0.6.2 強化回合同步、出牌 / Pass 防連點、下一局穩定、斷線重連與偵錯面板。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -155,6 +155,23 @@
           <div class="seat-card empty">座位 2｜等待玩家</div>
           <div class="seat-card empty">座位 3｜等待玩家</div>
           <div class="seat-card empty">座位 4｜等待玩家</div>
+        </div>
+      </section>
+
+
+      <section class="debug-panel" aria-label="多人同步偵錯面板">
+        <div class="panel-heading">
+          <div>
+            <h2>多人同步偵錯面板</h2>
+            <p class="hint small">截圖回報問題時，請一併截到這一區，方便判斷房號、座位、回合、revision 與最後同步狀態。</p>
+          </div>
+          <span class="pill">v0.6.2</span>
+        </div>
+        <div id="debugPanel" class="debug-grid">
+          <div><strong>版本</strong><span>v0.6.2</span></div>
+          <div><strong>房號</strong><span>—</span></div>
+          <div><strong>狀態</strong><span>尚未連線</span></div>
+          <div><strong>我的座位</strong><span>未入座</span></div>
         </div>
       </section>
 
@@ -257,8 +274,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.6.1</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.1 支援連續對戰與離線接管</span>
+      <span>Big2 TW v0.6.2</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.2 強化多人實戰穩定性</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>

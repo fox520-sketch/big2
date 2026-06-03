@@ -7,6 +7,7 @@ import { ruleSummary, scoringSummary } from './game-settings.js';
 import { playSound } from './sound.js';
 
 const selectedCardIds = new Set();
+let actionLock = { locked: false, label: '同步中' };
 
 function el(id) {
   return document.getElementById(id);
@@ -30,6 +31,10 @@ function makeCardElement(card, options = {}) {
 
 export function clearSelection() {
   selectedCardIds.clear();
+}
+
+export function setActionLock(locked, label = '同步中') {
+  actionLock = { locked: Boolean(locked), label };
 }
 
 function pruneSelectionToCurrentHand(gameState) {
@@ -134,11 +139,19 @@ function renderControls(gameState) {
   const localSeat = getLocalSeat(gameState);
   const localPlayer = gameState.players[localSeat];
   const isHumanTurn = gameState.currentTurnSeat === localSeat && !gameState.finished && !localPlayer?.isAI;
-  el('playBtn').disabled = !isHumanTurn;
-  el('passBtn').disabled = !isHumanTurn || !canPass(gameState);
+  const playBtn = el('playBtn');
+  const passBtn = el('passBtn');
+  playBtn.disabled = !isHumanTurn || actionLock.locked;
+  passBtn.disabled = !isHumanTurn || !canPass(gameState) || actionLock.locked;
+  playBtn.textContent = actionLock.locked ? '同步中...' : '出牌';
+  passBtn.textContent = actionLock.locked ? '等待同步' : 'Pass';
+  playBtn.setAttribute('aria-busy', actionLock.locked ? 'true' : 'false');
+  passBtn.setAttribute('aria-busy', actionLock.locked ? 'true' : 'false');
   el('turnBadge').textContent = gameState.finished
     ? '本局結束'
-    : `輪到 ${gameState.players[gameState.currentTurnSeat].name}`;
+    : actionLock.locked
+      ? `${actionLock.label}｜輪到 ${gameState.players[gameState.currentTurnSeat].name}`
+      : `輪到 ${gameState.players[gameState.currentTurnSeat].name}`;
 }
 
 function renderHistory(gameState) {
