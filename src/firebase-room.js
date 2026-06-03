@@ -1,5 +1,5 @@
 import { VERSION } from './constants.js';
-import { firebaseConfig, hasFirebaseConfig } from './firebase-config.js';
+import { cloudFunctionsRegion, firebaseConfig, hasFirebaseConfig } from './firebase-config.js';
 import { createGameFromSeats, passTurn, playCards, runAITurn } from './game-state.js';
 import { mergeSeriesTotals } from './scoring.js';
 import { canPass, validateHumanPlay } from './rules.js';
@@ -17,6 +17,7 @@ let sdkPromise = null;
 let appInstance = null;
 let authInstance = null;
 let dbInstance = null;
+let functionsInstance = null;
 let currentUser = null;
 let unsubscribeRoom = null;
 let activeRoomId = null;
@@ -43,7 +44,7 @@ export function saveLocalPlayerName(name) {
 
 export function getFirebaseSetupState() {
   return hasFirebaseConfig()
-    ? { ok: true, text: 'Firebase 設定已填入，可以建立/加入房間。' }
+    ? { ok: true, text: 'Firebase 設定已填入；v0.7.0 需要 Cloud Functions 已部署後才能建立/加入房間。' }
     : { ok: false, text: '尚未填入 Firebase 設定，請先編輯 src/firebase-config.js。' };
 }
 
@@ -52,8 +53,9 @@ async function loadFirebaseSdk() {
     sdkPromise = Promise.all([
       import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
       import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-auth.js`),
-      import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`)
-    ]).then(([app, auth, firestore]) => ({ app, auth, firestore }));
+      import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`),
+      import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-functions.js`)
+    ]).then(([app, auth, firestore, functions]) => ({ app, auth, firestore, functions }));
   }
   return sdkPromise;
 }
@@ -71,6 +73,7 @@ export async function ensureFirebaseReady() {
       : sdk.app.initializeApp(firebaseConfig);
     authInstance = sdk.auth.getAuth(appInstance);
     dbInstance = sdk.firestore.getFirestore(appInstance);
+    functionsInstance = sdk.functions.getFunctions(appInstance, cloudFunctionsRegion);
   }
 
   if (!authInstance.currentUser) {
@@ -78,7 +81,25 @@ export async function ensureFirebaseReady() {
   }
 
   currentUser = authInstance.currentUser;
-  return { sdk, app: appInstance, auth: authInstance, db: dbInstance, user: currentUser };
+  return { sdk, app: appInstance, auth: authInstance, db: dbInstance, functions: functionsInstance, user: currentUser };
+}
+
+
+async function callCloudFunction(name, payload = {}) {
+  const { sdk, functions } = await ensureFirebaseReady();
+  if (!functions) throw new Error('Cloud Functions 尚未初始化。');
+  const callable = sdk.functions.httpsCallable(functions, name);
+  try {
+    const result = await callable(payload);
+    return result.data || {};
+  } catch (error) {
+    const message = error?.message || error?.details?.message || 'Cloud Functions 操作失敗，請確認已部署 functions。';
+    throw new Error(message.replace(/^FirebaseError:\s*/i, ''));
+  }
+}
+
+function cardsToIds(cards = []) {
+  return cards.map((card) => String(card.id || card).trim().toUpperCase()).filter(Boolean);
 }
 
 export function makeRoomId() {
@@ -303,42 +324,18 @@ function applyFinishedGameTotals(room, updatedGame) {
 }
 
 export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
-  const { sdk, db, user } = await ensureFirebaseReady();
-  const roomId = makeRoomId();
   const name = saveLocalPlayerName(playerName);
-  const roomRef = sdk.firestore.doc(db, ROOM_COLLECTION, roomId);
-  const inviteUrl = buildInviteUrl(roomId);
-  const hostSeat = seatPayload({ seat: 0, name, uid: user.uid, host: true });
-  const normalizedRules = normalizeRules(rules);
-  const normalizedScoringRules = normalizeScoringRules(scoringRules);
-
-  const roomData = {
-    roomId,
-    status: 'waiting',
-    hostUid: user.uid,
-    hostName: name,
+  const data = await callCloudFunction('createRoom', {
+    playerName: name,
     aiLevel: Number(aiLevel) || 8,
-    rules: normalizedRules,
-    scoringRules: normalizedScoringRules,
-    securityVersion: 'client-validated-v0.6.2',
-    version: VERSION,
-    createdAt: sdk.firestore.serverTimestamp(),
-    updatedAt: sdk.firestore.serverTimestamp(),
-    presenceUpdatedAt: sdk.firestore.serverTimestamp(),
-    invitePath: inviteUrl,
-    gameNo: 0,
-    lastEvent: `${name} 建立房間。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`,
-    totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
-    seats: {
-      0: hostSeat
-    }
-  };
-
-  await sdk.firestore.setDoc(roomRef, roomData);
+    rules: normalizeRules(rules),
+    scoringRules: normalizeScoringRules(scoringRules)
+  });
+  const roomId = normalizeRoomId(data.roomId);
   activeRoomId = roomId;
-  activeSeat = 0;
+  activeSeat = Number.isInteger(data.seat) ? data.seat : 0;
   startPresenceTimers(roomId);
-  return { roomId, inviteUrl, seat: 0 };
+  return { roomId, inviteUrl: buildInviteUrl(roomId), seat: activeSeat };
 }
 
 export async function joinRoom(roomId, { playerName } = {}) {
@@ -346,392 +343,70 @@ export async function joinRoom(roomId, { playerName } = {}) {
   if (!normalizedRoomId || normalizedRoomId.length !== ROOM_ID_LENGTH) {
     throw new Error('請輸入 6 碼房號。');
   }
-
-  const { sdk, db, user } = await ensureFirebaseReady();
-  const ref = sdk.firestore.doc(db, ROOM_COLLECTION, normalizedRoomId);
-  let joinedSeat = null;
-
-  await sdk.firestore.runTransaction(db, async (transaction) => {
-    const snap = await transaction.get(ref);
-    if (!snap.exists()) {
-      throw new Error(`找不到房間 ${normalizedRoomId}，請確認房號是否正確。`);
-    }
-
-    const room = snap.data();
-    const existingSeat = findSeatForUid(room, user.uid);
-    const emptySeat = findEmptySeat(room);
-    const replaceAISeat = emptySeat === null ? findReplaceableAISeat(room) : null;
-    const seat = existingSeat ?? emptySeat ?? replaceAISeat;
-    if (seat === null) {
-      throw new Error('這個房間已滿或牌局已開始，無法加入。');
-    }
-
-    const name = saveLocalPlayerName(playerName);
-    const seats = normalizeSeats(room.seats);
-    const wasHost = room.hostUid === user.uid || (!room.hostUid && seat === 0);
-    const payload = seatPayload({ seat, name, uid: user.uid, host: wasHost, connected: true, aiTakingOver: false });
-    seats[seat] = payload;
-
-    let game = room.game ? cloneGame(room.game) : null;
-    if (game && existingSeat !== null) {
-      game = restoreGameSeatFromReconnect(game, seat, payload);
-    }
-
-    const totalScores = { ...(room.totalScores || makeInitialTotalsFromSeats(seats)) };
-    totalScores[seat] = {
-      ...(totalScores[seat] || {}),
-      seat,
-      name,
-      uid: user.uid,
-      isAI: false,
-      totalScore: Number(totalScores[seat]?.totalScore || 0),
-      wins: Number(totalScores[seat]?.wins || 0),
-      games: Number(totalScores[seat]?.games || 0),
-      latestRank: totalScores[seat]?.latestRank ?? null,
-      latestScore: Number(totalScores[seat]?.latestScore || 0),
-      latestRemaining: totalScores[seat]?.latestRemaining ?? null,
-      updatedGameNo: Number(totalScores[seat]?.updatedGameNo || 0)
-    };
-
-    const updates = {
-      seats: seatsToObject(seats),
-      totalScores,
-      updatedAt: sdk.firestore.serverTimestamp(),
-      presenceUpdatedAt: sdk.firestore.serverTimestamp(),
-      lastEvent: existingSeat === null ? `${name} 加入房間。` : `${name} 回到房間。`
-    };
-    if (game) updates.game = makePlainGame(game);
-
-    transaction.update(ref, updates);
-    joinedSeat = seat;
-  });
-
+  const name = saveLocalPlayerName(playerName);
+  const data = await callCloudFunction('joinRoom', { roomId: normalizedRoomId, playerName: name });
   activeRoomId = normalizedRoomId;
-  activeSeat = joinedSeat;
+  activeSeat = Number.isInteger(data.seat) ? data.seat : null;
   startPresenceTimers(normalizedRoomId);
-  return { roomId: normalizedRoomId, inviteUrl: buildInviteUrl(normalizedRoomId), seat: joinedSeat };
+  return { roomId: normalizedRoomId, inviteUrl: buildInviteUrl(normalizedRoomId), seat: activeSeat };
 }
 
 export async function fillAISeats(roomId) {
   const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
-  const { sdk, ref, snap } = await getRoomDocument(normalizedRoomId);
-  if (!snap.exists()) throw new Error('找不到房間，無法補 AI。');
-
-  const room = snap.data();
-  const { user } = await ensureFirebaseReady();
-  if (room.hostUid !== user.uid) {
-    throw new Error('只有房主可以補 AI 空位。');
-  }
-
-  const updates = {
-    updatedAt: sdk.firestore.serverTimestamp(),
-    lastEvent: '房主已用 AI 補滿空位。'
-  };
-  const seats = normalizeSeats(room.seats);
-  const totalScores = { ...(room.totalScores || makeInitialTotalsFromSeats(seats)) };
-  for (let seat = 0; seat < 4; seat += 1) {
-    if (!seats[seat]) {
-      const aiSeat = seatPayload({ seat, name: `AI ${seat + 1}`, isAI: true, connected: false });
-      updates[`seats.${seat}`] = aiSeat;
-      totalScores[seat] = totalScores[seat] || {
-        seat,
-        name: aiSeat.name,
-        uid: aiSeat.uid,
-        isAI: true,
-        totalScore: 0,
-        wins: 0,
-        games: 0,
-        latestRank: null,
-        latestScore: 0,
-        latestRemaining: null,
-        updatedGameNo: 0
-      };
-    }
-  }
-  updates.totalScores = totalScores;
-  await sdk.firestore.updateDoc(ref, updates);
+  await callCloudFunction('fillAISeats', { roomId: normalizedRoomId });
 }
 
 export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRules } = {}) {
   const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
-  const { sdk, db, user } = await ensureFirebaseReady();
-  const ref = sdk.firestore.doc(db, ROOM_COLLECTION, normalizedRoomId);
-
-  await sdk.firestore.runTransaction(db, async (transaction) => {
-    const snap = await transaction.get(ref);
-    if (!snap.exists()) throw new Error('找不到房間，無法開始多人遊戲。');
-    const room = snap.data();
-    if (room.hostUid !== user.uid) throw new Error('只有房主可以開始多人遊戲 / 下一局。');
-
-    const filledSeats = prepareSeatListForGame(room);
-    const nextGameNo = Number(room.gameNo || 0) + 1;
-    const normalizedRules = normalizeRules(rules || room.rules);
-    const normalizedScoringRules = normalizeScoringRules(scoringRules || room.scoringRules);
-    const game = createGameFromSeats(filledSeats, {
-      aiLevel: Number(aiLevel || room.aiLevel || 8),
-      rules: normalizedRules,
-      scoringRules: normalizedScoringRules,
-      hostUid: room.hostUid,
-      gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
-    });
-    game.version = VERSION;
-    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.6.2' };
-    game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
-
-    const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
-    for (const seat of filledSeats) {
-      if (!seat) continue;
-      totalScores[seat.seat] = {
-        ...(totalScores[seat.seat] || {}),
-        seat: seat.seat,
-        name: seat.name,
-        uid: seat.uid || null,
-        isAI: Boolean(seat.isAI),
-        totalScore: Number(totalScores[seat.seat]?.totalScore || 0),
-        wins: Number(totalScores[seat.seat]?.wins || 0),
-        games: Number(totalScores[seat.seat]?.games || 0),
-        latestRank: totalScores[seat.seat]?.latestRank ?? null,
-        latestScore: Number(totalScores[seat.seat]?.latestScore || 0),
-        latestRemaining: totalScores[seat.seat]?.latestRemaining ?? null,
-        updatedGameNo: Number(totalScores[seat.seat]?.updatedGameNo || 0)
-      };
-    }
-
-    transaction.update(ref, {
-      status: 'playing',
-      seats: seatsToObject(filledSeats),
-      game: makePlainGame(game),
-      gameNo: nextGameNo,
-      totalScores,
-      aiLevel: Number(aiLevel || room.aiLevel || 8),
-      rules: normalizedRules,
-      scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.6.2',
-      updatedAt: sdk.firestore.serverTimestamp(),
-      lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
-    });
+  await callCloudFunction('startGame', {
+    roomId: normalizedRoomId,
+    aiLevel: Number(aiLevel) || 8,
+    rules: normalizeRules(rules),
+    scoringRules: normalizeScoringRules(scoringRules)
   });
 }
 
-function assertGameTurnIntegrity(game) {
-  if (!Array.isArray(game.players) || game.players.length !== 4) {
-    throw new Error('牌局玩家狀態異常，請請房主重新開局。');
-  }
-  if (!Number.isInteger(game.currentTurnSeat) || game.currentTurnSeat < 0 || game.currentTurnSeat > 3) {
-    throw new Error('回合座位狀態異常，請請房主重新開局。');
-  }
-  if (!game.players[game.currentTurnSeat]) {
-    throw new Error('目前回合玩家不存在，請請房主重新開局。');
-  }
-}
-
-function validateActionPreconditions(game, options = {}) {
-  if (options.expectedGameId && game.gameId && options.expectedGameId !== game.gameId) {
-    throw new Error('牌局已換新局，請依最新手牌重新操作。');
-  }
-  if (Number.isFinite(Number(options.expectedRevision))) {
-    const currentRevision = Number(game.security?.revision || 0);
-    if (currentRevision !== Number(options.expectedRevision)) {
-      throw new Error('牌局已更新，請確認最新回合後再出牌。');
-    }
-  }
-  if (Number.isInteger(options.expectedTurnSeat) && game.currentTurnSeat !== options.expectedTurnSeat) {
-    throw new Error('回合已更新，現在輪到其他玩家。');
-  }
-}
-
-async function updateMultiplayerGame(roomId, action, options = {}) {
-  const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
-  const { sdk, db, user } = await ensureFirebaseReady();
-  const ref = sdk.firestore.doc(db, ROOM_COLLECTION, normalizedRoomId);
-
-  await sdk.firestore.runTransaction(db, async (transaction) => {
-    const snap = await transaction.get(ref);
-    if (!snap.exists()) throw new Error('找不到房間。');
-    const room = snap.data();
-    if (room.status !== 'playing' || !room.game) throw new Error('這個房間目前尚未開始多人遊戲。');
-
-    const seat = findSeatForUid(room, user.uid);
-    const game = cloneGame(room.game);
-    const wasFinished = Boolean(game.finished);
-    game.localSeat = seat ?? activeSeat ?? 0;
-    assertGameTurnIntegrity(game);
-    validateActionPreconditions(game, options);
-    const updatedGame = action({ room, game, seat, user });
-    assertGameTurnIntegrity(updatedGame);
-    updatedGame.security = {
-      ...(updatedGame.security || {}),
-      revision: Number(game.security?.revision || 0) + 1,
-      lastActionId: `${normalizedRoomId}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      lastActorUid: user.uid,
-      lastActorSeat: Number.isInteger(seat) ? seat : null,
-      updatedAtMs: Date.now(),
-      version: 'client-validated-v0.6.2'
-    };
-    const justFinished = !wasFinished && Boolean(updatedGame.finished);
-    const updates = {
-      status: roomStatusForGame(updatedGame),
-      game: makePlainGame(updatedGame),
-      updatedAt: sdk.firestore.serverTimestamp(),
-      lastEvent: updatedGame.message
-    };
-    if (justFinished) {
-      const totalScores = applyFinishedGameTotals(room, updatedGame);
-      updatedGame.totalScores = totalScores;
-      updates.game = makePlainGame(updatedGame);
-      updates.totalScores = totalScores;
-      updates.lastEvent = `${updatedGame.message} 已更新累計總分。`;
-    }
-
-    transaction.update(ref, updates);
-  });
+function buildActionPreconditions(options = {}) {
+  return {
+    expectedGameId: options.expectedGameId || null,
+    expectedRevision: Number.isFinite(Number(options.expectedRevision)) ? Number(options.expectedRevision) : undefined,
+    expectedTurnSeat: Number.isInteger(options.expectedTurnSeat) ? options.expectedTurnSeat : undefined
+  };
 }
 
 export async function playMultiplayerCards(roomId, cards, options = {}) {
-  await updateMultiplayerGame(roomId, ({ game, seat }) => {
-    if (seat === null || seat === undefined) throw new Error('你不在這個房間座位內。');
-    if (game.currentTurnSeat !== seat) throw new Error('現在還沒輪到你。');
-    if (game.players[seat]?.isAI) throw new Error('這個座位目前由 AI 接管，請等待回合更新。');
-    const validation = validateHumanPlay(cards, game);
-    if (!validation.ok) throw new Error(validation.message);
-    return playCards(game, seat, cards);
-  }, options);
+  await callCloudFunction('submitPlay', {
+    roomId: normalizeRoomId(roomId || activeRoomId),
+    cardIds: cardsToIds(cards),
+    ...buildActionPreconditions(options)
+  });
 }
 
 export async function passMultiplayerTurn(roomId, options = {}) {
-  await updateMultiplayerGame(roomId, ({ game, seat }) => {
-    if (seat === null || seat === undefined) throw new Error('你不在這個房間座位內。');
-    if (game.currentTurnSeat !== seat) throw new Error('現在還沒輪到你。');
-    if (game.players[seat]?.isAI) throw new Error('這個座位目前由 AI 接管，請等待回合更新。');
-    if (!canPass(game)) throw new Error('現在不能 Pass，請領出一手牌。');
-    return passTurn(game, seat);
-  }, options);
+  await callCloudFunction('submitPass', {
+    roomId: normalizeRoomId(roomId || activeRoomId),
+    ...buildActionPreconditions(options)
+  });
 }
 
 export async function runMultiplayerAITurn(roomId) {
-  await updateMultiplayerGame(roomId, ({ room, game, user }) => {
-    if (room.hostUid !== user.uid) throw new Error('只有目前房主可以接管 AI 出牌。');
-    const player = game.players[game.currentTurnSeat];
-    if (!player?.isAI) throw new Error('目前不是 AI 或離線接管座位的回合。');
-    return runAITurn(game);
-  });
+  await callCloudFunction('runAITurnCallable', { roomId: normalizeRoomId(roomId || activeRoomId) });
 }
 
 export async function reconcileRoomPresence(roomId) {
   const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
   if (!normalizedRoomId) return;
-  const { sdk, db } = await ensureFirebaseReady();
-  const ref = sdk.firestore.doc(db, ROOM_COLLECTION, normalizedRoomId);
-
-  await sdk.firestore.runTransaction(db, async (transaction) => {
-    const snap = await transaction.get(ref);
-    if (!snap.exists()) return;
-    const room = snap.data();
-    const seats = normalizeSeats(room.seats);
-    const now = nowMs();
-    let changed = false;
-    const events = [];
-    let game = room.game ? cloneGame(room.game) : null;
-
-    for (let seat = 0; seat < 4; seat += 1) {
-      const seatData = seats[seat];
-      if (seatData && !seatData.isAI && seatData.connected && isSeatStale(seatData, now)) {
-        seats[seat] = {
-          ...seatData,
-          connected: false,
-          aiTakingOver: room.status === 'playing',
-          disconnectedAt: now
-        };
-        if (room.status === 'playing' && game) {
-          game = markGameSeatAsAITakeover(game, seat, seatData);
-          events.push(`${seatData.name} 離線，由 AI 接管。`);
-        } else {
-          events.push(`${seatData.name} 暫時離線。`);
-        }
-        changed = true;
-      }
-    }
-
-    let hostUid = room.hostUid;
-    let hostName = room.hostName;
-    const hostSeat = findHostSeat(seats, room.hostUid);
-    const hostNeedsTransfer = hostSeat === null || !seats[hostSeat]?.connected || isSeatStale(seats[hostSeat], now);
-    if (hostNeedsTransfer) {
-      const newHostSeat = findNextConnectedHumanSeat(seats, hostSeat ?? -1);
-      if (newHostSeat !== null) {
-        seats.forEach((seatData, index) => {
-          if (seatData) seats[index] = { ...seatData, host: index === newHostSeat };
-        });
-        hostUid = seats[newHostSeat].uid;
-        hostName = seats[newHostSeat].name;
-        if (game) game.hostUid = hostUid;
-        events.push(`房主已轉移給 ${hostName}。`);
-        changed = true;
-      }
-    }
-
-    if (!changed) return;
-    transaction.update(ref, {
-      seats: seatsToObject(seats),
-      ...(game ? { game: makePlainGame(game) } : {}),
-      hostUid,
-      hostName,
-      updatedAt: sdk.firestore.serverTimestamp(),
-      presenceUpdatedAt: sdk.firestore.serverTimestamp(),
-      lastEvent: events[events.length - 1] || room.lastEvent || '已更新房間連線狀態。'
-    });
-  });
+  await callCloudFunction('reconcilePresence', { roomId: normalizedRoomId });
 }
 
 async function sendHeartbeat(roomId = activeRoomId) {
   const normalizedRoomId = normalizeRoomId(roomId);
   if (!normalizedRoomId || activeSeat === null || activeSeat === undefined) return;
-  const { sdk, ref, snap } = await getRoomDocument(normalizedRoomId);
-  if (!snap.exists()) return;
-  const room = snap.data();
-  const seat = findSeatForUid(room, currentUser?.uid);
-  if (seat === null || seat === undefined) return;
-  const name = getLocalPlayerName();
-  const updates = {
-    [`seats.${seat}.connected`]: true,
-    [`seats.${seat}.aiTakingOver`]: false,
-    [`seats.${seat}.lastSeen`]: nowMs(),
-    [`seats.${seat}.name`]: name,
-    presenceUpdatedAt: sdk.firestore.serverTimestamp()
-  };
-
-  if (room.game?.players?.[seat] && !room.seats?.[seat]?.isAI && !room.seats?.[String(seat)]?.isAI) {
-    const game = cloneGame(room.game);
-    const player = game.players[seat];
-    const payload = {
-      seat,
-      name,
-      uid: currentUser?.uid,
-      isAI: false,
-      connected: true
-    };
-
-    // 一般心跳只更新 seats.lastSeen，不要每 15 秒重寫 game。
-    // v0.6.0 會把「已重新連線」重複寫入 game.history，造成所有人畫面重繪，
-    // 玩家剛選好的牌因此看起來會閃一下並被清掉。
-    if (player?.isAI || player?.aiTakingOver || player?.connected === false) {
-      restoreGameSeatFromReconnect(game, seat, payload);
-      updates.game = makePlainGame(game);
-    } else if (player && (player.name !== name || player.uid !== currentUser?.uid || !player.isHuman)) {
-      game.players[seat] = {
-        ...player,
-        name,
-        uid: currentUser?.uid,
-        connected: true,
-        isAI: false,
-        isHuman: true,
-        aiTakingOver: false
-      };
-      updates.game = makePlainGame(game);
-    }
-  }
-
-  await sdk.firestore.updateDoc(ref, updates);
+  const data = await callCloudFunction('syncPresence', {
+    roomId: normalizedRoomId,
+    playerName: getLocalPlayerName()
+  });
+  if (Number.isInteger(data.seat)) activeSeat = data.seat;
   lastHeartbeatAt = nowMs();
 }
 
@@ -762,33 +437,7 @@ function stopPresenceTimers() {
 export async function leaveRoom(roomId) {
   const normalizedRoomId = normalizeRoomId(roomId || activeRoomId);
   if (!normalizedRoomId || activeSeat === null) return;
-
-  const { sdk, ref, snap } = await getRoomDocument(normalizedRoomId);
-  if (!snap.exists()) return;
-  const room = snap.data();
-  const { user } = await ensureFirebaseReady();
-  const currentSeat = findSeatForUid(room, user.uid);
-  if (currentSeat === null) return;
-
-  if (room.status === 'playing' && room.game) {
-    const game = markGameSeatAsAITakeover(cloneGame(room.game), currentSeat, normalizeSeats(room.seats)[currentSeat]);
-    await sdk.firestore.updateDoc(ref, {
-      [`seats.${currentSeat}.connected`]: false,
-      [`seats.${currentSeat}.aiTakingOver`]: true,
-      [`seats.${currentSeat}.disconnectedAt`]: nowMs(),
-      game: makePlainGame(game),
-      updatedAt: sdk.firestore.serverTimestamp(),
-      lastEvent: `${getLocalPlayerName()} 離線，由 AI 接管到本局結束。`
-    });
-    await reconcileRoomPresence(normalizedRoomId).catch(() => {});
-  } else {
-    await sdk.firestore.updateDoc(ref, {
-      [`seats.${currentSeat}`]: sdk.firestore.deleteField(),
-      updatedAt: sdk.firestore.serverTimestamp(),
-      lastEvent: `${getLocalPlayerName()} 離開房間。`
-    });
-  }
-
+  await callCloudFunction('leaveRoom', { roomId: normalizedRoomId });
   stopListeningRoom();
   stopPresenceTimers();
   activeRoomId = null;

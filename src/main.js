@@ -96,7 +96,8 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.6.2'}`],
+    ['版本', `v${game?.version || room?.version || '0.7.0'}`],
+    ['後端模式', room?.backendMode || room?.securityVersion || game?.security?.version || '—'],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
