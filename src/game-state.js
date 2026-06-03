@@ -48,7 +48,7 @@ function makePlayers(basePlayers, options = {}) {
     results: null,
     roundNo: 1,
     scoringRules,
-    security: { revision: 0, lastActionId: null, version: 'client-validated-v0.6.4' },
+    security: { revision: 0, lastActionId: null, version: 'client-validated-v0.6.5' },
     history: [firstMessage, `計分：${scoringSummary(scoringRules)}`, `規則：${ruleSummary(rules)}`, `AI 難度：${getAILevelLabel(aiLevel)}。`],
     message: `${players[firstSeat].name} 先出，第一手必須包含${firstCardName}。`,
     aiLevel

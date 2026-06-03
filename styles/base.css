@@ -929,10 +929,10 @@ h3 {
 }
 
 .playing-card {
-  animation: deal-in 0.22s ease both;
+  transition: transform 0.14s ease, outline-color 0.14s ease, border-color 0.14s ease;
 }
 
-.last-play-panel .playing-card {
+body[data-motion='on'] .last-play-panel .playing-card {
   animation: play-pop 0.2s ease both;
 }
 
@@ -1002,7 +1002,13 @@ h3 {
   .security-panel,
   .settings-panel,
   .room-panel,
-  .result-panel {
+  .result-panel,
+  .firebase-check-panel,
+  .debug-panel,
+  .room-directory-panel,
+  .experience-panel,
+  .leaderboard-panel,
+  .rules-help-panel {
     border-radius: 1rem;
     padding: 0.75rem;
   }
@@ -1163,7 +1169,7 @@ button[aria-busy='true'] {
   }
 }
 
-/* v0.6.4 遊戲體驗優化 */
+/* v0.6.5 實機測試修正 */
 .mobile-orientation-tip,
 .room-directory-panel,
 .experience-panel,
@@ -1342,5 +1348,32 @@ body[data-motion='on'] .player-card.active {
 @media (max-width: 820px) and (orientation: portrait) {
   .mobile-orientation-tip {
     display: block;
+  }
+}
+
+
+/* v0.6.5 實機修正：手機操作與列表可讀性 */
+@media (max-width: 720px) {
+  .panel-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .action-panel .button-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .room-controls .button-row,
+  .invite-card .button-row,
+  .compact-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .room-list-row .room-join-btn {
+    width: 100%;
+  }
+
+  .hand-section {
+    scroll-margin-bottom: 8rem;
   }
 }

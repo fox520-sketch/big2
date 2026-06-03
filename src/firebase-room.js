@@ -52,7 +52,7 @@ export function explainFirebaseError(error) {
   const code = error?.code || '';
   const message = error?.message || String(error || '未知錯誤');
   if (code.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
-    return 'Firestore 寫入被拒絕。通常是 Firebase Console 仍套用 v0.7.0 Cloud Functions 版 Rules，請改貼 v0.6.4 的 firestore.rules 後 Publish。';
+    return 'Firestore 寫入被拒絕。通常是 Firebase Console 仍套用 v0.7.0 Cloud Functions 版 Rules，請改貼 v0.6.5 的 firestore.rules 後 Publish。';
   }
   if (code.includes('unauthenticated') || message.includes('auth')) {
     return '匿名登入失敗。請到 Firebase Console → Authentication → Sign-in method 啟用 Anonymous。';
@@ -68,7 +68,7 @@ export function explainFirebaseError(error) {
 
 export async function runFirebaseDiagnostics() {
   const checks = [];
-  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.6.4 是免 Cloud Functions 休閒版，不需要 Blaze。' });
+  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.6.5 是免 Cloud Functions 休閒版，不需要 Blaze。' });
 
   if (!hasFirebaseConfig()) {
     checks.push({ label: 'Firebase Config', ok: false, text: '尚未填入 src/firebase-config.js。' });
@@ -95,14 +95,14 @@ export async function runFirebaseDiagnostics() {
       aiLevel: 8,
       rules: normalizeRules(),
       scoringRules: normalizeScoringRules(),
-      securityVersion: 'client-validated-v0.6.4',
+      securityVersion: 'client-validated-v0.6.5',
       version: VERSION,
       createdAt: sdk.firestore.serverTimestamp(),
       updatedAt: sdk.firestore.serverTimestamp(),
       presenceUpdatedAt: sdk.firestore.serverTimestamp(),
       invitePath: buildInviteUrl(testRoomId),
       gameNo: 0,
-      lastEvent: 'v0.6.4 Firebase 設定檢查用暫存房間。',
+      lastEvent: 'v0.6.5 Firebase 設定檢查用暫存房間。',
       totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
       seats: { 0: hostSeat }
     };
@@ -111,7 +111,7 @@ export async function runFirebaseDiagnostics() {
     const snap = await sdk.firestore.getDoc(ref);
     if (!snap.exists()) throw new Error('測試房間建立後讀取失敗。');
     await sdk.firestore.deleteDoc(ref);
-    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.6.4。' });
+    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.6.5。' });
     return { ok: true, checks, summary: 'Firebase 設定檢查通過，可以建立房間。' };
   } catch (error) {
     checks.push({ label: 'Firestore 寫入', ok: false, text: explainFirebaseError(error) });
@@ -412,41 +412,56 @@ export async function listRecentRoomsFromFirestore(maxRooms = 12) {
 
 export async function createRoom({ playerName, aiLevel, rules, scoringRules }) {
   const { sdk, db, user } = await ensureFirebaseReady();
-  const roomId = makeRoomId();
   const name = saveLocalPlayerName(playerName);
-  const roomRef = sdk.firestore.doc(db, ROOM_COLLECTION, roomId);
-  const inviteUrl = buildInviteUrl(roomId);
-  const hostSeat = seatPayload({ seat: 0, name, uid: user.uid, host: true });
   const normalizedRules = normalizeRules(rules);
   const normalizedScoringRules = normalizeScoringRules(scoringRules);
+  let roomId = '';
+  let inviteUrl = '';
 
-  const roomData = {
-    roomId,
-    status: 'waiting',
-    hostUid: user.uid,
-    hostName: name,
-    aiLevel: Number(aiLevel) || 8,
-    rules: normalizedRules,
-    scoringRules: normalizedScoringRules,
-    securityVersion: 'client-validated-v0.6.4',
-    version: VERSION,
-    createdAt: sdk.firestore.serverTimestamp(),
-    updatedAt: sdk.firestore.serverTimestamp(),
-    presenceUpdatedAt: sdk.firestore.serverTimestamp(),
-    invitePath: inviteUrl,
-    gameNo: 0,
-    lastEvent: `${name} 建立房間。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`,
-    totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
-    seats: {
-      0: hostSeat
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    roomId = makeRoomId();
+    inviteUrl = buildInviteUrl(roomId);
+    const roomRef = sdk.firestore.doc(db, ROOM_COLLECTION, roomId);
+    const hostSeat = seatPayload({ seat: 0, name, uid: user.uid, host: true });
+    const roomData = {
+      roomId,
+      status: 'waiting',
+      hostUid: user.uid,
+      hostName: name,
+      aiLevel: Number(aiLevel) || 8,
+      rules: normalizedRules,
+      scoringRules: normalizedScoringRules,
+      securityVersion: 'client-validated-v0.6.5',
+      version: VERSION,
+      createdAt: sdk.firestore.serverTimestamp(),
+      updatedAt: sdk.firestore.serverTimestamp(),
+      presenceUpdatedAt: sdk.firestore.serverTimestamp(),
+      invitePath: inviteUrl,
+      gameNo: 0,
+      lastEvent: `${name} 建立房間。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`,
+      totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
+      seats: {
+        0: hostSeat
+      }
+    };
+
+    let created = false;
+    await sdk.firestore.runTransaction(db, async (transaction) => {
+      const snap = await transaction.get(roomRef);
+      if (snap.exists()) return;
+      transaction.set(roomRef, roomData);
+      created = true;
+    });
+
+    if (created) {
+      activeRoomId = roomId;
+      activeSeat = 0;
+      startPresenceTimers(roomId);
+      return { roomId, inviteUrl, seat: 0 };
     }
-  };
+  }
 
-  await sdk.firestore.setDoc(roomRef, roomData);
-  activeRoomId = roomId;
-  activeSeat = 0;
-  startPresenceTimers(roomId);
-  return { roomId, inviteUrl, seat: 0 };
+  throw new Error('房號產生重複，請再按一次建立房間。');
 }
 
 export async function joinRoom(roomId, { playerName } = {}) {
@@ -583,7 +598,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
     });
     game.version = VERSION;
-    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.6.4' };
+    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.6.5' };
     game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
 
     const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
@@ -614,7 +629,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       aiLevel: Number(aiLevel || room.aiLevel || 8),
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.6.4',
+      securityVersion: 'client-validated-v0.6.5',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
@@ -674,7 +689,7 @@ async function updateMultiplayerGame(roomId, action, options = {}) {
       lastActorUid: user.uid,
       lastActorSeat: Number.isInteger(seat) ? seat : null,
       updatedAtMs: Date.now(),
-      version: 'client-validated-v0.6.4'
+      version: 'client-validated-v0.6.5'
     };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {
