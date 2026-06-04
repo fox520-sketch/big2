@@ -1,7 +1,7 @@
 import { DEFAULT_AI_LEVEL } from './constants.js';
 import { createNewGame, passTurn, playCards, runAITurn, setAILevel } from './game-state.js';
 import { applyTheme, getSavedTheme } from './themes.js';
-import { clearSelection, getSelectedCards, render, renderThemeNote, setActionLock } from './ui.js';
+import { clearSelection, getHandSortMode, getSelectedCards, hasPlayableMove, render, renderThemeNote, selectRecommendedPlay, setActionLock, setHandSortMode } from './ui.js';
 import { getRulePreset, getScoringPreset, ruleSummary, scoringSummary } from './game-settings.js';
 import { getSoundPreferences, isSoundEnabled, playDealSound, playSound, setSoundEnabled, setSoundPreference } from './sound.js';
 import { applyAnimationPreference, clearGameRecords, clearRecentRooms, getAchievements, getDailyStats, getGameRecords, getRecentRooms, isAnimationEnabled, recordFinishedGame, rememberRecentRoom, roomStatusLabel, setAnimationEnabled } from './experience.js';
@@ -34,6 +34,7 @@ const AI_LEVEL_KEY = 'big2-ai-level';
 const PLAYER_NAME_KEY = 'big2-player-name';
 const RULE_PRESET_KEY = 'big2-rule-preset';
 const SCORING_PRESET_KEY = 'big2-scoring-preset';
+const PASS_REMINDER_KEY = 'big2-pass-reminder-enabled';
 let lastRenderedActionId = null;
 let lastRenderedMultiplayerGameId = null;
 let lastRecordedFinishedGameId = null;
@@ -121,6 +122,43 @@ function getSavedRules() {
 
 function getSavedScoringRules() {
   return getScoringPreset(getSavedScoringPresetId());
+}
+
+function isPassReminderEnabled() {
+  return localStorage.getItem(PASS_REMINDER_KEY) !== '0';
+}
+
+function setPassReminderEnabled(enabled) {
+  localStorage.setItem(PASS_REMINDER_KEY, enabled ? '1' : '0');
+  const checkbox = el('passReminderToggle');
+  if (checkbox) checkbox.checked = Boolean(enabled);
+}
+
+function confirmPassIfNeeded() {
+  if (!isPassReminderEnabled()) return true;
+  if (!hasPlayableMove(gameState)) return true;
+  const ok = window.confirm('你目前還有可以出的牌，確定要 Pass 嗎？');
+  if (!ok) {
+    gameState.message = '已取消 Pass，可以重新選牌或按「推薦出牌」。';
+    playSound('select');
+    renderGameAndFocus();
+  }
+  return ok;
+}
+
+function applyPlayAssist(mode = 'smart') {
+  const move = selectRecommendedPlay(gameState, mode);
+  if (!move) {
+    gameState.message = '目前沒有可出的牌，建議按 Pass。';
+    playSound('error');
+    renderGameAndFocus();
+    return;
+  }
+  gameState.message = mode === 'minimum'
+    ? `已選擇最小可出：${move.label}。`
+    : `已推薦出牌：${move.label}。`;
+  playSound('select');
+  renderGameAndFocus();
 }
 
 function updateSettingsSummary() {
@@ -389,7 +427,7 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.6.7'}`],
+    ['版本', `v${game?.version || room?.version || '0.6.8'}`],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
@@ -517,7 +555,7 @@ function renderFirebaseDiagnosticPanel(result = null) {
       { label: 'Firebase Config', ok: setup.ok, text: setup.text },
       { label: '匿名登入', ok: null, text: '按「執行檢查」後確認。' },
       { label: 'Firestore 寫入', ok: null, text: '按「執行檢查」後建立暫存房間測試。' },
-      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.7 不需要 functions/，也不需要 Blaze。' }
+      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.8 不需要 functions/，也不需要 Blaze。' }
     ];
     grid.innerHTML = rows.map(renderFirebaseCheckItem).join('');
     summary.textContent = setup.ok ? '已偵測到 Firebase Config。可按「執行檢查」確認 Auth 與 Firestore Rules。' : '尚未填入 Firebase Config。';
@@ -798,7 +836,7 @@ async function bindRoomEvents() {
           summary: makeFriendlyError(error),
           checks: [
             { label: 'Firebase 設定檢查', ok: false, text: makeFriendlyError(error) },
-            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.7 不需要 functions/，也不需要 Blaze。' }
+            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.8 不需要 functions/，也不需要 Blaze。' }
           ]
         };
         renderFirebaseDiagnosticPanel(result);
@@ -822,6 +860,42 @@ function bindGameEvents() {
   }
 
   el('newGameBtn').addEventListener('click', () => resetGame({ playDealSound: true }));
+
+  const handSortSelect = el('handSortSelect');
+  if (handSortSelect) {
+    handSortSelect.value = getHandSortMode();
+    handSortSelect.addEventListener('change', (event) => {
+      setHandSortMode(event.target.value);
+      gameState.message = `已切換手牌排序：${event.target.options[event.target.selectedIndex]?.textContent || '依點數'}`;
+      renderGameAndFocus();
+    });
+  }
+
+  const recommendBtn = el('recommendPlayBtn');
+  if (recommendBtn) recommendBtn.addEventListener('click', () => applyPlayAssist('smart'));
+
+  const minimumBtn = el('minPlayableBtn');
+  if (minimumBtn) minimumBtn.addEventListener('click', () => applyPlayAssist('minimum'));
+
+  const clearSelectionBtn = el('clearSelectionBtn');
+  if (clearSelectionBtn) {
+    clearSelectionBtn.addEventListener('click', () => {
+      clearSelection();
+      gameState.message = '已清除選牌。';
+      playSound('select');
+      renderGameAndFocus();
+    });
+  }
+
+  const passReminderToggle = el('passReminderToggle');
+  if (passReminderToggle) {
+    passReminderToggle.checked = isPassReminderEnabled();
+    passReminderToggle.addEventListener('change', (event) => {
+      setPassReminderEnabled(event.target.checked);
+      gameState.message = event.target.checked ? 'Pass 前提醒已開啟。' : 'Pass 前提醒已關閉。';
+      renderGameAndFocus();
+    });
+  }
 
   el('playBtn').addEventListener('click', async () => {
     const selected = getSelectedCards(gameState);
@@ -863,6 +937,8 @@ function bindGameEvents() {
   });
 
   el('passBtn').addEventListener('click', async () => {
+    if (!confirmPassIfNeeded()) return;
+
     if (gameState.mode === 'multiplayer' && currentRoomId) {
       await runLockedMultiplayerAction('Pass 同步中', async () => {
         try {

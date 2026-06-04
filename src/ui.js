@@ -1,16 +1,24 @@
-import { cardLabel, cardLongName, getSuitInfo, sortCards } from './cards.js';
+import { cardLabel, cardLongName, cardPower, getRankInfo, getSuitInfo, sortCards } from './cards.js';
 import { getAILevelDescription, getAILevelLabel } from './ai.js';
 import { THEMES } from './themes.js';
-import { canPass, describePlay, detectHandType } from './rules.js';
+import { canBeat, canPass, describePlay, detectHandType, getLegalMoves } from './rules.js';
 import { totalsToSortedRows } from './scoring.js';
 import { ruleSummary, scoringSummary } from './game-settings.js';
 import { playSound } from './sound.js';
 
 const selectedCardIds = new Set();
+const HAND_SORT_KEY = 'big2-hand-sort-mode';
+const HAND_SORT_MODES = new Set(['rank', 'suit', 'combo']);
+let handSortMode = HAND_SORT_MODES.has(localStorage.getItem(HAND_SORT_KEY)) ? localStorage.getItem(HAND_SORT_KEY) : 'rank';
 let actionLock = { locked: false, label: '同步中' };
 
 function el(id) {
   return document.getElementById(id);
+}
+
+function safeSetText(id, text) {
+  const node = el(id);
+  if (node) node.textContent = text;
 }
 
 function makeCardElement(card, options = {}) {
@@ -20,7 +28,12 @@ function makeCardElement(card, options = {}) {
   button.dataset.cardId = card.id;
   button.setAttribute('aria-label', cardLongName(card));
   if (options.clickable) button.type = 'button';
-  if (selectedCardIds.has(card.id)) button.classList.add('selected');
+  if (selectedCardIds.has(card.id)) {
+    button.classList.add('selected');
+    button.setAttribute('aria-pressed', 'true');
+  } else if (options.clickable) {
+    button.setAttribute('aria-pressed', 'false');
+  }
   button.innerHTML = `
     <span class="corner"><span>${card.rank}</span><span>${suit.symbol}</span></span>
     <span class="rank">${card.rank}</span>
@@ -37,6 +50,16 @@ export function setActionLock(locked, label = '同步中') {
   actionLock = { locked: Boolean(locked), label };
 }
 
+export function getHandSortMode() {
+  return handSortMode;
+}
+
+export function setHandSortMode(mode) {
+  handSortMode = HAND_SORT_MODES.has(mode) ? mode : 'rank';
+  localStorage.setItem(HAND_SORT_KEY, handSortMode);
+  return handSortMode;
+}
+
 function pruneSelectionToCurrentHand(gameState) {
   const localSeat = getLocalSeat(gameState);
   const hand = gameState.players[localSeat]?.hand || [];
@@ -50,15 +73,187 @@ function getLocalSeat(gameState) {
   return Number.isInteger(gameState.localSeat) ? gameState.localSeat : 0;
 }
 
-export function getSelectedCards(gameState) {
+function getLocalHand(gameState) {
   const localSeat = getLocalSeat(gameState);
-  const hand = gameState.players[localSeat]?.hand || [];
+  return gameState.players[localSeat]?.hand || [];
+}
+
+function sortBySuit(cards) {
+  return [...cards].sort((a, b) => {
+    const suitDiff = getSuitInfo(a).value - getSuitInfo(b).value;
+    if (suitDiff !== 0) return suitDiff;
+    return getRankInfo(a).value - getRankInfo(b).value;
+  });
+}
+
+function sortByCombo(cards) {
+  const groups = new Map();
+  for (const card of sortCards(cards)) {
+    if (!groups.has(card.rank)) groups.set(card.rank, []);
+    groups.get(card.rank).push(card);
+  }
+  return [...groups.values()]
+    .map((group) => sortCards(group))
+    .sort((a, b) => {
+      const aComboWeight = a.length >= 2 ? a.length : 0;
+      const bComboWeight = b.length >= 2 ? b.length : 0;
+      if (aComboWeight !== bComboWeight) return bComboWeight - aComboWeight;
+      return getRankInfo(a[0]).value - getRankInfo(b[0]).value;
+    })
+    .flat();
+}
+
+function sortHandForDisplay(cards) {
+  if (handSortMode === 'suit') return sortBySuit(cards);
+  if (handSortMode === 'combo') return sortByCombo(cards);
+  return sortCards(cards);
+}
+
+export function getSelectedCards(gameState) {
+  const hand = getLocalHand(gameState);
   return sortCards(hand.filter((card) => selectedCardIds.has(card.id)));
 }
 
 export function toggleCardSelection(cardId) {
   if (selectedCardIds.has(cardId)) selectedCardIds.delete(cardId);
   else selectedCardIds.add(cardId);
+}
+
+function selectCards(cards) {
+  selectedCardIds.clear();
+  for (const card of cards || []) selectedCardIds.add(card.id);
+}
+
+function getLocalLegalMoves(gameState) {
+  const hand = getLocalHand(gameState);
+  const requireCardId = gameState.isFirstPlay ? gameState.rules?.firstCardId : null;
+  return getLegalMoves(hand, gameState.lastPlay, { rules: gameState.rules, requireCardId });
+}
+
+export function hasPlayableMove(gameState) {
+  if (!gameState || gameState.finished) return false;
+  const localSeat = getLocalSeat(gameState);
+  if (gameState.currentTurnSeat !== localSeat) return false;
+  const localPlayer = gameState.players?.[localSeat];
+  if (!localPlayer || localPlayer.isAI) return false;
+  return getLocalLegalMoves(gameState).length > 0;
+}
+
+function chooseRecommendedMove(gameState, mode = 'smart') {
+  const legalMoves = getLocalLegalMoves(gameState);
+  if (!legalMoves.length) return null;
+  if (mode === 'minimum') return legalMoves[0];
+
+  if (gameState.isFirstPlay) {
+    const firstCardId = gameState.rules?.firstCardId;
+    const firstSingle = legalMoves.find((move) => move.size === 1 && move.cards.some((card) => card.id === firstCardId));
+    if (firstSingle) return firstSingle;
+    return legalMoves[0];
+  }
+
+  if (!gameState.lastPlay) {
+    const single = legalMoves.find((move) => move.size === 1);
+    if (single) return single;
+  }
+
+  return legalMoves[0];
+}
+
+export function selectRecommendedPlay(gameState, mode = 'smart') {
+  const move = chooseRecommendedMove(gameState, mode);
+  if (!move) return null;
+  selectCards(move.cards);
+  return move;
+}
+
+function describeRequiredMove(gameState) {
+  if (gameState.finished) return '本局已結束。';
+  if (gameState.isFirstPlay) return `第一手必須包含${gameState.rules?.firstCardName || gameState.rules?.firstCardId || '起手牌'}。`;
+  if (!gameState.lastPlay) return '目前你取得領出權，可自由出單張、對子、三條或五張牌型。';
+  return `上一手是 ${gameState.lastPlay.playerName || '上一家'} 的 ${gameState.lastPlay.name}，你必須出 ${gameState.lastPlay.size} 張且更大的牌，或 Pass。`;
+}
+
+export function getSelectionAnalysis(gameState) {
+  const selected = getSelectedCards(gameState);
+  const labels = selected.map(cardLabel).join(' ');
+  const localSeat = getLocalSeat(gameState);
+  const localPlayer = gameState.players?.[localSeat];
+  const isTurn = gameState.currentTurnSeat === localSeat && !gameState.finished && !localPlayer?.isAI;
+  const playableCount = isTurn ? getLocalLegalMoves(gameState).length : 0;
+
+  if (!selected.length) {
+    return {
+      selected,
+      canPlay: false,
+      level: playableCount ? 'info' : 'neutral',
+      text: playableCount ? `目前有 ${playableCount} 種可出牌。可按「推薦出牌」或手動選牌。` : '請選擇手牌後出牌。',
+      advice: isTurn ? describeRequiredMove(gameState) : `等待 ${gameState.players?.[gameState.currentTurnSeat]?.name || '目前玩家'} 出牌。`
+    };
+  }
+
+  const type = detectHandType(selected, gameState.rules);
+  const baseText = type ? `已選 ${selected.length} 張：${type.name}｜${labels}` : `已選 ${selected.length} 張：不是合法牌型｜${labels}`;
+
+  if (!type) {
+    return {
+      selected,
+      canPlay: false,
+      level: 'warn',
+      text: baseText,
+      advice: selected.length === 4
+        ? '大老二不能直接出 4 張；鐵支需要 4 張同點數再加 1 張，總共 5 張。'
+        : '請改選單張、對子、三條，或順子 / 同花 / 葫蘆 / 鐵支 / 同花順。'
+    };
+  }
+
+  if (gameState.isFirstPlay && !selected.some((card) => card.id === gameState.rules?.firstCardId)) {
+    return {
+      selected,
+      canPlay: false,
+      level: 'warn',
+      text: baseText,
+      advice: `第一手必須包含${gameState.rules?.firstCardName || gameState.rules?.firstCardId}，請把起手牌一起選進來。`
+    };
+  }
+
+  if (gameState.lastPlay) {
+    if (selected.length !== gameState.lastPlay.size) {
+      return {
+        selected,
+        canPlay: false,
+        level: 'warn',
+        text: baseText,
+        advice: `上一手是 ${gameState.lastPlay.size} 張牌，你目前選了 ${selected.length} 張；請改出同張數、同牌型可壓過的牌，或 Pass。`
+      };
+    }
+    if (!canBeat(type, gameState.lastPlay)) {
+      return {
+        selected,
+        canPlay: false,
+        level: 'warn',
+        text: baseText,
+        advice: `這手牌壓不過上一手「${gameState.lastPlay.label || gameState.lastPlay.name}」，請改選更大的牌或 Pass。`
+      };
+    }
+  }
+
+  if (!isTurn) {
+    return {
+      selected,
+      canPlay: false,
+      level: 'info',
+      text: baseText,
+      advice: `牌型正確，但還沒輪到你；目前輪到 ${gameState.players?.[gameState.currentTurnSeat]?.name || '其他玩家'}。`
+    };
+  }
+
+  return {
+    selected,
+    canPlay: true,
+    level: 'ok',
+    text: `${baseText}｜可以出`,
+    advice: gameState.lastPlay ? '這手牌可以壓過上一手。' : '這手牌可以領出。'
+  };
 }
 
 function renderPlayerStatus(gameState) {
@@ -84,12 +279,14 @@ function renderPlayerStatus(gameState) {
 function renderLastPlay(gameState) {
   const lastPlayCards = el('lastPlayCards');
   const lastPlayType = el('lastPlayType');
+  const lastPlayHint = el('lastPlayHint');
   lastPlayCards.innerHTML = '';
 
   if (!gameState.lastPlay) {
-    lastPlayType.textContent = gameState.isFirstPlay ? '梅花 3 起手' : '領出新一輪';
+    lastPlayType.textContent = gameState.isFirstPlay ? `${gameState.rules?.firstCardName || '梅花 3'}起手` : '領出新一輪';
     lastPlayCards.className = 'card-row empty';
-    lastPlayCards.textContent = gameState.isFirstPlay ? '等待梅花 3 起手' : '目前無上一手，可自由領出。';
+    lastPlayCards.textContent = gameState.isFirstPlay ? `等待${gameState.rules?.firstCardName || '梅花 3'}起手` : '目前無上一手，可自由領出。';
+    if (lastPlayHint) lastPlayHint.textContent = describeRequiredMove(gameState);
     return;
   }
 
@@ -97,6 +294,9 @@ function renderLastPlay(gameState) {
   lastPlayCards.className = 'card-row';
   for (const card of gameState.lastPlay.cards) {
     lastPlayCards.appendChild(makeCardElement(card));
+  }
+  if (lastPlayHint) {
+    lastPlayHint.textContent = `上一手：${gameState.lastPlay.playerName} 出了 ${describePlay(gameState.lastPlay)}。你要出 ${gameState.lastPlay.size} 張更大的牌，或 Pass。`;
   }
 }
 
@@ -106,7 +306,7 @@ function renderHand(gameState) {
   const localPlayer = gameState.players[localSeat] || gameState.players[0];
   hand.innerHTML = '';
 
-  for (const card of localPlayer.hand) {
+  for (const card of sortHandForDisplay(localPlayer.hand)) {
     const cardEl = makeCardElement(card, { clickable: true });
     cardEl.addEventListener('click', () => {
       toggleCardSelection(card.id);
@@ -116,42 +316,62 @@ function renderHand(gameState) {
     hand.appendChild(cardEl);
   }
 
-  el('handCount').textContent = `${localPlayer.hand.length} 張`;
+  safeSetText('handCount', `${localPlayer.hand.length} 張`);
+  const sortSelect = el('handSortSelect');
+  if (sortSelect) sortSelect.value = handSortMode;
   const title = document.querySelector('.hand-section h2');
   if (title) title.textContent = gameState.mode === 'multiplayer' ? `我的手牌｜座位 ${localSeat + 1}` : '我的手牌';
 }
 
 function renderSelectedInfo(gameState) {
-  const selected = getSelectedCards(gameState);
-  if (selected.length === 0) {
-    el('selectedInfo').textContent = '請選擇手牌後出牌。';
-    return;
+  const analysis = getSelectionAnalysis(gameState);
+  const info = el('selectedInfo');
+  if (info) {
+    info.textContent = analysis.text;
+    info.dataset.level = analysis.level;
   }
-
-  const type = detectHandType(selected, gameState.rules);
-  const labels = selected.map(cardLabel).join(' ');
-  el('selectedInfo').textContent = type
-    ? `已選 ${selected.length} 張：${type.name}｜${labels}`
-    : `已選 ${selected.length} 張：不是合法牌型｜${labels}`;
+  const advice = el('selectionAdvice');
+  if (advice) {
+    advice.textContent = analysis.advice;
+    advice.dataset.level = analysis.level;
+  }
 }
 
 function renderControls(gameState) {
   const localSeat = getLocalSeat(gameState);
   const localPlayer = gameState.players[localSeat];
   const isHumanTurn = gameState.currentTurnSeat === localSeat && !gameState.finished && !localPlayer?.isAI;
+  const analysis = getSelectionAnalysis(gameState);
+  const playableCount = isHumanTurn ? getLocalLegalMoves(gameState).length : 0;
   const playBtn = el('playBtn');
   const passBtn = el('passBtn');
-  playBtn.disabled = !isHumanTurn || actionLock.locked;
+  playBtn.disabled = !isHumanTurn || actionLock.locked || !analysis.canPlay;
   passBtn.disabled = !isHumanTurn || !canPass(gameState) || actionLock.locked;
-  playBtn.textContent = actionLock.locked ? '同步中...' : '出牌';
+  playBtn.textContent = actionLock.locked ? '同步中...' : (analysis.canPlay ? '出牌' : '出牌');
   passBtn.textContent = actionLock.locked ? '等待同步' : 'Pass';
   playBtn.setAttribute('aria-busy', actionLock.locked ? 'true' : 'false');
   passBtn.setAttribute('aria-busy', actionLock.locked ? 'true' : 'false');
-  el('turnBadge').textContent = gameState.finished
+
+  const recommendBtn = el('recommendPlayBtn');
+  const minBtn = el('minPlayableBtn');
+  const clearBtn = el('clearSelectionBtn');
+  if (recommendBtn) recommendBtn.disabled = !isHumanTurn || actionLock.locked || playableCount === 0;
+  if (minBtn) minBtn.disabled = !isHumanTurn || actionLock.locked || playableCount === 0;
+  if (clearBtn) clearBtn.disabled = actionLock.locked || selectedCardIds.size === 0;
+
+  const passHelp = el('passHelp');
+  if (passHelp) {
+    if (!isHumanTurn) passHelp.textContent = `目前輪到 ${gameState.players[gameState.currentTurnSeat]?.name || '其他玩家'}。`;
+    else if (!canPass(gameState)) passHelp.textContent = '你正在領出新一輪，不能 Pass。';
+    else if (playableCount > 0) passHelp.textContent = `你還有 ${playableCount} 種可出牌；按 Pass 前會提醒確認。`;
+    else passHelp.textContent = '目前沒有可壓過上一手的牌，可以 Pass。';
+  }
+
+  safeSetText('turnBadge', gameState.finished
     ? '本局結束'
     : actionLock.locked
       ? `${actionLock.label}｜輪到 ${gameState.players[gameState.currentTurnSeat].name}`
-      : `輪到 ${gameState.players[gameState.currentTurnSeat].name}`;
+      : `輪到 ${gameState.players[gameState.currentTurnSeat].name}`);
 }
 
 function renderHistory(gameState) {
@@ -250,7 +470,6 @@ function renderResults(gameState) {
   `;
 }
 
-
 function renderRulePanel(gameState) {
   const grid = document.querySelector('.rules-panel .rules-grid');
   if (!grid) return;
@@ -286,7 +505,7 @@ export function renderThemeNote(themeName) {
 
 export function render(gameState) {
   pruneSelectionToCurrentHand(gameState);
-  el('statusText').textContent = gameState.message;
+  safeSetText('statusText', gameState.message);
   renderPlayerStatus(gameState);
   renderLastPlay(gameState);
   renderHand(gameState);

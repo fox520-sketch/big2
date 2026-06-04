@@ -1590,3 +1590,178 @@ body[data-gameplay-focus='on'] .toolbar .ai-level-field,
 body[data-gameplay-focus='on'] #newGameBtn {
   display: none !important;
 }
+
+/* v0.6.8 出牌體驗優化：手牌排序、出牌提示、推薦出牌與手機選牌 */
+.play-requirement,
+.selection-info,
+.selection-advice,
+#passHelp {
+  border: 1.5px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface-2);
+  padding: 0.65rem 0.8rem;
+  margin: 0.45rem 0 0;
+  color: var(--text);
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.selection-info[data-level='ok'],
+.selection-advice[data-level='ok'] {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--surface-2) 78%, var(--success) 22%);
+}
+
+.selection-info[data-level='warn'],
+.selection-advice[data-level='warn'] {
+  border-color: var(--danger);
+  background: color-mix(in srgb, var(--surface-2) 78%, var(--danger) 22%);
+}
+
+.selection-info[data-level='info'],
+.selection-advice[data-level='info'] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--surface-2) 82%, var(--primary) 18%);
+}
+
+.assist-actions,
+.main-actions {
+  margin-top: 0.7rem;
+}
+
+.assist-actions .secondary-btn {
+  min-height: 2.55rem;
+}
+
+.main-actions .primary-btn,
+.main-actions .secondary-btn {
+  min-width: 8rem;
+  font-size: 1.05rem;
+  font-weight: 950;
+}
+
+.inline-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text);
+  font-weight: 850;
+}
+
+.inline-toggle input {
+  width: 1.2rem;
+  height: 1.2rem;
+  accent-color: var(--primary);
+}
+
+.pass-reminder-row {
+  margin-top: 0.75rem;
+}
+
+.hand-heading {
+  align-items: flex-start;
+}
+
+.hand-tools {
+  display: flex;
+  align-items: end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.compact-field {
+  min-width: 10rem;
+}
+
+.compact-field span {
+  font-size: 0.82rem;
+}
+
+.compact-field select {
+  min-height: 2.4rem;
+  padding: 0.45rem 0.7rem;
+}
+
+.hand .playing-card.selected::after {
+  content: '✓';
+  position: absolute;
+  right: -0.35rem;
+  top: -0.35rem;
+  width: 1.35rem;
+  height: 1.35rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--warning);
+  color: #000000;
+  border: 2px solid var(--card-bg);
+  font-size: 0.9rem;
+  font-weight: 1000;
+}
+
+body[data-motion='on'] .hand .playing-card,
+body[data-motion='on'] .player-card.active {
+  transition: transform 150ms ease, outline-color 150ms ease, background-color 150ms ease;
+}
+
+@media (max-width: 720px) {
+  .table-area {
+    gap: 0.7rem;
+  }
+
+  .action-panel {
+    position: sticky;
+    bottom: 0.35rem;
+    z-index: 15;
+    border: 2px solid var(--border);
+  }
+
+  .assist-actions,
+  .main-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .assist-actions #clearSelectionBtn {
+    grid-column: 1 / -1;
+  }
+
+  .main-actions .primary-btn,
+  .main-actions .secondary-btn {
+    width: 100%;
+    min-height: 3.25rem;
+  }
+
+  .hand-heading,
+  .hand-tools {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .hand-tools {
+    justify-content: stretch;
+  }
+
+  .compact-field {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  .hand {
+    gap: 0.78rem;
+    padding: 0.9rem 0.35rem 1.25rem;
+  }
+
+  .hand .playing-card.selected {
+    transform: translateY(-1.05rem) scale(1.03);
+  }
+
+  .play-requirement,
+  .selection-info,
+  .selection-advice,
+  #passHelp {
+    padding: 0.65rem;
+    font-size: 0.94rem;
+  }
+}

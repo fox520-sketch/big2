@@ -236,25 +236,41 @@ export function getLegalMoves(hand, lastPlay, options = {}) {
 export function validateHumanPlay(cards, gameState) {
   const uniqueCardIds = new Set(cards.map((card) => card.id));
   if (uniqueCardIds.size !== cards.length) {
-    return { ok: false, message: '選牌中有重複牌，請重新選擇。' };
+    return { ok: false, message: '你重複選到同一張牌，請清除選牌後重新選擇。' };
   }
 
   const currentPlayer = gameState.players?.[gameState.currentTurnSeat];
   if (currentPlayer?.hand && cards.some((card) => !hasCard(currentPlayer.hand, card.id))) {
-    return { ok: false, message: '選牌不在目前玩家手牌中，已阻擋異常出牌。' };
+    return { ok: false, message: '選牌不在目前玩家手牌中，可能是畫面剛同步更新，請重新選牌。' };
+  }
+
+  if (!cards.length) {
+    return { ok: false, message: '請先選擇要出的牌。' };
   }
 
   const play = detectHandType(cards, gameState.rules);
   if (!play) {
-    return { ok: false, message: '這不是合法牌型。' };
+    const countText = `${cards.length} 張`;
+    if (cards.length === 4) {
+      return { ok: false, message: `你選了 ${countText}，但大老二不能直接出 4 張；鐵支要選 4 張同點數再加 1 張，總共 5 張。` };
+    }
+    if (![1, 2, 3, 5].includes(cards.length)) {
+      return { ok: false, message: `你選了 ${countText}，可出的張數只能是 1、2、3 或 5 張。` };
+    }
+    return { ok: false, message: `你選的 ${countText} 不是合法牌型，請改選單張、對子、三條，或五張牌型。` };
   }
 
   if (gameState.isFirstPlay && !hasCard(cards, gameState.rules.firstCardId)) {
-    return { ok: false, message: `第一手必須包含${gameState.rules.firstCardName || gameState.rules.firstCardId}。` };
+    return { ok: false, message: `第一手必須包含${gameState.rules.firstCardName || gameState.rules.firstCardId}，請把起手牌一起選進來。` };
   }
 
-  if (gameState.lastPlay && !canBeat(play, gameState.lastPlay)) {
-    return { ok: false, message: `必須出同張數且大於上一手：${gameState.lastPlay.label}。` };
+  if (gameState.lastPlay) {
+    if (play.size !== gameState.lastPlay.size) {
+      return { ok: false, message: `上一手是 ${gameState.lastPlay.size} 張牌，你選了 ${cards.length} 張；請出同張數的牌，或選 Pass。` };
+    }
+    if (!canBeat(play, gameState.lastPlay)) {
+      return { ok: false, message: `你選的「${play.label}」壓不過上一手「${gameState.lastPlay.label || gameState.lastPlay.name}」，請改選更大的牌或 Pass。` };
+    }
   }
 
   return { ok: true, play };
