@@ -1,7 +1,7 @@
 import { cardLabel, cardLongName, cardPower, getRankInfo, getSuitInfo, sortCards } from './cards.js';
 import { getAILevelDescription, getAILevelLabel } from './ai.js';
 import { THEMES } from './themes.js';
-import { canBeat, canPass, describePlay, detectHandType, getLegalMoves } from './rules.js';
+import { canBeat, canPass, describePlay, detectHandType, getLegalMoves, summarizeLegalMoves } from './rules.js';
 import { totalsToSortedRows } from './scoring.js';
 import { ruleSummary, scoringSummary } from './game-settings.js';
 import { playSound } from './sound.js';
@@ -179,14 +179,15 @@ export function getSelectionAnalysis(gameState) {
   const localSeat = getLocalSeat(gameState);
   const localPlayer = gameState.players?.[localSeat];
   const isTurn = gameState.currentTurnSeat === localSeat && !gameState.finished && !localPlayer?.isAI;
-  const playableCount = isTurn ? getLocalLegalMoves(gameState).length : 0;
+  const playableSummary = isTurn ? summarizeLegalMoves(getLocalHand(gameState), gameState.lastPlay, { rules: gameState.rules, requireCardId: gameState.isFirstPlay ? gameState.rules?.firstCardId : null }) : { count: 0, typeText: '' };
+  const playableCount = playableSummary.count;
 
   if (!selected.length) {
     return {
       selected,
       canPlay: false,
       level: playableCount ? 'info' : 'neutral',
-      text: playableCount ? `目前有 ${playableCount} 種可出牌。可按「推薦出牌」或手動選牌。` : '請選擇手牌後出牌。',
+      text: playableCount ? `目前有 ${playableCount} 組可出牌${playableSummary.typeText ? `（${playableSummary.typeText}）` : ''}。可按「推薦出牌」或手動選牌。` : '請選擇手牌後出牌。',
       advice: isTurn ? describeRequiredMove(gameState) : `等待 ${gameState.players?.[gameState.currentTurnSeat]?.name || '目前玩家'} 出牌。`
     };
   }

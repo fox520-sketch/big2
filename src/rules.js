@@ -233,6 +233,26 @@ export function getLegalMoves(hand, lastPlay, options = {}) {
   });
 }
 
+
+export function summarizeLegalMoves(hand, lastPlay, options = {}) {
+  const moves = getLegalMoves(hand, lastPlay, options);
+  const typeCounts = moves.reduce((map, move) => {
+    const name = move.name || move.id;
+    map[name] = (map[name] ?? 0) + 1;
+    return map;
+  }, {});
+  const typeText = Object.entries(typeCounts)
+    .map(([name, count]) => `${name} ${count}`)
+    .join('、');
+  return {
+    count: moves.length,
+    typeCounts,
+    typeText,
+    firstMove: moves[0] || null,
+    hasMove: moves.length > 0
+  };
+}
+
 export function validateHumanPlay(cards, gameState) {
   const uniqueCardIds = new Set(cards.map((card) => card.id));
   if (uniqueCardIds.size !== cards.length) {

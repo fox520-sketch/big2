@@ -47,6 +47,16 @@ function isWeakSingle(move) {
   return move.size === 1 && getRankInfo(move.cards[0]).value <= 5;
 }
 
+function highCardConservePenalty(move, level) {
+  if (level < 12) return 0;
+  return move.cards.reduce((sum, card) => {
+    if (card.rank === '2') return sum + 10;
+    if (card.rank === 'A') return sum + 6;
+    if (card.rank === 'K') return sum + 3;
+    return sum;
+  }, 0);
+}
+
 function breakPenalty(move, hand, level) {
   const rankCounts = countRanks(hand);
   let penalty = 0;
@@ -63,12 +73,12 @@ function breakPenalty(move, hand, level) {
     penalty -= FIVE_TYPE_BONUS[move.id] ?? 0;
   }
 
-  return penalty;
+  return penalty + highCardConservePenalty(move, level);
 }
 
-function remainingHandScore(hand, move, level) {
+function remainingHandScore(hand, move, level, rules = DEFAULT_RULES) {
   const remaining = sortCards(removeCards(hand, move.cards));
-  const candidates = getAllCandidatePlays(remaining, DEFAULT_RULES);
+  const candidates = getAllCandidatePlays(remaining, rules);
   const singles = remaining.length;
   const pairCount = candidates.filter((candidate) => candidate.id === HAND_TYPES.PAIR.id).length;
   const tripleCount = candidates.filter((candidate) => candidate.id === HAND_TYPES.TRIPLE.id).length;
@@ -129,14 +139,14 @@ function chooseLeadMove(moves, hand, level, gameState) {
   }
 
   if (level <= 11) {
-    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level));
+    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level, gameState.rules ?? DEFAULT_RULES));
   }
 
   if (level <= 14) {
     const preferred = hand.length <= 6
       ? [...fiveCards, ...triples, ...pairs, ...singles]
       : [...singles.filter(isWeakSingle), ...pairs, ...triples, ...fiveCards, ...singles];
-    if (preferred.length) return chooseByScore(preferred, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level));
+    if (preferred.length) return chooseByScore(preferred, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level, gameState.rules ?? DEFAULT_RULES));
   }
 
   if (level <= 17) {
@@ -144,7 +154,7 @@ function chooseLeadMove(moves, hand, level, gameState) {
       const blockingSizes = moves.filter((move) => move.size >= Math.min(2, pressure.nextCards));
       if (blockingSizes.length) return strongestMove(blockingSizes.slice(-Math.min(6, blockingSizes.length)));
     }
-    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level) * 1.35);
+    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level, gameState.rules ?? DEFAULT_RULES) * 1.35);
   }
 
   if (pressure.severe) {
@@ -154,7 +164,7 @@ function chooseLeadMove(moves, hand, level, gameState) {
 
   const endgame = hand.length <= 5;
   return chooseByScore(moves, (move) => {
-    const future = remainingHandScore(hand, move, level);
+    const future = remainingHandScore(hand, move, level, gameState.rules ?? DEFAULT_RULES);
     const conserve = breakPenalty(move, hand, level);
     const tempoBonus = endgame ? -move.cards.length * 8 : 0;
     const pressureBonus = pressure.danger && movePower(move) > 25 ? -10 : 0;
@@ -167,6 +177,13 @@ function chooseRespondMove(moves, hand, level, gameState) {
   if (goOut) return goOut;
 
   const pressure = getOpponentPressure(gameState);
+  const targetSize = gameState.lastPlay?.size || 1;
+  const sameSizeMoves = moves.filter((move) => move.size === targetSize);
+
+  if (level >= 15 && pressure.severe && sameSizeMoves.length) {
+    // 對手只剩 1 張時，優先用較大的同張數牌攔截，降低被秒出完的機率。
+    return strongestMove(sameSizeMoves);
+  }
 
   if (level <= 3) {
     // 初學 AI 有時會亂 Pass，模擬低難度。
@@ -182,12 +199,12 @@ function chooseRespondMove(moves, hand, level, gameState) {
   }
 
   if (level <= 11) {
-    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level) * 0.8);
+    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level, gameState.rules ?? DEFAULT_RULES) * 0.8);
   }
 
   if (level <= 14) {
     if (hand.length <= 5) return chooseByScore(moves, (move) => movePower(move) - move.cards.length * 6 + breakPenalty(move, hand, level));
-    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level));
+    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level, gameState.rules ?? DEFAULT_RULES));
   }
 
   if (level <= 17) {
@@ -195,7 +212,7 @@ function chooseRespondMove(moves, hand, level, gameState) {
       const strongerHalf = [...moves].sort((a, b) => movePower(b) - movePower(a)).slice(0, Math.max(1, Math.ceil(moves.length / 2)));
       return chooseByScore(strongerHalf, (move) => breakPenalty(move, hand, level) - move.cards.length * 3);
     }
-    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level) * 1.2);
+    return chooseByScore(moves, (move) => movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level, gameState.rules ?? DEFAULT_RULES) * 1.2);
   }
 
   if (pressure.severe) return strongestMove(moves);
@@ -203,7 +220,7 @@ function chooseRespondMove(moves, hand, level, gameState) {
   return chooseByScore(moves, (move) => {
     const remaining = removeCards(hand, move.cards);
     const remainingLowSingles = remaining.filter((card) => getRankInfo(card).value <= 5).length;
-    return movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level) * 1.5 + remainingLowSingles;
+    return movePower(move) + breakPenalty(move, hand, level) - remainingHandScore(hand, move, level, gameState.rules ?? DEFAULT_RULES) * 1.5 + remainingLowSingles;
   });
 }
 
@@ -226,7 +243,7 @@ export function getAILevelDescription(level) {
   if (value <= 11) return '會保留對子、三條與五張牌型，不輕易拆牌。';
   if (value <= 14) return '會依剩牌數調整節奏，接近尾局時加速出牌。';
   if (value <= 17) return '會觀察對手剩牌數，必要時用較強牌攔截。';
-  return '會綜合剩牌、牌型完整度、尾局壓制與未來手牌彈性。';
+  return '會綜合剩牌、牌型完整度、尾局壓制、對手剩牌數與未來手牌彈性；較少亂拆 2、A、對子與順子。';
 }
 
 export function chooseAIMove(gameState, aiHand, aiLevel = 1) {

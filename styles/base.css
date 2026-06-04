@@ -1591,7 +1591,7 @@ body[data-gameplay-focus='on'] #newGameBtn {
   display: none !important;
 }
 
-/* v0.6.8 出牌體驗優化：手牌排序、出牌提示、推薦出牌與手機選牌 */
+/* v0.6.9 規則校正 + AI 強化：手牌排序、出牌提示、推薦出牌與手機選牌 */
 .play-requirement,
 .selection-info,
 .selection-advice,

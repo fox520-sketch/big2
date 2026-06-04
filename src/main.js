@@ -50,6 +50,7 @@ let lastSubmitStartedAt = 0;
 const ACTION_COOLDOWN_MS = 650;
 let focusPanelsExpanded = false;
 let lastFocusGameKey = null;
+let lastRoomMessage = '尚未連線房間。';
 
 function el(id) {
   return document.getElementById(id);
@@ -427,7 +428,7 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.6.8'}`],
+    ['版本', `v${game?.version || room?.version || '0.6.9'}`],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
@@ -445,6 +446,67 @@ function renderDebugPanel(room = latestRoom) {
   panel.innerHTML = items.map(([label, value]) => `
     <div><strong>${label}</strong><span>${formatDebugValue(value)}</span></div>
   `).join('');
+}
+
+function buildDebugReport() {
+  const room = latestRoom || {};
+  const game = gameState || room.game || {};
+  const localSeat = Number.isInteger(room.localSeat) ? room.localSeat : game.localSeat;
+  const players = (game.players || room.game?.players || []).map((player) => ({
+    seat: player.seat,
+    name: player.name,
+    isAI: Boolean(player.isAI),
+    connected: player.connected !== false,
+    handCount: player.hand?.length ?? null
+  }));
+  const seats = (room.seatList || []).map((seat, index) => seat ? {
+    seat: index,
+    name: seat.name,
+    isAI: Boolean(seat.isAI),
+    connected: seat.connected !== false,
+    aiTakingOver: Boolean(seat.aiTakingOver),
+    isHost: seat.uid === room.hostUid
+  } : { seat: index, empty: true });
+  const report = {
+    version: `v${game.version || room.version || '0.6.9'}`,
+    url: window.location.href,
+    roomId: room.roomId || currentRoomId || null,
+    roomStatus: room.status || null,
+    message: game.message || lastRoomMessage || null,
+    roomMessage: lastRoomMessage || null,
+    localSeat,
+    currentTurnSeat: game.currentTurnSeat,
+    leadSeat: game.leadSeat,
+    roundNo: game.roundNo,
+    gameNo: room.gameNo || game.gameNo || 0,
+    gameId: game.gameId || null,
+    revision: game.security?.revision ?? null,
+    lastActionId: game.security?.lastActionId || null,
+    lastPlay: game.lastPlay ? {
+      playerName: game.lastPlay.playerName,
+      type: game.lastPlay.name || game.lastPlay.id,
+      size: game.lastPlay.size,
+      cards: game.lastPlay.cards?.map((card) => card.id) || []
+    } : null,
+    selectedCards: getSelectedCards(game).map((card) => card.id),
+    players,
+    seats,
+    historyTop: (game.history || []).slice(0, 8),
+    latestSnapshotAt: latestSnapshotAt ? latestSnapshotAt.toISOString() : null,
+    userAgent: navigator.userAgent
+  };
+  return JSON.stringify(report, null, 2);
+}
+
+async function copyDebugReport() {
+  const text = buildDebugReport();
+  try {
+    await navigator.clipboard.writeText(text);
+    setRoomMessage('已複製偵錯資訊，可以直接貼給我判斷問題。', 'ok');
+  } catch {
+    window.prompt('瀏覽器不允許自動複製，請手動複製以下偵錯資訊：', text);
+    setRoomMessage('已產生偵錯資訊，請手動複製。', 'warn');
+  }
 }
 
 function setMultiplayerActionSubmitting(locked, label = '同步中') {
@@ -534,6 +596,7 @@ function setFirebaseBadge() {
 }
 
 function setRoomMessage(message, level = 'info') {
+  lastRoomMessage = message || '';
   const roomMessage = el('roomMessage');
   roomMessage.textContent = message;
   roomMessage.dataset.level = level;
@@ -555,7 +618,7 @@ function renderFirebaseDiagnosticPanel(result = null) {
       { label: 'Firebase Config', ok: setup.ok, text: setup.text },
       { label: '匿名登入', ok: null, text: '按「執行檢查」後確認。' },
       { label: 'Firestore 寫入', ok: null, text: '按「執行檢查」後建立暫存房間測試。' },
-      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.8 不需要 functions/，也不需要 Blaze。' }
+      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.9 不需要 functions/，也不需要 Blaze。' }
     ];
     grid.innerHTML = rows.map(renderFirebaseCheckItem).join('');
     summary.textContent = setup.ok ? '已偵測到 Firebase Config。可按「執行檢查」確認 Auth 與 Firestore Rules。' : '尚未填入 Firebase Config。';
@@ -820,6 +883,9 @@ async function bindRoomEvents() {
   });
 
 
+  const copyDebugBtn = el('copyDebugBtn');
+  if (copyDebugBtn) copyDebugBtn.addEventListener('click', copyDebugReport);
+
   const firebaseCheckBtn = el('runFirebaseCheckBtn');
   if (firebaseCheckBtn) {
     firebaseCheckBtn.addEventListener('click', async () => {
@@ -836,7 +902,7 @@ async function bindRoomEvents() {
           summary: makeFriendlyError(error),
           checks: [
             { label: 'Firebase 設定檢查', ok: false, text: makeFriendlyError(error) },
-            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.8 不需要 functions/，也不需要 Blaze。' }
+            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.9 不需要 functions/，也不需要 Blaze。' }
           ]
         };
         renderFirebaseDiagnosticPanel(result);

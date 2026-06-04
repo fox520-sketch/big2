@@ -1,8 +1,8 @@
-# Firebase 設定教學：Big2 TW v0.6.8
+# Firebase 設定教學：Big2 TW v0.6.9
 
 本版使用 Firebase Authentication 匿名登入 + Cloud Firestore 同步多人房間與牌局狀態。
 
-> v0.6.8 是免 Cloud Functions 的朋友休閒測試版：可同步洗牌、發牌、出牌、Pass、回合、AI 補位接管、下一局、累計總分、離線 AI 接管與房主轉移，並加入出牌防連點、revision 檢查、偵錯面板與 Firebase 設定檢查面板。不需要 Blaze，也不需要部署 `functions/`。
+> v0.6.9 是免 Cloud Functions 的朋友休閒測試版：可同步洗牌、發牌、出牌、Pass、回合、AI 補位接管、下一局、累計總分、離線 AI 接管與房主轉移，並加入出牌防連點、revision 檢查、偵錯面板與 Firebase 設定檢查面板。不需要 Blaze，也不需要部署 `functions/`。
 
 ---
 
@@ -89,11 +89,11 @@ firebase-adminsdk.json
 4. 複製專案根目錄的 `firestore.rules` 內容貼上。
 5. 點「Publish」。
 
-v0.6.8 的規則允許已匿名登入的玩家讀寫 `rooms/{roomId}`，並限制欄位只能是房間、座位、`game` 牌局狀態、`totalScores` 累計分數與 `presenceUpdatedAt` 連線狀態相關欄位。這是休閒測試規則，不是正式防作弊規則。
+v0.6.9 的規則允許已匿名登入的玩家讀寫 `rooms/{roomId}`，並限制欄位只能是房間、座位、`game` 牌局狀態、`totalScores` 累計分數與 `presenceUpdatedAt` 連線狀態相關欄位。這是休閒測試規則，不是正式防作弊規則。
 
 ---
 
-## v0.6.8 實戰測試重點
+## v0.6.9 實戰測試重點
 
 多人測試時請特別看「多人同步偵錯面板」：若發生卡住或不同步，請截圖保留房號、我的座位、目前回合、Revision、LastAction、GameId 與最後同步時間。
 
@@ -140,7 +140,7 @@ http://localhost:8080
 
 ## 8. GitHub Pages 上傳
 
-請把壓縮檔解開後，將 `big2-tw-v0.6.8` 資料夾內的檔案全部放到 GitHub repository 根目錄。
+請把壓縮檔解開後，將 `big2-tw-v0.6.9` 資料夾內的檔案全部放到 GitHub repository 根目錄。
 
 正確：
 
@@ -158,7 +158,7 @@ package.json
 不要變成：
 
 ```txt
-big2-tw-v0.6.8/index.html
+big2-tw-v0.6.9/index.html
 ```
 
 否則 GitHub Pages 可能找不到首頁。
@@ -181,9 +181,9 @@ https://fox520-sketch.github.io/big2/?room=ABC123&join=1
 這次不只是帶入房號，會真的呼叫加入房間流程。
 
 
-## v0.6.8 需要重新 Publish firestore.rules
+## v0.6.9 需要重新 Publish firestore.rules
 
-如果你曾經貼過 v0.7.0 的 Cloud Functions 版 Rules，請務必改貼回 v0.6.8 的 `firestore.rules`：
+如果你曾經貼過 v0.7.0 的 Cloud Functions 版 Rules，請務必改貼回 v0.6.9 的 `firestore.rules`：
 
 ```txt
 Firebase Console → Firestore Database → Rules → Publish
@@ -192,7 +192,7 @@ Firebase Console → Firestore Database → Rules → Publish
 否則建立房間時可能出現 permission-denied，畫面會提示 Rules 版本不相容。
 
 
-## v0.6.8 不需要 Cloud Functions
+## v0.6.9 不需要 Cloud Functions
 
 本版不需要執行：
 
@@ -209,4 +209,4 @@ firebase.json
 .firebaserc.example
 ```
 
-如果你不想升級 Blaze，請維持 v0.6.8。
+如果你不想升級 Blaze，請維持 v0.6.9。
