@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.6.6</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.6.6：遊戲內容強化版，強化排行榜、最近房號、房間列表、手機操作、音效動畫開關與多人出牌穩定性" />
+    <title>台灣大老二 Big2 TW v0.6.7</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.6.7：牌局專注模式，遊戲中自動隱藏不相關設定與說明，保留必要操作與座位資訊" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,10 +12,10 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.6.6 遊戲內容強化版</p>
+        <p class="subtitle">v0.6.7 牌局專注模式</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
-        <label class="field">
+        <label class="field ai-level-field">
           <span>AI 難度</span>
           <select id="aiLevelSelect" aria-label="選擇 AI 難度">
             <option value="1">Lv.1 新手隨機</option>
@@ -40,7 +40,7 @@
             <option value="20">Lv.20 高手判斷</option>
           </select>
         </label>
-        <label class="field">
+        <label class="field theme-field">
           <span>顯示風格</span>
           <select id="themeSelect" aria-label="選擇顯示風格">
             <option value="dark">深色模式</option>
@@ -59,11 +59,16 @@
           </select>
         </label>
         <button id="soundToggleBtn" class="secondary-btn" type="button" aria-pressed="true">音效：開</button>
+        <button id="focusModeToggleBtn" class="secondary-btn" type="button" aria-pressed="true">顯示設定</button>
         <button id="newGameBtn" class="secondary-btn" type="button">重新開局</button>
       </div>
     </header>
 
     <main class="game-shell">
+      <section class="focus-mode-note" aria-live="polite">
+        <strong>牌局專注模式：</strong>
+        <span>遊戲進行中已自動隱藏規則設定、房間列表、檢查面板、說明與紀錄等非必要區塊；需要查看時可按右上角「顯示設定」。</span>
+      </section>
       <section class="notice" aria-live="polite">
         <strong>目前狀態：</strong>
         <span id="statusText">準備開始遊戲。</span>
@@ -81,7 +86,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.6.6</span>
+          <span class="pill">v0.6.7</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -113,7 +118,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.6.6 免 Cloud Functions 版：建立房間、加入房間、補 AI、多人同步與出牌防連點皆走 Firestore 休閒版流程，不需要 Blaze。</p>
+            <p class="hint small">v0.6.7 免 Cloud Functions 版：建立房間、加入房間、補 AI、多人同步與出牌防連點皆走 Firestore 休閒版流程；遊戲中會自動進入牌局專注模式。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -205,7 +210,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.6.6 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.6.7 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -213,8 +218,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.6.6。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.6.6 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.6.7。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.6.7 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -224,10 +229,10 @@
             <h2>多人同步偵錯面板</h2>
             <p class="hint small">截圖回報問題時，請一併截到這一區，方便判斷房號、座位、回合、revision 與最後同步狀態。</p>
           </div>
-          <span class="pill">v0.6.6</span>
+          <span class="pill">v0.6.7</span>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.6.6</span></div>
+          <div><strong>版本</strong><span>v0.6.7</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -415,8 +420,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.6.6</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.6 遊戲內容強化版</span>
+      <span>Big2 TW v0.6.7</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.7 牌局專注模式</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>

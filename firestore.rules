@@ -21,7 +21,7 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if signedIn();
 
-      // v0.6.6 朋友休閒版安全規則：
+      // v0.6.7 朋友休閒版安全規則：
       // 1. 僅允許登入玩家讀寫房間。
       // 2. 限制房間文件欄位，避免寫入未預期資料。
       // 3. 前端交易會再驗證目前座位、回合、手牌與 revision。

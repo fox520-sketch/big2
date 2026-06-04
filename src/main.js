@@ -47,9 +47,53 @@ let multiplayerActionSubmitting = false;
 let latestSnapshotAt = null;
 let lastSubmitStartedAt = 0;
 const ACTION_COOLDOWN_MS = 650;
+let focusPanelsExpanded = false;
+let lastFocusGameKey = null;
 
 function el(id) {
   return document.getElementById(id);
+}
+
+function getFocusGameKey() {
+  const mode = gameState?.mode || 'single';
+  const roomId = latestRoom?.roomId || currentRoomId || 'local';
+  const gameId = gameState?.gameId || gameState?.gameNo || gameState?.history?.[0] || 'current';
+  return `${mode}:${roomId}:${gameId}`;
+}
+
+function isGameplayActiveForFocus() {
+  if (!gameState || gameState.finished) return false;
+  if (latestRoom) {
+    return latestRoom.status === 'playing' && gameState.mode === 'multiplayer';
+  }
+  return gameState.mode !== 'multiplayer';
+}
+
+function updateGameplayFocusMode() {
+  const active = isGameplayActiveForFocus();
+  const key = getFocusGameKey();
+  if (active && key !== lastFocusGameKey) {
+    focusPanelsExpanded = false;
+    lastFocusGameKey = key;
+  }
+  if (!active) {
+    focusPanelsExpanded = true;
+    lastFocusGameKey = key;
+  }
+  const enabled = active && !focusPanelsExpanded;
+  document.body.dataset.gameplayFocus = enabled ? 'on' : 'off';
+  const button = el('focusModeToggleBtn');
+  if (button) {
+    button.disabled = !active;
+    button.textContent = enabled ? '顯示設定' : (active ? '隱藏設定' : '設定已顯示');
+    button.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+    button.title = enabled ? '展開規則設定、房間列表、檢查面板與說明' : '遊戲中隱藏非必要區塊，讓牌桌更清楚';
+  }
+}
+
+function renderGameAndFocus() {
+  render(gameState);
+  updateGameplayFocusMode();
 }
 
 function getSavedAILevel() {
@@ -345,7 +389,7 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.6.6'}`],
+    ['版本', `v${game?.version || room?.version || '0.6.7'}`],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
@@ -368,7 +412,7 @@ function renderDebugPanel(room = latestRoom) {
 function setMultiplayerActionSubmitting(locked, label = '同步中') {
   multiplayerActionSubmitting = Boolean(locked);
   setActionLock(multiplayerActionSubmitting, label);
-  render(gameState);
+  renderGameAndFocus();
   renderDebugPanel(latestRoom);
 }
 
@@ -377,7 +421,7 @@ async function runLockedMultiplayerAction(label, action) {
   if (multiplayerActionSubmitting || now - lastSubmitStartedAt < ACTION_COOLDOWN_MS) {
     gameState.message = '上一個動作仍在同步或剛送出，請稍候再按。';
     playSound('error');
-    render(gameState);
+    renderGameAndFocus();
     return;
   }
   lastSubmitStartedAt = now;
@@ -407,7 +451,7 @@ function scheduleAIIfNeeded() {
       gameState = runAITurn(gameState);
       playSound(gameState.finished ? 'win' : (gameState.lastAction?.type === 'PASS' ? 'pass' : 'play'));
       clearSelection();
-      render(gameState);
+      renderGameAndFocus();
       renderLeaderboard();
       maybeRecordFinishedGame();
       scheduleAIIfNeeded();
@@ -436,7 +480,7 @@ function resetGame(options = {}) {
   lastRenderedActionId = null;
   lastRenderedMultiplayerGameId = null;
   clearSelection();
-  render(gameState);
+  renderGameAndFocus();
   renderLeaderboard();
   if (options.playDealSound) playDealSound();
   scheduleAIIfNeeded();
@@ -473,7 +517,7 @@ function renderFirebaseDiagnosticPanel(result = null) {
       { label: 'Firebase Config', ok: setup.ok, text: setup.text },
       { label: '匿名登入', ok: null, text: '按「執行檢查」後確認。' },
       { label: 'Firestore 寫入', ok: null, text: '按「執行檢查」後建立暫存房間測試。' },
-      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.6 不需要 functions/，也不需要 Blaze。' }
+      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.7 不需要 functions/，也不需要 Blaze。' }
     ];
     grid.innerHTML = rows.map(renderFirebaseCheckItem).join('');
     summary.textContent = setup.ok ? '已偵測到 Firebase Config。可按「執行檢查」確認 Auth 與 Firestore Rules。' : '尚未填入 Firebase Config。';
@@ -536,7 +580,7 @@ function renderRoomGame(room) {
 
     const actionId = gameState.security?.lastActionId || `${gameState.gameId || 'game'}:${gameState.history?.[0] || ''}`;
     const shouldPlaySound = actionId && actionId !== lastRenderedActionId;
-    render(gameState);
+    renderGameAndFocus();
     renderLeaderboard();
     maybeRecordFinishedGame(room);
     if (shouldPlaySound) {
@@ -754,7 +798,7 @@ async function bindRoomEvents() {
           summary: makeFriendlyError(error),
           checks: [
             { label: 'Firebase 設定檢查', ok: false, text: makeFriendlyError(error) },
-            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.6 不需要 functions/，也不需要 Blaze。' }
+            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.7 不需要 functions/，也不需要 Blaze。' }
           ]
         };
         renderFirebaseDiagnosticPanel(result);
@@ -768,13 +812,22 @@ async function bindRoomEvents() {
 }
 
 function bindGameEvents() {
+  const focusButton = el('focusModeToggleBtn');
+  if (focusButton) {
+    focusButton.addEventListener('click', () => {
+      if (!isGameplayActiveForFocus()) return;
+      focusPanelsExpanded = !focusPanelsExpanded;
+      updateGameplayFocusMode();
+    });
+  }
+
   el('newGameBtn').addEventListener('click', () => resetGame({ playDealSound: true }));
 
   el('playBtn').addEventListener('click', async () => {
     const selected = getSelectedCards(gameState);
     if (!selected.length) {
       gameState.message = '請先選擇要出的牌。';
-      render(gameState);
+      renderGameAndFocus();
       return;
     }
 
@@ -792,7 +845,7 @@ function bindGameEvents() {
         } catch (error) {
           gameState.message = makeFriendlyError(error) || '多人出牌失敗。';
           playSound('error');
-          render(gameState);
+          renderGameAndFocus();
         }
       });
       return;
@@ -803,7 +856,7 @@ function bindGameEvents() {
     if (gameState.lastAction?.type === 'PLAY' && gameState.lastAction.seat === 0) {
       clearSelection();
     }
-    render(gameState);
+    renderGameAndFocus();
     renderLeaderboard();
     maybeRecordFinishedGame();
     scheduleAIIfNeeded();
@@ -824,7 +877,7 @@ function bindGameEvents() {
         } catch (error) {
           gameState.message = makeFriendlyError(error) || '多人 Pass 失敗。';
           playSound('error');
-          render(gameState);
+          renderGameAndFocus();
         }
       });
       return;
@@ -833,7 +886,7 @@ function bindGameEvents() {
     gameState = passTurn(gameState, 0);
     playSound(gameState.lastAction?.type === 'PASS' ? 'pass' : 'error');
     clearSelection();
-    render(gameState);
+    renderGameAndFocus();
     renderLeaderboard();
     maybeRecordFinishedGame();
     scheduleAIIfNeeded();
@@ -855,7 +908,7 @@ function bindGameEvents() {
     saveAILevel(aiLevel);
     if (gameState.mode !== 'multiplayer') {
       gameState = setAILevel(gameState, aiLevel);
-      render(gameState);
+      renderGameAndFocus();
       renderLeaderboard();
       scheduleAIIfNeeded();
     } else {
@@ -874,7 +927,7 @@ function bindGameEvents() {
       } else {
         resetGame();
         gameState.message = '已套用新玩法規則並重新開局。';
-        render(gameState);
+        renderGameAndFocus();
       }
     });
   }
@@ -890,7 +943,7 @@ function bindGameEvents() {
       } else {
         gameState.scoringRules = getSavedScoringRules();
         gameState.message = '已套用新計分規則，本局結束時計算。';
-        render(gameState);
+        renderGameAndFocus();
       }
     });
   }
@@ -959,6 +1012,6 @@ bindGameEvents();
 bindRoomEvents();
 updateSettingsSummary();
 renderDebugPanel(null);
-render(gameState);
+renderGameAndFocus();
 updateAllExperienceViews();
 scheduleAIIfNeeded();

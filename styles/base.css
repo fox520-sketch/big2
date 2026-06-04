@@ -1500,3 +1500,93 @@ body[data-motion='on'] .player-card.active {
     width: 100%;
   }
 }
+
+/* v0.6.7 牌局專注模式：遊戲進行中自動隱藏非必要功能 */
+.focus-mode-note {
+  display: none;
+  border: 2px solid var(--border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--primary) 12%, var(--surface));
+  box-shadow: var(--shadow);
+  padding: 0.85rem 1rem;
+  color: var(--text);
+}
+
+body[data-gameplay-focus='on'] .focus-mode-note {
+  display: block;
+}
+
+body[data-gameplay-focus='on'] .settings-panel,
+body[data-gameplay-focus='on'] .room-management-panel,
+body[data-gameplay-focus='on'] .room-directory-panel,
+body[data-gameplay-focus='on'] .firebase-check-panel,
+body[data-gameplay-focus='on'] .debug-panel,
+body[data-gameplay-focus='on'] .info-grid,
+body[data-gameplay-focus='on'] .experience-panel,
+body[data-gameplay-focus='on'] .leaderboard-panel,
+body[data-gameplay-focus='on'] .progress-panel,
+body[data-gameplay-focus='on'] .game-records-panel,
+body[data-gameplay-focus='on'] .history-panel,
+body[data-gameplay-focus='on'] .rules-panel,
+body[data-gameplay-focus='on'] .rules-help-panel,
+body[data-gameplay-focus='on'] .security-panel,
+body[data-gameplay-focus='on'] .contrast-panel,
+body[data-gameplay-focus='on'] .mobile-orientation-tip {
+  display: none !important;
+}
+
+body[data-gameplay-focus='on'] .room-panel .room-grid {
+  display: none !important;
+}
+
+body[data-gameplay-focus='on'] .room-panel {
+  padding: 0.75rem 1rem;
+}
+
+body[data-gameplay-focus='on'] .room-panel .panel-heading {
+  margin-bottom: 0.55rem;
+}
+
+body[data-gameplay-focus='on'] .seat-grid {
+  gap: 0.5rem;
+}
+
+body[data-gameplay-focus='on'] .seat-card {
+  padding: 0.65rem;
+}
+
+body[data-gameplay-focus='on'] .game-shell {
+  gap: 0.75rem;
+}
+
+body[data-gameplay-focus='on'] .app-header {
+  padding-block: 0.85rem;
+}
+
+body[data-gameplay-focus='on'] .subtitle::after {
+  content: '｜牌局專注模式';
+}
+
+@media (max-width: 760px) {
+  body[data-gameplay-focus='on'] .app-header {
+    gap: 0.65rem;
+  }
+
+  body[data-gameplay-focus='on'] .toolbar {
+    gap: 0.45rem;
+  }
+
+  body[data-gameplay-focus='on'] .toolbar .field {
+    min-width: 8.5rem;
+  }
+
+  body[data-gameplay-focus='on'] .focus-mode-note {
+    padding: 0.75rem;
+    border-radius: 1rem;
+  }
+}
+
+body[data-gameplay-focus='on'] .toolbar .ai-level-field,
+body[data-gameplay-focus='on'] #newGameBtn {
+  display: none !important;
+}
