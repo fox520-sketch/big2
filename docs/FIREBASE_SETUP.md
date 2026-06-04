@@ -1,148 +1,58 @@
-# Firebase 設定教學：Big2 TW v0.6.9
+# Firebase 設定步驟｜Big2 TW v0.7.0 免 Cloud Functions 版
 
-本版使用 Firebase Authentication 匿名登入 + Cloud Firestore 同步多人房間與牌局狀態。
-
-> v0.6.9 是免 Cloud Functions 的朋友休閒測試版：可同步洗牌、發牌、出牌、Pass、回合、AI 補位接管、下一局、累計總分、離線 AI 接管與房主轉移，並加入出牌防連點、revision 檢查、偵錯面板與 Firebase 設定檢查面板。不需要 Blaze，也不需要部署 `functions/`。
-
----
+> 這版是 GitHub Pages + Firebase Auth + Cloud Firestore 的休閒穩定版，不需要 Blaze 付費方案，也不需要部署 `functions/`。
 
 ## 1. 建立 Firebase 專案
 
-1. 開啟 Firebase Console。
-2. 點「新增專案 / Add project」。
-3. 專案名稱可填：`big2-tw`。
-4. Google Analytics 可先關閉，之後需要再開。
-5. 建立專案。
-
----
+1. 進入 Firebase Console。
+2. 建立專案，例如 `big2-tw`。
+3. 進入專案總覽。
 
 ## 2. 建立 Web App
 
-1. 進入剛建立的 Firebase 專案。
-2. 在專案總覽頁點 `</>` Web 圖示。
-3. App nickname 可填：`big2-tw-web`。
-4. 先不用勾選 Firebase Hosting。
-5. 點「Register app」。
-6. 複製畫面中的 `firebaseConfig`。
+1. 點 `</>` Web 圖示。
+2. App nickname 可填 `big2-tw-web`。
+3. 取得 `firebaseConfig`。
+4. 將設定貼到 `src/firebase-config.js`。
 
----
-
-## 3. 貼上 firebaseConfig
-
-開啟：
-
-```txt
-src/firebase-config.js
-```
-
-把下方 PASTE 開頭的內容換成 Firebase Console 給你的值：
+請確認不要再保留：
 
 ```js
-export const firebaseConfig = {
-  apiKey: '你的 apiKey',
-  authDomain: '你的專案.firebaseapp.com',
-  projectId: '你的專案 ID',
-  storageBucket: '你的 storageBucket',
-  messagingSenderId: '你的 messagingSenderId',
-  appId: '你的 appId'
-};
+apiKey: 'PASTE_YOUR_API_KEY'
 ```
 
-不要上傳這些檔案：
+## 3. 啟用匿名登入
+
+到 Firebase Console：
 
 ```txt
-serviceAccountKey.json
-firebase-adminsdk.json
-.env
-.env.local
-任何私人金鑰
+Authentication → Sign-in method → Anonymous → Enable → Save
 ```
 
----
+這樣朋友不用註冊帳號，也可以建立房間或加入房間。
 
-## 4. 啟用匿名登入
+## 4. 建立 Firestore Database
 
-1. Firebase Console 左側選單點「Authentication」。
-2. 點「Get started」。
-3. 進入「Sign-in method」。
-4. 找到「Anonymous / 匿名」。
-5. 點進去後啟用。
-6. 儲存。
-
----
-
-## 5. 建立 Cloud Firestore
-
-1. Firebase Console 左側選單點「Firestore Database」。
-2. 點「Create database」。
-3. 模式建議先選「Production mode」。
-4. 區域可選靠近台灣的區域，例如 `asia-east1` 或 Firebase 介面提供的亞洲區域。
-5. 建立資料庫。
-
----
-
-## 6. 發佈 Firestore Rules
-
-1. 進入 Firestore Database。
-2. 點上方「Rules」。
-3. 刪除原本內容。
-4. 複製專案根目錄的 `firestore.rules` 內容貼上。
-5. 點「Publish」。
-
-v0.6.9 的規則允許已匿名登入的玩家讀寫 `rooms/{roomId}`，並限制欄位只能是房間、座位、`game` 牌局狀態、`totalScores` 累計分數與 `presenceUpdatedAt` 連線狀態相關欄位。這是休閒測試規則，不是正式防作弊規則。
-
----
-
-## v0.6.9 實戰測試重點
-
-多人測試時請特別看「多人同步偵錯面板」：若發生卡住或不同步，請截圖保留房號、我的座位、目前回合、Revision、LastAction、GameId 與最後同步時間。
-
----
-
-## 7. 本機測試
-
-在專案資料夾執行：
-
-```bash
-npm test
-```
-
-再用簡單伺服器開啟網頁：
-
-```bash
-python -m http.server 8080
-```
-
-瀏覽器開：
+到 Firebase Console：
 
 ```txt
-http://localhost:8080
+Firestore Database → Create database
 ```
 
-測試流程：
+建議選 Production mode，再用本版 `firestore.rules` 控制權限。
 
-1. 輸入暱稱。
-2. 按「執行 Firebase 檢查」。
-3. 確認 Firebase Config、匿名登入、Firestore 寫入都通過。
-4. 按「建立房間」。
-5. 看到 6 碼房號。
-6. 按「複製邀請連結」。
-7. 開另一個無痕視窗貼上連結。
-8. 確認會顯示「正在自動加入房間...」。
-9. 確認座位列表會新增真人玩家。
-10. 房主按「補 AI 空位」。
-11. 房主按「開始多人遊戲」。
-12. 確認每個視窗都進入同一局，且只操作自己的座位。
-13. 輪到真人時出牌或 Pass。
-14. 輪到 AI 時，由房主瀏覽器自動接管 AI 出牌。
+## 5. 貼上 Firestore Rules
 
----
+1. 打開本專案的 `firestore.rules`。
+2. 到 Firebase Console → Firestore Database → Rules。
+3. 全部貼上。
+4. 按 Publish。
 
-## 8. GitHub Pages 上傳
+若你之前測過 Cloud Functions 防作弊版，請務必改貼回本版 Rules。本版不需要 Cloud Functions，也不需要 Blaze。
 
-請把壓縮檔解開後，將 `big2-tw-v0.6.9` 資料夾內的檔案全部放到 GitHub repository 根目錄。
+## 6. 上傳 GitHub Pages
 
-正確：
+將解壓縮後的檔案放到 GitHub repository 根目錄：
 
 ```txt
 index.html
@@ -155,58 +65,38 @@ VERSION.md
 package.json
 ```
 
-不要變成：
-
-```txt
-big2-tw-v0.6.9/index.html
-```
-
-否則 GitHub Pages 可能找不到首頁。
-
----
-
-## 9. 邀請連結格式
-
-本版產生的邀請連結格式如下：
-
-```txt
-https://fox520-sketch.github.io/big2/?room=ABC123&join=1
-```
-
-程式會做兩件事：
-
-1. 讀取 `room=ABC123`，自動帶入房號。
-2. 看到 `join=1`，在 Firebase 匿名登入完成後自動執行 `joinRoom()`。
-
-這次不只是帶入房號，會真的呼叫加入房間流程。
-
-
-## v0.6.9 需要重新 Publish firestore.rules
-
-如果你曾經貼過 v0.7.0 的 Cloud Functions 版 Rules，請務必改貼回 v0.6.9 的 `firestore.rules`：
-
-```txt
-Firebase Console → Firestore Database → Rules → Publish
-```
-
-否則建立房間時可能出現 permission-denied，畫面會提示 Rules 版本不相容。
-
-
-## v0.6.9 不需要 Cloud Functions
-
-本版不需要執行：
-
-```bash
-firebase deploy --only functions
-```
-
-也不需要上傳：
+不要上傳：
 
 ```txt
 functions/
 firebase.json
 .firebaserc
-.firebaserc.example
+node_modules/
+.env
+serviceAccountKey.json
+firebase-adminsdk.json
 ```
 
-如果你不想升級 Blaze，請維持 v0.6.9。
+## 7. 發布後測試
+
+1. 開啟 GitHub Pages 網址。
+2. 確認頁面顯示 v0.7.0。
+3. 按「執行 Firebase 檢查」。
+4. 確認 Firebase Config、匿名登入、Firestore 寫入通過。
+5. 建立房間，邀請朋友加入。
+6. 補 AI 空位並開始多人遊戲。
+7. 測試出牌、Pass、下一局與回房。
+
+## 常見問題
+
+### 按建立房間沒反應
+
+請先按「執行 Firebase 檢查」。通常是 Firebase Config 未填、匿名登入未啟用，或 Firestore Rules 尚未貼上本版規則。
+
+### 需要執行 firebase deploy --only functions 嗎？
+
+不需要。本版是免 Cloud Functions 版。
+
+### 需要升級 Blaze 嗎？
+
+不需要。本版只用 GitHub Pages、Firebase Auth 與 Firestore。

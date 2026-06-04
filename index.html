@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.6.9</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.6.9：規則校正 + AI 強化，全面檢查大老二牌型規則、壓牌邏輯、Pass 流程、AI 出牌策略、結算排名，並加入複製偵錯資訊功能" />
+    <title>台灣大老二 Big2 TW v0.7.0</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.7.0：正式發布候選版，整理首頁流程、新手教學、房間體驗、多人體驗防呆與發布檢查清單，維持免 Cloud Functions、不需要 Blaze" />
     <link rel="stylesheet" href="styles/base.css" />
   </head>
   <body data-theme="dark">
@@ -12,7 +12,7 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.6.9 規則校正 + AI 強化</p>
+        <p class="subtitle">v0.7.0 正式發布候選版｜免 Cloud Functions</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field ai-level-field">
@@ -79,6 +79,30 @@
         <span>若手牌或結果表太寬，可以把手機轉成橫向，手牌也可左右滑動。</span>
       </section>
 
+      <section class="home-panel" aria-label="首頁流程">
+        <div class="panel-heading">
+          <div>
+            <h2>首頁流程</h2>
+            <p class="hint small">v0.7.0 將常用入口集中在這裡：單人練習、建立房間、加入房間、最近房間、規則說明與設定。</p>
+          </div>
+          <span class="pill ok">正式發布候選版</span>
+        </div>
+        <div class="home-actions">
+          <button id="quickSingleBtn" class="primary-btn" type="button">單人遊戲</button>
+          <button id="quickCreateRoomBtn" class="secondary-btn" type="button">建立房間</button>
+          <button id="quickJoinRoomBtn" class="secondary-btn" type="button">加入房間</button>
+          <button id="quickRecentRoomBtn" class="secondary-btn" type="button">最近房間</button>
+          <button id="quickRulesBtn" class="secondary-btn" type="button">新手教學</button>
+          <button id="quickSettingsBtn" class="secondary-btn" type="button">設定</button>
+        </div>
+        <div class="home-flow-grid">
+          <div><strong>1. 單人練習</strong><span>先熟悉梅花 3 起手、壓牌、Pass 與結算。</span></div>
+          <div><strong>2. 建立房間</strong><span>輸入暱稱，可設定密碼，再複製連結或 QR Code 邀請朋友。</span></div>
+          <div><strong>3. 補 AI 空位</strong><span>不足四人時由 AI 補位，房主瀏覽器負責 AI 行動。</span></div>
+          <div><strong>4. 開始多人</strong><span>遊戲中自動進入專注模式，只保留出牌需要的區塊。</span></div>
+        </div>
+      </section>
+
 
       <section class="settings-panel" aria-label="正式規則與計分設定">
         <div class="panel-heading">
@@ -86,7 +110,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.6.9</span>
+          <span class="pill">v0.7.0</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -118,7 +142,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.6.9 免 Cloud Functions 版：建立房間、加入房間、補 AI、多人同步與出牌防連點皆走 Firestore 休閒版流程；遊戲中會自動進入牌局專注模式。</p>
+            <p class="hint small">v0.7.0 正式發布候選版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -210,7 +234,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.6.9 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.7.0 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -218,8 +242,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.6.9。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.6.9 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.7.0。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.7.0 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -231,11 +255,11 @@
           </div>
           <div class="button-row compact-actions">
             <button id="copyDebugBtn" class="secondary-btn" type="button">複製偵錯資訊</button>
-            <span class="pill">v0.6.9</span>
+            <span class="pill">v0.7.0</span>
           </div>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.6.9</span></div>
+          <div><strong>版本</strong><span>v0.7.0</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -402,6 +426,38 @@
 
 
 
+      <section class="tutorial-panel" aria-label="新手教學模式">
+        <div class="panel-heading">
+          <div>
+            <h2>新手教學模式</h2>
+            <p class="hint small">第一次玩大老二的朋友，可以照下面順序看；正式規則仍以「正式規則與計分設定」為準。</p>
+          </div>
+          <span class="pill">快速上手</span>
+        </div>
+        <div class="tutorial-steps">
+          <details open>
+            <summary>第一步：認識牌型</summary>
+            <p>可出單張、對子、三條，以及五張牌型：順子、同花、葫蘆、鐵支、同花順。四張牌不能單獨出，鐵支在本遊戲中是四張相同點數加一張雜牌的五張牌型。</p>
+          </details>
+          <details>
+            <summary>第二步：誰先出牌</summary>
+            <p>台灣常用規則為梅花 3 起手，第一手必須包含梅花 3；也可在設定中改成方塊 3 起手或朋友局變體。</p>
+          </details>
+          <details>
+            <summary>第三步：怎麼壓牌</summary>
+            <p>必須出相同張數與相同類型的牌，或用更大的五張牌型壓過上一手。單張、對子、三條比較點數與花色；五張牌型依順子 &lt; 同花 &lt; 葫蘆 &lt; 鐵支 &lt; 同花順。</p>
+          </details>
+          <details>
+            <summary>第四步：什麼時候可以 Pass</summary>
+            <p>你是領出者時不能 Pass；若上一手壓不過或想保留牌，可以 Pass。其他三家都 Pass 後，最後成功出牌的人取得下一輪領出權。</p>
+          </details>
+          <details>
+            <summary>第五步：邀請朋友一起玩</summary>
+            <p>房主建立房間後複製邀請連結或顯示 QR Code。朋友開啟連結會自動帶入房號並嘗試加入；若是密碼房，請先輸入密碼再加入。</p>
+          </details>
+        </div>
+      </section>
+
       <section class="rules-help-panel" aria-label="規則說明頁">
         <div class="panel-heading">
           <div>
@@ -435,6 +491,22 @@
         <p class="hint small">提醒：這版是 GitHub Pages + Firestore 朋友休閒版，不需要 Blaze。若未來要嚴格防作弊，才需要另行升級 Cloud Functions。</p>
       </section>
 
+      <section class="release-panel" aria-label="發布檢查清單">
+        <div class="panel-heading">
+          <div>
+            <h2>發布檢查清單</h2>
+            <p class="hint small">上傳 GitHub Pages 前請逐項確認。完整清單請看 docs/RELEASE_CHECKLIST.md。</p>
+          </div>
+          <span class="pill ok">免付費部署</span>
+        </div>
+        <div class="check-grid">
+          <div><strong>GitHub Pages</strong><span>解壓後只上傳根目錄檔案，不要多包一層資料夾。</span></div>
+          <div><strong>Firebase</strong><span>確認 src/firebase-config.js 已填入 Web App 設定，匿名登入已啟用。</span></div>
+          <div><strong>Firestore Rules</strong><span>貼上本版 firestore.rules 並 Publish，不要使用 Cloud Functions 版 Rules。</span></div>
+          <div><strong>不要上傳</strong><span>不要上傳 functions/、node_modules/、.env、serviceAccountKey.json 或任何私鑰。</span></div>
+        </div>
+      </section>
+
       <section class="contrast-panel" aria-label="UI 對比檢查摘要">
         <h2>UI 對比檢查摘要</h2>
         <div class="check-grid">
@@ -447,8 +519,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.6.9</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.6.9 規則校正 + AI 強化</span>
+      <span>Big2 TW v0.7.0</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.0 正式發布候選版</span>
     </footer>
 
     <script type="module" src="src/main.js"></script>

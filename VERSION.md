@@ -1,5 +1,23 @@
 # 版本說明
 
+## v0.7.0 - 2026-06-04
+### 新增
+- 新增首頁流程快速入口：單人遊戲、建立房間、加入房間、最近房間、新手教學與設定。
+- 新增新手教學模式，整理牌型、起手、壓牌、Pass、計分與邀請朋友流程。
+- 新增發布檢查清單 `docs/RELEASE_CHECKLIST.md`，方便上傳 GitHub Pages 與檢查 Firebase 設定。
+- 新增同一裝置重複開啟同房間提示，降低多人遊戲重複視窗誤操作。
+- 新增 `scripts/test-release-readiness.js`，檢查發布候選版不含 Cloud Functions 付費版殘留。
+
+### 修正
+- 整理首頁與房間區說明，明確標示本版為免 Cloud Functions、不需要 Blaze 的 GitHub Pages 穩定版。
+- 遊戲中仍保留牌局專注模式，避免大量設定與說明干擾出牌。
+- 更新 README、版本文字與發布提醒，避免與先前 Cloud Functions 付費版混淆。
+
+### 保留
+- 保留 v0.6.9 的規則校正、AI 強化、出牌輔助、複製偵錯資訊、排行榜、房間密碼、成就與每日戰績。
+- 仍為免 Cloud Functions 版，不需要 Blaze 付費方案。
+
+---
 ## v0.6.9 - 2026-06-04
 ### 新增
 - 新增 `scripts/test-rule-boundaries.js`，全面檢查單張、對子、三條、五張牌型、起手牌、Pass、結算與累計總分。

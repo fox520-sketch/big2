@@ -48,6 +48,8 @@ let multiplayerActionSubmitting = false;
 let latestSnapshotAt = null;
 let lastSubmitStartedAt = 0;
 const ACTION_COOLDOWN_MS = 650;
+const SESSION_TAB_ID = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+const ACTIVE_TAB_KEY = 'big2-active-tab';
 let focusPanelsExpanded = false;
 let lastFocusGameKey = null;
 let lastRoomMessage = '尚未連線房間。';
@@ -428,7 +430,7 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.6.9'}`],
+    ['版本', `v${game?.version || room?.version || '0.7.0'}`],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
@@ -468,7 +470,7 @@ function buildDebugReport() {
     isHost: seat.uid === room.hostUid
   } : { seat: index, empty: true });
   const report = {
-    version: `v${game.version || room.version || '0.6.9'}`,
+    version: `v${game.version || room.version || '0.7.0'}`,
     url: window.location.href,
     roomId: room.roomId || currentRoomId || null,
     roomStatus: room.status || null,
@@ -618,7 +620,7 @@ function renderFirebaseDiagnosticPanel(result = null) {
       { label: 'Firebase Config', ok: setup.ok, text: setup.text },
       { label: '匿名登入', ok: null, text: '按「執行檢查」後確認。' },
       { label: 'Firestore 寫入', ok: null, text: '按「執行檢查」後建立暫存房間測試。' },
-      { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.9 不需要 functions/，也不需要 Blaze。' }
+      { label: 'Cloud Functions', ok: true, text: '未使用。v0.7.0 不需要 functions/，也不需要 Blaze。' }
     ];
     grid.innerHTML = rows.map(renderFirebaseCheckItem).join('');
     summary.textContent = setup.ok ? '已偵測到 Firebase Config。可按「執行檢查」確認 Auth 與 Firestore Rules。' : '尚未填入 Firebase Config。';
@@ -700,6 +702,7 @@ function renderRoomGame(room) {
 function renderRoom(room) {
   latestRoom = room;
   latestSnapshotAt = new Date();
+  updateDuplicateTabWarning(room);
   if (!room) {
     currentRoomId = null;
     latestInviteUrl = '';
@@ -902,7 +905,7 @@ async function bindRoomEvents() {
           summary: makeFriendlyError(error),
           checks: [
             { label: 'Firebase 設定檢查', ok: false, text: makeFriendlyError(error) },
-            { label: 'Cloud Functions', ok: true, text: '未使用。v0.6.9 不需要 functions/，也不需要 Blaze。' }
+            { label: 'Cloud Functions', ok: true, text: '未使用。v0.7.0 不需要 functions/，也不需要 Blaze。' }
           ]
         };
         renderFirebaseDiagnosticPanel(result);
@@ -913,6 +916,48 @@ async function bindRoomEvents() {
       }
     });
   }
+}
+
+function scrollToPanel(selector, focusSelector = null) {
+  const panel = document.querySelector(selector);
+  if (!panel) return;
+  panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const target = focusSelector ? document.querySelector(focusSelector) : null;
+  if (target && typeof target.focus === 'function') {
+    window.setTimeout(() => target.focus(), 260);
+  }
+}
+
+function updateDuplicateTabWarning(room = latestRoom) {
+  try {
+    const payload = { tabId: SESSION_TAB_ID, roomId: room?.roomId || currentRoomId || null, at: Date.now() };
+    const previous = JSON.parse(localStorage.getItem(ACTIVE_TAB_KEY) || 'null');
+    localStorage.setItem(ACTIVE_TAB_KEY, JSON.stringify(payload));
+    if (previous?.tabId && previous.tabId !== SESSION_TAB_ID && previous.roomId && previous.roomId === payload.roomId && payload.roomId) {
+      setRoomMessage(`偵測到同一裝置可能開了多個 ${payload.roomId} 房間視窗；建議只保留一個視窗，避免重複操作。`, 'warn');
+    }
+  } catch {
+    // localStorage 不可用時不影響遊戲。
+  }
+}
+
+function bindHomeFlowEvents() {
+  const bind = (id, handler) => {
+    const button = el(id);
+    if (button) button.addEventListener('click', handler);
+  };
+  bind('quickSingleBtn', () => {
+    if (gameState.mode === 'multiplayer' && currentRoomId && !confirm('目前已在多人房間中，確定要切回單人練習嗎？')) return;
+    resetGame({ playDealSound: true });
+    gameState.message = '已進入單人練習模式。';
+    renderGameAndFocus();
+    scrollToPanel('.table-area');
+  });
+  bind('quickCreateRoomBtn', () => scrollToPanel('.room-panel', '#playerNameInput'));
+  bind('quickJoinRoomBtn', () => scrollToPanel('.room-panel', '#roomCodeInput'));
+  bind('quickRecentRoomBtn', () => scrollToPanel('.room-directory-panel'));
+  bind('quickRulesBtn', () => scrollToPanel('.tutorial-panel'));
+  bind('quickSettingsBtn', () => scrollToPanel('.settings-panel'));
 }
 
 function bindGameEvents() {
@@ -1150,6 +1195,7 @@ function bindGameEvents() {
 
 
 applyAnimationPreference();
+bindHomeFlowEvents();
 bindGameEvents();
 bindRoomEvents();
 updateSettingsSummary();

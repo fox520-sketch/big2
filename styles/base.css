@@ -1765,3 +1765,76 @@ body[data-motion='on'] .player-card.active {
     font-size: 0.94rem;
   }
 }
+
+/* v0.7.0 正式發布候選版：首頁流程、新手教學與發布檢查 */
+.home-panel,
+.tutorial-panel,
+.release-panel {
+  border: 2px solid var(--border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.home-actions {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.home-flow-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.home-flow-grid > div,
+.tutorial-steps details {
+  border: 1.5px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-2);
+  padding: 0.8rem;
+}
+
+.home-flow-grid strong,
+.home-flow-grid span {
+  display: block;
+}
+
+.home-flow-grid span {
+  color: var(--muted);
+  font-weight: 750;
+  margin-top: 0.25rem;
+}
+
+.tutorial-steps {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.tutorial-steps summary {
+  cursor: pointer;
+  font-weight: 900;
+  color: var(--text);
+}
+
+.tutorial-steps p {
+  color: var(--muted);
+  font-weight: 750;
+  margin: 0.55rem 0 0;
+}
+
+body[data-gameplay-focus='on'] .home-panel,
+body[data-gameplay-focus='on'] .tutorial-panel,
+body[data-gameplay-focus='on'] .release-panel {
+  display: none !important;
+}
+
+@media (max-width: 900px) {
+  .home-actions,
+  .home-flow-grid {
+    grid-template-columns: 1fr;
+  }
+}
