@@ -4,7 +4,7 @@ const css = fs.readFileSync(new URL('../styles/base.css', import.meta.url), 'utf
 const index = fs.readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 
 const required = [
-  '/* v0.7.4 手機選牌裁切修正',
+  '/* v0.7.5 手機選牌裁切修正',
   '.hand-section .hand {',
   'padding-top: 1.25rem;',
   'overflow-y: hidden;',
@@ -21,8 +21,8 @@ for (const text of required) {
   }
 }
 
-if (!index.includes('styles/base.css?v=0.7.4') || !index.includes('src/main.js?v=0.7.4')) {
-  throw new Error('GitHub Pages 快取版本參數未更新為 v0.7.4。');
+if (!index.includes('styles/base.css?v=0.7.5') || !index.includes('src/main.js?v=0.7.5')) {
+  throw new Error('GitHub Pages 快取版本參數未更新為 v0.7.5。');
 }
 
 console.log('Mobile selected card clipping tests passed.');

@@ -1,10 +1,10 @@
 {
   "name": "big2-tw",
-  "version": "0.7.4",
-  "description": "台灣大老二網頁遊戲 v0.7.4：手機選牌裁切修正版，免 Cloud Functions 穩定版",
+  "version": "0.7.5",
+  "description": "台灣大老二網頁遊戲 v0.7.5：手機實戰回歸測試與 Firebase 效能穩定版，免 Cloud Functions",
   "type": "module",
   "scripts": {
-    "test": "node scripts/test-rules.js && node scripts/test-rule-boundaries.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js && node scripts/test-release-readiness.js && node scripts/test-online-readiness.js && node scripts/test-mobile-table-layout.js && node scripts/test-compact-action-panel.js && node scripts/test-mobile-selected-card.js",
+    "test": "node scripts/test-rules.js && node scripts/test-rule-boundaries.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js && node scripts/test-release-readiness.js && node scripts/test-online-readiness.js && node scripts/test-mobile-table-layout.js && node scripts/test-compact-action-panel.js && node scripts/test-mobile-selected-card.js && node scripts/test-performance-stability.js",
     "test:rules": "node scripts/test-rules.js",
     "test:ai": "node scripts/test-ai.js",
     "test:multiplayer": "node scripts/test-multiplayer-state.js",
@@ -15,7 +15,8 @@
     "test:online": "node scripts/test-online-readiness.js",
     "test:mobile-layout": "node scripts/test-mobile-table-layout.js",
     "test:compact-action": "node scripts/test-compact-action-panel.js",
-    "test:mobile-selected-card": "node scripts/test-mobile-selected-card.js"
+    "test:mobile-selected-card": "node scripts/test-mobile-selected-card.js",
+    "test:stability": "node scripts/test-performance-stability.js"
   },
   "keywords": [
     "big-two",

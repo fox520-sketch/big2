@@ -8,6 +8,7 @@ import { applyAnimationPreference, clearGameRecords, clearRecentRooms, getAchiev
 import { totalsToSortedRows } from './scoring.js';
 import {
   buildInviteUrl,
+  cleanupExpiredOwnedRooms,
   createRoom,
   fillAISeats,
   getFirebaseSetupState,
@@ -23,6 +24,7 @@ import {
   passMultiplayerTurn,
   playMultiplayerCards,
   qrCodeImageUrl,
+  refreshActiveRoomConnection,
   runMultiplayerAITurn,
   runFirebaseDiagnostics,
   saveLocalPlayerName,
@@ -53,9 +55,85 @@ const ACTIVE_TAB_KEY = 'big2-active-tab';
 let focusPanelsExpanded = false;
 let lastFocusGameKey = null;
 let lastRoomMessage = '尚未連線房間。';
+let reconnectInProgress = false;
+let viewportRaf = null;
 
 function el(id) {
   return document.getElementById(id);
+}
+
+
+function updateViewportMetrics() {
+  if (viewportRaf) window.cancelAnimationFrame(viewportRaf);
+  viewportRaf = window.requestAnimationFrame(() => {
+    const viewport = window.visualViewport;
+    const height = viewport?.height || window.innerHeight;
+    const offsetTop = viewport?.offsetTop || 0;
+    document.documentElement.style.setProperty('--app-height', `${Math.round(height)}px`);
+    document.documentElement.style.setProperty('--viewport-offset-top', `${Math.round(offsetTop)}px`);
+    const actionPanel = document.querySelector('.action-panel');
+    const actionHeight = actionPanel && window.matchMedia('(max-width: 760px)').matches
+      ? Math.ceil(actionPanel.getBoundingClientRect().height)
+      : 0;
+    document.documentElement.style.setProperty('--action-panel-height', `${actionHeight}px`);
+    viewportRaf = null;
+  });
+}
+
+function renderNetworkStatus(state = navigator.onLine ? 'online' : 'offline', detail = '') {
+  const bar = el('networkStatusBar');
+  const title = el('networkStatusTitle');
+  const text = el('networkStatusText');
+  const retry = el('retryConnectionBtn');
+  if (!bar || !title || !text || !retry) return;
+  const normalized = ['online', 'offline', 'syncing', 'reconnected'].includes(state) ? state : 'online';
+  bar.dataset.state = normalized;
+  title.textContent = normalized === 'offline' ? '網路已中斷'
+    : normalized === 'syncing' ? '正在重新連線'
+      : normalized === 'reconnected' ? '已恢復連線'
+        : '網路正常';
+  text.textContent = detail || (normalized === 'offline'
+    ? '單人遊戲仍可操作；多人出牌請等網路恢復後再送出。'
+    : normalized === 'syncing'
+      ? '正在恢復 Firebase 心跳與房間同步，請稍候。'
+      : normalized === 'reconnected'
+        ? '已恢復 Firebase 房間同步，可以繼續遊戲。'
+        : '已連線；多人房間會自動同步。');
+  retry.classList.toggle('hidden', normalized === 'online' || normalized === 'reconnected');
+}
+
+async function reconnectActiveRoom() {
+  if (reconnectInProgress || navigator.onLine === false) return;
+  reconnectInProgress = true;
+  renderNetworkStatus('syncing');
+  try {
+    const result = await refreshActiveRoomConnection();
+    renderNetworkStatus('reconnected', result?.roomId
+      ? `房間 ${result.roomId} 已恢復心跳與同步。`
+      : '網路已恢復；尚未加入多人房間。');
+    if (result?.roomId) setRoomMessage(`已重新連線房間 ${result.roomId}。`, 'ok');
+    window.setTimeout(() => renderNetworkStatus('online'), 1800);
+  } catch (error) {
+    renderNetworkStatus('offline', `重新連線失敗：${makeFriendlyError(error)}`);
+  } finally {
+    reconnectInProgress = false;
+  }
+}
+
+function bindViewportAndNetworkEvents() {
+  updateViewportMetrics();
+  window.addEventListener('resize', updateViewportMetrics, { passive: true });
+  window.addEventListener('orientationchange', () => window.setTimeout(updateViewportMetrics, 120), { passive: true });
+  window.visualViewport?.addEventListener('resize', updateViewportMetrics, { passive: true });
+  window.visualViewport?.addEventListener('scroll', updateViewportMetrics, { passive: true });
+  window.addEventListener('offline', () => renderNetworkStatus('offline'));
+  window.addEventListener('online', reconnectActiveRoom);
+  document.addEventListener('visibilitychange', () => {
+    updateViewportMetrics();
+    if (document.visibilityState === 'visible' && navigator.onLine !== false) reconnectActiveRoom();
+  });
+  el('retryConnectionBtn')?.addEventListener('click', reconnectActiveRoom);
+  renderNetworkStatus(navigator.onLine === false ? 'offline' : 'online');
 }
 
 function getFocusGameKey() {
@@ -98,6 +176,7 @@ function updateGameplayFocusMode() {
 function renderGameAndFocus() {
   render(gameState);
   updateGameplayFocusMode();
+  updateViewportMetrics();
 }
 
 function getSavedAILevel() {
@@ -495,6 +574,8 @@ function buildDebugReport() {
     seats,
     historyTop: (game.history || []).slice(0, 8),
     latestSnapshotAt: latestSnapshotAt ? latestSnapshotAt.toISOString() : null,
+    online: navigator.onLine !== false,
+    viewport: { width: window.innerWidth, height: window.innerHeight, visualHeight: window.visualViewport?.height || null },
     userAgent: navigator.userAgent
   };
   return JSON.stringify(report, null, 2);
@@ -881,7 +962,7 @@ async function bindRoomEvents() {
     await runButtonLocked('startMultiplayerBtn', latestRoom?.status === 'finished' ? '下一局中...' : '開始中...', async () => {
       try {
         setRoomMessage(latestRoom?.status === 'finished' ? '正在開始下一局並保留累計總分...' : '正在同步洗牌、發牌並開始多人遊戲...');
-        await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
+        await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules(), expectedGameNo: Number(latestRoom?.gameNo || 0) });
         playSound('start');
         setRoomMessage(latestRoom?.status === 'finished' ? '下一局已開始，累計總分已保留。' : '多人遊戲已開始。', 'ok');
       } catch (error) {
@@ -1232,6 +1313,21 @@ function bindGameEvents() {
   const refreshRoomsBtn = el('refreshRoomsBtn');
   if (refreshRoomsBtn) refreshRoomsBtn.addEventListener('click', refreshPublicRooms);
 
+  const cleanupRoomsBtn = el('cleanupRoomsBtn');
+  if (cleanupRoomsBtn) {
+    cleanupRoomsBtn.addEventListener('click', async () => {
+      await runButtonLocked('cleanupRoomsBtn', '清理中...', async () => {
+        try {
+          const result = await cleanupExpiredOwnedRooms();
+          setRoomMessage(`已檢查 ${result.checked} 個自己建立的房間，清理 ${result.deleted} 個超過 24 小時且未進行中的房間。`, 'ok');
+          await refreshPublicRooms();
+        } catch (error) {
+          setRoomMessage(makeFriendlyError(error) || '清理過期房間失敗。', 'warn');
+        }
+      });
+    });
+  }
+
   const clearRecentBtn = el('clearRecentRoomsBtn');
   if (clearRecentBtn) {
     clearRecentBtn.addEventListener('click', () => {
@@ -1254,6 +1350,7 @@ function bindGameEvents() {
 
 
 applyAnimationPreference();
+bindViewportAndNetworkEvents();
 bindHomeFlowEvents();
 bindGameEvents();
 bindRoomEvents();

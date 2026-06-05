@@ -2,17 +2,18 @@
 <html lang="zh-Hant">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.7.4</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.7.4：修正手機選牌上浮裁切，增加手牌安全留白並調整勾勾位置，保留精簡操作面板、牌桌緊鄰手牌與免 Cloud Functions 架構" />
-    <link rel="stylesheet" href="styles/base.css?v=0.7.4" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#060b14" />
+    <title>台灣大老二 Big2 TW v0.7.5</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.7.5：強化手機動態視窗、手牌滑動、安全區、斷線重連、Firebase 監聽與讀寫效能、過期房間清理及下一局穩定性" />
+    <link rel="stylesheet" href="styles/base.css?v=0.7.5" />
   </head>
   <body data-theme="dark">
     <header class="app-header">
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.7.4 手機選牌裁切修正版｜免 Cloud Functions</p>
+        <p class="subtitle">v0.7.5 手機實戰回歸＋效能穩定版｜免 Cloud Functions</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field ai-level-field">
@@ -74,6 +75,12 @@
         <span id="statusText">準備開始遊戲。</span>
       </section>
 
+      <section id="networkStatusBar" class="network-status-bar" data-state="online" aria-live="polite" aria-label="網路與同步狀態">
+        <strong id="networkStatusTitle">網路正常</strong>
+        <span id="networkStatusText">已連線；多人房間會自動同步。</span>
+        <button id="retryConnectionBtn" class="secondary-btn compact-network-btn hidden" type="button">重新連線</button>
+      </section>
+
       <section class="mobile-orientation-tip" aria-label="手機橫向提示">
         <strong>手機提示：</strong>
         <span>若手牌或結果表太寬，可以把手機轉成橫向，手牌也可左右滑動。</span>
@@ -83,7 +90,7 @@
         <div class="panel-heading">
           <div>
             <h2>首頁流程</h2>
-            <p class="hint small">v0.7.4 延續正式首頁流程，並修正手機選牌上浮時的牌面裁切問題。</p>
+            <p class="hint small">v0.7.5 延續正式首頁流程，並修正手機選牌上浮時的牌面裁切問題。</p>
           </div>
           <span class="pill ok">正式發布候選版</span>
         </div>
@@ -108,10 +115,10 @@
       <section class="online-fix-panel" aria-label="手機牌桌 UI 優化">
         <div class="panel-heading">
           <div>
-            <h2>手機牌桌與操作精簡</h2>
-            <p class="hint small">v0.7.4 增加手機手牌區上方安全留白、降低選牌上浮距離並將勾勾移入牌面，避免選中牌上緣被截掉。</p>
+            <h2>手機實戰與同步穩定</h2>
+            <p class="hint small">v0.7.5 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
           </div>
-          <span class="pill ok">v0.7.4</span>
+          <span class="pill ok">v0.7.5</span>
         </div>
         <div class="check-grid compact-check-grid">
           <div><strong>牌桌靠近手牌</strong><span>手機依序顯示牌桌、自己的手牌、操作按鈕，減少上下捲動。</span></div>
@@ -119,6 +126,8 @@
           <div><strong>牌面更集中</strong><span>上一手牌縮短留白並置中顯示，五張牌不再與自己的手牌距離過遠。</span></div>
           <div><strong>觸控更順手</strong><span>手牌保留橫向滑動，出牌與 Pass 按鈕維持大尺寸及底部黏附。</span></div>
           <div><strong>建議預設隱藏</strong><span>出牌建議與 Pass 細部設定改放在可展開的「出牌輔助」內，減少操作面板高度。</span></div>
+          <div><strong>動態視窗高度</strong><span>網址列展開或收合時使用 visualViewport 更新高度，降低畫面跳動。</span></div>
+          <div><strong>同步效能</strong><span>忽略只有心跳時間改變的快照，並只由房主執行離線狀態整理。</span></div>
         </div>
       </section>
 
@@ -128,7 +137,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.7.4</span>
+          <span class="pill">v0.7.5</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -160,7 +169,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.7.4 正式上線實測修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
+            <p class="hint small">v0.7.5 正式上線實測修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -234,6 +243,7 @@
           </div>
           <div class="button-row compact-actions">
             <button id="refreshRoomsBtn" class="secondary-btn" type="button">刷新房間列表</button>
+            <button id="cleanupRoomsBtn" class="secondary-btn" type="button">清理我的過期房間</button>
             <button id="clearRecentRoomsBtn" class="secondary-btn" type="button">清除最近房號</button>
           </div>
         </div>
@@ -253,7 +263,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.7.4 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.7.5 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -261,8 +271,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.7.4。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.7.4 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.7.5。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.7.5 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -274,11 +284,11 @@
           </div>
           <div class="button-row compact-actions">
             <button id="copyDebugBtn" class="secondary-btn" type="button">複製偵錯資訊</button>
-            <span class="pill">v0.7.4</span>
+            <span class="pill">v0.7.5</span>
           </div>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.7.4</span></div>
+          <div><strong>版本</strong><span>v0.7.5</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -543,10 +553,10 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.7.4</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.4 手機選牌裁切修正版</span>
+      <span>Big2 TW v0.7.5</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.5 手機選牌裁切修正版</span>
     </footer>
 
-    <script type="module" src="src/main.js?v=0.7.4"></script>
+    <script type="module" src="src/main.js?v=0.7.5"></script>
   </body>
 </html>
