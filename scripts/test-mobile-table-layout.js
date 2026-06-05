@@ -8,7 +8,7 @@ const css = fs.readFileSync(path.join(root, 'styles/base.css'), 'utf8');
 const tableStart = index.indexOf('<section class="table-area"');
 const lastPlay = index.indexOf('class="last-play-panel"', tableStart);
 const hand = index.indexOf('class="hand-section"', tableStart);
-const action = index.indexOf('class="action-panel"', tableStart);
+const action = index.indexOf('class="action-panel', tableStart);
 const tableEnd = index.indexOf('<section id="resultPanel"', tableStart);
 
 if ([tableStart, lastPlay, hand, action, tableEnd].some((value) => value < 0)) {
@@ -37,8 +37,8 @@ for (const text of cssNeeds) {
   }
 }
 
-if (!index.includes('styles/base.css?v=0.7.2') || !index.includes('src/main.js?v=0.7.2')) {
-  throw new Error('GitHub Pages 快取版本參數未更新為 v0.7.2。');
+if (!index.includes('styles/base.css?v=0.7.3') || !index.includes('src/main.js?v=0.7.3')) {
+  throw new Error('GitHub Pages 快取版本參數未更新為 v0.7.3。');
 }
 
 console.log('Mobile table layout tests passed.');

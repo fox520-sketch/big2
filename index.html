@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.7.2</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.7.2：手機牌桌 UI 優化版，縮短手機牌局畫面、讓牌桌牌緊鄰自己的手牌、壓縮玩家與座位資訊並強化觸控操作，維持免 Cloud Functions、不需要 Blaze" />
-    <link rel="stylesheet" href="styles/base.css?v=0.7.2" />
+    <title>台灣大老二 Big2 TW v0.7.3</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.7.3：精簡手機操作面板，將推薦出牌、最小可出、清除選牌與 Pass 設定收合於出牌輔助，維持牌桌緊鄰手牌與免 Cloud Functions 架構" />
+    <link rel="stylesheet" href="styles/base.css?v=0.7.3" />
   </head>
   <body data-theme="dark">
     <header class="app-header">
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.7.2 手機牌桌 UI 優化版｜免 Cloud Functions</p>
+        <p class="subtitle">v0.7.3 手機操作精簡版｜免 Cloud Functions</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field ai-level-field">
@@ -83,7 +83,7 @@
         <div class="panel-heading">
           <div>
             <h2>首頁流程</h2>
-            <p class="hint small">v0.7.2 將常用入口集中在這裡：單人練習、建立房間、加入房間、最近房間、規則說明與設定。</p>
+            <p class="hint small">v0.7.3 將常用入口集中在這裡：單人練習、建立房間、加入房間、最近房間、規則說明與設定。</p>
           </div>
           <span class="pill ok">正式發布候選版</span>
         </div>
@@ -108,16 +108,17 @@
       <section class="online-fix-panel" aria-label="手機牌桌 UI 優化">
         <div class="panel-heading">
           <div>
-            <h2>手機牌桌 UI 優化</h2>
-            <p class="hint small">v0.7.2 重新安排手機牌局區塊：牌桌／上一手緊接自己的手牌，操作按鈕固定在手牌下方，並壓縮玩家與座位資訊。</p>
+            <h2>手機牌桌與操作精簡</h2>
+            <p class="hint small">v0.7.3 保留牌桌緊鄰手牌的配置，並將推薦出牌、最小可出、清除選牌與 Pass 設定預設收合，操作區只先顯示必要資訊。</p>
           </div>
-          <span class="pill ok">v0.7.2</span>
+          <span class="pill ok">v0.7.3</span>
         </div>
         <div class="check-grid compact-check-grid">
           <div><strong>牌桌靠近手牌</strong><span>手機依序顯示牌桌、自己的手牌、操作按鈕，減少上下捲動。</span></div>
           <div><strong>玩家資訊壓縮</strong><span>手機玩家狀態改為橫向滑動卡片，座位資訊在牌局中改為雙欄。</span></div>
           <div><strong>牌面更集中</strong><span>上一手牌縮短留白並置中顯示，五張牌不再與自己的手牌距離過遠。</span></div>
           <div><strong>觸控更順手</strong><span>手牌保留橫向滑動，出牌與 Pass 按鈕維持大尺寸及底部黏附。</span></div>
+          <div><strong>建議預設隱藏</strong><span>出牌建議與 Pass 細部設定改放在可展開的「出牌輔助」內，減少操作面板高度。</span></div>
         </div>
       </section>
 
@@ -127,7 +128,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.7.2</span>
+          <span class="pill">v0.7.3</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -159,7 +160,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.7.2 正式上線實測修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
+            <p class="hint small">v0.7.3 正式上線實測修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -252,7 +253,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.7.2 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.7.3 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -260,8 +261,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.7.2。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.7.2 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.7.3。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.7.3 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -273,11 +274,11 @@
           </div>
           <div class="button-row compact-actions">
             <button id="copyDebugBtn" class="secondary-btn" type="button">複製偵錯資訊</button>
-            <span class="pill">v0.7.2</span>
+            <span class="pill">v0.7.3</span>
           </div>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.7.2</span></div>
+          <div><strong>版本</strong><span>v0.7.3</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -363,27 +364,32 @@
           <div id="humanHand" class="hand"></div>
         </section>
 
-        <div class="action-panel">
+        <div class="action-panel compact-action-panel">
           <div class="panel-heading">
             <h2>操作</h2>
             <span id="turnBadge" class="pill">等待中</span>
           </div>
           <p id="selectedInfo" class="hint selection-info" data-level="info">請選擇手牌後出牌。</p>
-          <p id="selectionAdvice" class="hint small selection-advice" data-level="info">系統會即時提示目前牌型是否可出。</p>
-          <div class="button-row assist-actions">
-            <button id="recommendPlayBtn" class="secondary-btn" type="button">推薦出牌</button>
-            <button id="minPlayableBtn" class="secondary-btn" type="button">最小可出</button>
-            <button id="clearSelectionBtn" class="secondary-btn" type="button">清除選牌</button>
-          </div>
           <div class="button-row main-actions">
             <button id="playBtn" class="primary-btn" type="button">出牌</button>
             <button id="passBtn" class="secondary-btn" type="button">Pass</button>
           </div>
-          <label class="inline-toggle pass-reminder-row">
-            <input id="passReminderToggle" type="checkbox" checked />
-            <span>有牌可出時，Pass 前提醒我</span>
-          </label>
-          <p id="passHelp" class="hint small">第一手依規則設定決定起手牌。輪到你領出時不能 Pass。</p>
+          <details id="playAssistDetails" class="play-assist-details">
+            <summary>出牌輔助與 Pass 設定</summary>
+            <div class="play-assist-content">
+              <p id="selectionAdvice" class="hint small selection-advice" data-level="info">系統會即時提示目前牌型是否可出。</p>
+              <div class="button-row assist-actions">
+                <button id="recommendPlayBtn" class="secondary-btn" type="button">推薦出牌</button>
+                <button id="minPlayableBtn" class="secondary-btn" type="button">最小可出</button>
+                <button id="clearSelectionBtn" class="secondary-btn" type="button">清除選牌</button>
+              </div>
+              <label class="inline-toggle pass-reminder-row">
+                <input id="passReminderToggle" type="checkbox" checked />
+                <span>有牌可出時，Pass 前提醒我</span>
+              </label>
+              <p id="passHelp" class="hint small">第一手依規則設定決定起手牌。輪到你領出時不能 Pass。</p>
+            </div>
+          </details>
         </div>
       </section>
 
@@ -537,10 +543,10 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.7.2</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.2 正式上線實測修正版</span>
+      <span>Big2 TW v0.7.3</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.3 手機操作精簡版</span>
     </footer>
 
-    <script type="module" src="src/main.js?v=0.7.2"></script>
+    <script type="module" src="src/main.js?v=0.7.3"></script>
   </body>
 </html>

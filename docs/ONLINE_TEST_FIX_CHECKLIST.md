@@ -1,11 +1,11 @@
-# v0.7.2 正式上線實測修正清單
+# v0.7.3 正式上線實測修正清單
 
 此版維持免 Cloud Functions、不需要 Blaze。重點是修正上傳 GitHub Pages 後，朋友實際用手機加入房間時最常遇到的問題。
 
 ## 1. GitHub Pages
 
-- `index.html` 載入 `styles/base.css?v=0.7.2`。
-- `index.html` 載入 `src/main.js?v=0.7.2`。
+- `index.html` 載入 `styles/base.css?v=0.7.3`。
+- `index.html` 載入 `src/main.js?v=0.7.3`。
 - 目的：降低瀏覽器或手機快取造成舊版 JS / CSS 殘留的機率。
 - 上傳後若仍看到舊版，請按 Ctrl + F5，或用手機無痕模式重新開啟。
 

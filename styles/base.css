@@ -1766,7 +1766,7 @@ body[data-motion='on'] .player-card.active {
   }
 }
 
-/* v0.7.2 正式發布候選版：首頁流程、新手教學與發布檢查 */
+/* v0.7.3 正式發布候選版：首頁流程、新手教學與發布檢查 */
 .home-panel,
 .tutorial-panel,
 .release-panel {
@@ -1839,7 +1839,7 @@ body[data-gameplay-focus='on'] .release-panel {
   }
 }
 
-/* v0.7.2 正式上線實測修正：QR 備援與手機按鈕防呆 */
+/* v0.7.3 正式上線實測修正：QR 備援與手機按鈕防呆 */
 .secondary-link {
   color: var(--primary);
   font-weight: 850;
@@ -1882,7 +1882,7 @@ button[aria-busy="true"] {
   }
 }
 
-/* v0.7.2 手機牌桌 UI：讓牌桌牌緊鄰自己的手牌 */
+/* v0.7.3 手機牌桌 UI：讓牌桌牌緊鄰自己的手牌 */
 .table-area {
   grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 1fr);
   grid-template-areas:
@@ -2115,5 +2115,117 @@ button[aria-busy="true"] {
     bottom: auto;
     max-height: calc(100vh - 0.7rem);
     overflow-y: auto;
+  }
+}
+
+/* v0.7.3 手機操作精簡：預設收合推薦出牌與進階提示 */
+.compact-action-panel .main-actions {
+  margin-top: 0.55rem;
+}
+
+.play-assist-details {
+  margin-top: 0.6rem;
+  border: 1.5px solid var(--border);
+  border-radius: 0.9rem;
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+  overflow: clip;
+}
+
+.play-assist-details summary {
+  min-height: 2.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.58rem 0.78rem;
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 900;
+  user-select: none;
+  list-style: none;
+}
+
+.play-assist-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.play-assist-details summary::after {
+  content: '展開';
+  flex: 0 0 auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.18rem 0.48rem;
+  color: var(--muted);
+  background: var(--surface);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.play-assist-details[open] summary {
+  border-bottom: 1.5px solid var(--border);
+}
+
+.play-assist-details[open] summary::after {
+  content: '收合';
+}
+
+.play-assist-content {
+  padding: 0 0.7rem 0.72rem;
+}
+
+.play-assist-content .selection-advice,
+.play-assist-content #passHelp {
+  margin-top: 0.62rem;
+}
+
+@media (max-width: 760px) {
+  .compact-action-panel {
+    padding: 0.55rem 0.62rem;
+  }
+
+  .compact-action-panel .panel-heading {
+    margin-bottom: 0.3rem;
+  }
+
+  .compact-action-panel .selection-info {
+    margin-top: 0.2rem;
+    padding: 0.48rem 0.58rem;
+    min-height: 0;
+  }
+
+  .compact-action-panel .main-actions {
+    margin-top: 0.42rem;
+    gap: 0.42rem;
+  }
+
+  .compact-action-panel .main-actions .primary-btn,
+  .compact-action-panel .main-actions .secondary-btn {
+    min-height: 3rem;
+  }
+
+  .play-assist-details {
+    margin-top: 0.45rem;
+  }
+
+  .play-assist-details summary {
+    min-height: 2.45rem;
+    padding: 0.48rem 0.62rem;
+    font-size: 0.88rem;
+  }
+
+  .play-assist-details summary::after {
+    font-size: 0.7rem;
+  }
+
+  .play-assist-content {
+    padding: 0 0.55rem 0.58rem;
+  }
+
+  .play-assist-content .assist-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .play-assist-content .assist-actions #clearSelectionBtn {
+    grid-column: 1 / -1;
   }
 }
