@@ -3,16 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>台灣大老二 Big2 TW v0.7.1</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.7.1：正式上線實測修正版，修正 GitHub Pages、Firebase、建立/加入房間、QR Code、密碼房、多人同步、手機操作、排行榜與下一局問題，維持免 Cloud Functions、不需要 Blaze" />
-    <link rel="stylesheet" href="styles/base.css?v=0.7.1" />
+    <title>台灣大老二 Big2 TW v0.7.2</title>
+    <meta name="description" content="台灣大老二網頁遊戲 v0.7.2：手機牌桌 UI 優化版，縮短手機牌局畫面、讓牌桌牌緊鄰自己的手牌、壓縮玩家與座位資訊並強化觸控操作，維持免 Cloud Functions、不需要 Blaze" />
+    <link rel="stylesheet" href="styles/base.css?v=0.7.2" />
   </head>
   <body data-theme="dark">
     <header class="app-header">
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.7.1 正式上線實測修正版｜免 Cloud Functions</p>
+        <p class="subtitle">v0.7.2 手機牌桌 UI 優化版｜免 Cloud Functions</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field ai-level-field">
@@ -83,7 +83,7 @@
         <div class="panel-heading">
           <div>
             <h2>首頁流程</h2>
-            <p class="hint small">v0.7.1 將常用入口集中在這裡：單人練習、建立房間、加入房間、最近房間、規則說明與設定。</p>
+            <p class="hint small">v0.7.2 將常用入口集中在這裡：單人練習、建立房間、加入房間、最近房間、規則說明與設定。</p>
           </div>
           <span class="pill ok">正式發布候選版</span>
         </div>
@@ -105,19 +105,19 @@
 
 
 
-      <section class="online-fix-panel" aria-label="正式上線實測修正">
+      <section class="online-fix-panel" aria-label="手機牌桌 UI 優化">
         <div class="panel-heading">
           <div>
-            <h2>正式上線實測修正</h2>
-            <p class="hint small">v0.7.1 針對 GitHub Pages、Firebase、建立/加入房間、QR Code、密碼房、多人同步、手機操作、排行榜與下一局做實測防呆。</p>
+            <h2>手機牌桌 UI 優化</h2>
+            <p class="hint small">v0.7.2 重新安排手機牌局區塊：牌桌／上一手緊接自己的手牌，操作按鈕固定在手牌下方，並壓縮玩家與座位資訊。</p>
           </div>
-          <span class="pill ok">v0.7.1</span>
+          <span class="pill ok">v0.7.2</span>
         </div>
         <div class="check-grid compact-check-grid">
-          <div><strong>GitHub Pages</strong><span>CSS / JS 加入版本參數，降低瀏覽器讀到舊檔案的機率。</span></div>
-          <div><strong>房間操作</strong><span>建立、加入、補 AI、開始、離開皆加入按鈕鎖定，避免連點造成重複寫入。</span></div>
-          <div><strong>QR Code</strong><span>新增載入失敗提示與圖片備援連結，掃碼失敗時可改複製邀請連結。</span></div>
-          <div><strong>密碼房</strong><span>加入失敗會提醒回到密碼欄位，避免誤以為 Firebase 故障。</span></div>
+          <div><strong>牌桌靠近手牌</strong><span>手機依序顯示牌桌、自己的手牌、操作按鈕，減少上下捲動。</span></div>
+          <div><strong>玩家資訊壓縮</strong><span>手機玩家狀態改為橫向滑動卡片，座位資訊在牌局中改為雙欄。</span></div>
+          <div><strong>牌面更集中</strong><span>上一手牌縮短留白並置中顯示，五張牌不再與自己的手牌距離過遠。</span></div>
+          <div><strong>觸控更順手</strong><span>手牌保留橫向滑動，出牌與 Pass 按鈕維持大尺寸及底部黏附。</span></div>
         </div>
       </section>
 
@@ -127,7 +127,7 @@
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.7.1</span>
+          <span class="pill">v0.7.2</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -159,7 +159,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.7.1 正式上線實測修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
+            <p class="hint small">v0.7.2 正式上線實測修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -252,7 +252,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.7.1 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.7.2 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -260,8 +260,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.7.1。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.7.1 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.7.2。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.7.2 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -273,11 +273,11 @@
           </div>
           <div class="button-row compact-actions">
             <button id="copyDebugBtn" class="secondary-btn" type="button">複製偵錯資訊</button>
-            <span class="pill">v0.7.1</span>
+            <span class="pill">v0.7.2</span>
           </div>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.7.1</span></div>
+          <div><strong>版本</strong><span>v0.7.2</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -332,15 +332,36 @@
         <article class="player-card" id="playerStatus3"></article>
       </section>
 
-      <section class="table-area" aria-label="牌桌">
+      <section class="table-area" aria-label="牌桌與我的手牌">
         <div class="last-play-panel">
           <div class="panel-heading">
-            <h2>上一手</h2>
+            <h2>牌桌／上一手</h2>
             <span id="lastPlayType" class="pill">尚未出牌</span>
           </div>
           <div id="lastPlayCards" class="card-row empty">等待梅花 3 起手</div>
           <p id="lastPlayHint" class="hint small play-requirement">第一手依規則設定決定起手牌。</p>
         </div>
+
+        <section class="hand-section" aria-label="我的手牌">
+          <div class="panel-heading hand-heading">
+            <div>
+              <h2>我的手牌</h2>
+              <p class="hint small">手機可左右滑動手牌；牌桌會緊鄰手牌，選中的牌會明顯上浮。</p>
+            </div>
+            <div class="hand-tools">
+              <label class="field compact-field">
+                <span>手牌排序</span>
+                <select id="handSortSelect" aria-label="選擇手牌排序">
+                  <option value="rank">依點數排序</option>
+                  <option value="suit">依花色排序</option>
+                  <option value="combo">依牌型建議排序</option>
+                </select>
+              </label>
+              <span id="handCount" class="pill">0 張</span>
+            </div>
+          </div>
+          <div id="humanHand" class="hand"></div>
+        </section>
 
         <div class="action-panel">
           <div class="panel-heading">
@@ -364,27 +385,6 @@
           </label>
           <p id="passHelp" class="hint small">第一手依規則設定決定起手牌。輪到你領出時不能 Pass。</p>
         </div>
-      </section>
-
-      <section class="hand-section" aria-label="我的手牌">
-        <div class="panel-heading hand-heading">
-          <div>
-            <h2>我的手牌</h2>
-            <p class="hint small">手機可左右滑動手牌；選中的牌會明顯上浮。</p>
-          </div>
-          <div class="hand-tools">
-            <label class="field compact-field">
-              <span>手牌排序</span>
-              <select id="handSortSelect" aria-label="選擇手牌排序">
-                <option value="rank">依點數排序</option>
-                <option value="suit">依花色排序</option>
-                <option value="combo">依牌型建議排序</option>
-              </select>
-            </label>
-            <span id="handCount" class="pill">0 張</span>
-          </div>
-        </div>
-        <div id="humanHand" class="hand"></div>
       </section>
 
       <section id="resultPanel" class="result-panel hidden" aria-label="本局結果"></section>
@@ -537,10 +537,10 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.7.1</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.1 正式上線實測修正版</span>
+      <span>Big2 TW v0.7.2</span>
+      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.2 正式上線實測修正版</span>
     </footer>
 
-    <script type="module" src="src/main.js?v=0.7.1"></script>
+    <script type="module" src="src/main.js?v=0.7.2"></script>
   </body>
 </html>

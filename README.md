@@ -1,16 +1,16 @@
-# 台灣大老二 Big2 TW v0.7.1
+# 台灣大老二 Big2 TW v0.7.2
 
 這是一個可上傳 GitHub Pages 的純前端台灣大老二網頁遊戲，支援單人 AI 對戰、Firebase 多人房間、多人同步牌局、連續對戰、規則設定、計分設定、主題切換、手機 UI、音效、動畫、出牌輔助與發布前檢查。
 
-## v0.7.1 修正重點
+## v0.7.2 手機牌桌 UI 優化重點
 
-- GitHub Pages 上線穩定性修正：CSS / JS 加入版本參數，降低瀏覽器快取造成舊版檔案殘留的機率。
-- Firebase 建立房間 / 加入房間防連點：建立、加入、補 AI、開始多人遊戲、離開房間都會在執行中暫時鎖定按鈕。
-- QR Code 顯示強化：新增載入狀態、載入失敗提示與備援圖片連結；掃碼失敗時可改複製邀請連結。
-- 密碼房提示強化：密碼錯誤時會自動聚焦到房間密碼欄位，並提示重新輸入。
-- 多人同步與下一局穩定性維持：保留出牌 / Pass revision 檢查、下一局 gameId 重建、排行榜防重複累加。
-- 手機操作修正：房間操作按鈕維持單欄大按鈕，牌局操作區在手機上靠近手牌並降低誤觸。
-- 新增 `docs/ONLINE_TEST_FIX_CHECKLIST.md` 與 `scripts/test-online-readiness.js`。
+- 手機牌局順序改為「牌桌／上一手 → 我的手牌 → 操作」，上一手牌會直接靠近自己的牌。
+- 手牌區正式納入牌桌版面：桌機仍維持雙欄牌桌與操作區，手機則改成單欄緊湊排列。
+- 手機玩家狀態改為橫向滑動卡片，避免四位玩家垂直堆疊占滿畫面。
+- 牌局專注模式的座位資訊改為雙欄小卡，縮短房間資訊高度。
+- 上一手牌在手機上改為置中、緊湊顯示，不再套用手牌的長距離橫向捲動版面。
+- 操作區移到手牌下方並維持底部黏附，選牌後更容易直接按「出牌」或「Pass」。
+- 縮短牌局各區塊間距、標題留白與說明高度，保留安全區與 44px 以上觸控目標。
 - 維持免 Cloud Functions 架構，不需要 Blaze 付費方案，也不需要 `functions/`。
 
 ## 功能
@@ -64,7 +64,7 @@
 docs/FIREBASE_SETUP.md
 ```
 
-v0.7.1 是免 Cloud Functions 版。更新後請務必把本版 `firestore.rules` 貼到 Firebase Console → Firestore Database → Rules → Publish。若你曾經貼過 Cloud Functions 防作弊版 Rules，請改貼回本版 Rules。
+v0.7.2 是免 Cloud Functions 版。更新後請務必把本版 `firestore.rules` 貼到 Firebase Console → Firestore Database → Rules → Publish。若你曾經貼過 Cloud Functions 防作弊版 Rules，請改貼回本版 Rules。
 
 ## 文件
 
@@ -91,9 +91,9 @@ npm test
 
 ## GitHub Pages 上傳提醒
 
-請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.7.1` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
+請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.7.2` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
 
-v0.7.1 不需要上傳：
+v0.7.2 不需要上傳：
 
 ```txt
 functions/

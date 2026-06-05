@@ -8,9 +8,9 @@ const css = fs.readFileSync(path.join(root, 'styles/base.css'), 'utf8');
 const docs = fs.readFileSync(path.join(root, 'docs/ONLINE_TEST_FIX_CHECKLIST.md'), 'utf8');
 
 const indexNeeds = [
-  'styles/base.css?v=0.7.1',
-  'src/main.js?v=0.7.1',
-  '正式上線實測修正',
+  'styles/base.css?v=0.7.2',
+  'src/main.js?v=0.7.2',
+  '手機牌桌 UI 優化',
   'qrStatusText',
   'qrFallbackLink'
 ];

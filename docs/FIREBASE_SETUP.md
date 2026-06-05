@@ -1,4 +1,4 @@
-# Firebase 設定步驟｜Big2 TW v0.7.1 免 Cloud Functions 版
+# Firebase 設定步驟｜Big2 TW v0.7.2 免 Cloud Functions 版
 
 > 這版是 GitHub Pages + Firebase Auth + Cloud Firestore 的休閒穩定版，不需要 Blaze 付費方案，也不需要部署 `functions/`。
 
@@ -80,7 +80,7 @@ firebase-adminsdk.json
 ## 7. 發布後測試
 
 1. 開啟 GitHub Pages 網址。
-2. 確認頁面顯示 v0.7.1。
+2. 確認頁面顯示 v0.7.2。
 3. 按「執行 Firebase 檢查」。
 4. 確認 Firebase Config、匿名登入、Firestore 寫入通過。
 5. 建立房間，邀請朋友加入。

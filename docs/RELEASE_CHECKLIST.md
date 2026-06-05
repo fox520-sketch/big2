@@ -1,11 +1,11 @@
-# v0.7.1 發布檢查清單
+# v0.7.2 發布檢查清單
 
 ## 1. GitHub Pages 上傳檢查
 
-- 解壓縮 `big2-tw-v0.7.1.zip`。
+- 解壓縮 `big2-tw-v0.7.2.zip`。
 - 只上傳資料夾裡面的檔案到 repository 根目錄。
 - 確認 GitHub 根目錄可以看到 `index.html`、`src/`、`styles/`、`docs/`、`firestore.rules`、`README.md`、`VERSION.md`。
-- 不要把整個 `big2-tw-v0.7.1/` 資料夾再包一層上傳。
+- 不要把整個 `big2-tw-v0.7.2/` 資料夾再包一層上傳。
 
 ## 2. Firebase Config 檢查
 
@@ -54,7 +54,7 @@ firebase-adminsdk.json
 ## 6. 發布後檢查
 
 - 打開 GitHub Pages 網址。
-- 確認頁面顯示 v0.7.1。
+- 確認頁面顯示 v0.7.2。
 - 按「執行 Firebase 檢查」。
 - 確認 Firebase Config、匿名登入、Firestore 寫入可用。
 - 建立新房間測試，不沿用舊版房間。
