@@ -4,16 +4,64 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#060b14" />
-    <title>台灣大老二 Big2 TW v0.7.5</title>
-    <meta name="description" content="台灣大老二網頁遊戲 v0.7.5：強化手機動態視窗、手牌滑動、安全區、斷線重連、Firebase 監聽與讀寫效能、過期房間清理及下一局穩定性" />
-    <link rel="stylesheet" href="styles/base.css?v=0.7.5" />
+    <title>台灣大老二 Big2 TW｜單人 AI 與好友連線 PWA</title>
+    <meta name="description" content="台灣大老二 Big2 TW：支援單人 AI、Firebase 好友連線、手機安裝 PWA、13 種主題、排行榜與連續對戰；免 Cloud Functions、不需要 Blaze。" />
+    <meta name="application-name" content="台灣大老二 Big2 TW" />
+    <meta name="apple-mobile-web-app-title" content="台灣大老二" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://fox520-sketch.github.io/big2/" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:site_name" content="台灣大老二 Big2 TW" />
+    <meta property="og:title" content="台灣大老二｜單人 AI 與好友連線 PWA" />
+    <meta property="og:description" content="台灣大老二網頁遊戲：單人 AI、Firebase 好友連線、手機安裝、排行榜與連續對戰。" />
+    <meta property="og:url" content="https://fox520-sketch.github.io/big2/" />
+    <meta property="og:image" content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="台灣大老二 Big2 TW 遊戲預覽" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="台灣大老二｜單人 AI 與好友連線 PWA" />
+    <meta name="twitter:description" content="免安裝即可玩，也可加入手機桌面。支援單人 AI 與 Firebase 好友連線。" />
+    <meta name="twitter:image" content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" />
+
+    <link rel="manifest" href="manifest.webmanifest?v=0.8.0" />
+    <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png" />
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" sizes="180x180" />
+    <link rel="apple-touch-startup-image" href="assets/splash/splash-portrait.png" media="(orientation: portrait)" />
+    <link rel="apple-touch-startup-image" href="assets/splash/splash-landscape.png" media="(orientation: landscape)" />
+    <link rel="stylesheet" href="styles/base.css?v=0.8.0" />
   </head>
   <body data-theme="dark">
+    <div id="pwaSplash" class="pwa-splash" role="status" aria-label="台灣大老二載入中">
+      <img src="assets/icons/icon-192.png" alt="" width="96" height="96" />
+      <strong>台灣大老二</strong>
+      <span>正在準備牌桌…</span>
+    </div>
+
+    <div id="pwaUpdateBanner" class="pwa-banner hidden" role="status" aria-live="polite">
+      <span><strong>發現新版本</strong>　重新載入即可套用最新牌桌。</span>
+      <div class="button-row compact">
+        <button id="pwaUpdateBtn" class="primary-btn" type="button">立即更新</button>
+        <button id="pwaUpdateLaterBtn" class="secondary-btn" type="button">稍後</button>
+      </div>
+    </div>
+
+    <div id="pwaOfflineBanner" class="pwa-offline-banner hidden" role="status" aria-live="assertive">
+      <strong>目前離線</strong>
+      <span>單人遊戲仍可使用；多人出牌請等網路恢復後再操作。</span>
+    </div>
     <header class="app-header">
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.7.5 手機實戰回歸＋效能穩定版｜免 Cloud Functions</p>
+        <p class="subtitle">v0.8.0 PWA 正式公開版｜免 Cloud Functions</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field ai-level-field">
@@ -60,6 +108,9 @@
           </select>
         </label>
         <button id="soundToggleBtn" class="secondary-btn" type="button" aria-pressed="true">音效：開</button>
+        <button id="installAppBtn" class="primary-btn hidden" type="button">安裝遊戲</button>
+        <button id="shareGameBtn" class="secondary-btn" type="button">分享遊戲</button>
+        <button id="openOnboardingBtn" class="secondary-btn" type="button">使用導覽</button>
         <button id="focusModeToggleBtn" class="secondary-btn" type="button" aria-pressed="true">顯示設定</button>
         <button id="newGameBtn" class="secondary-btn" type="button">重新開局</button>
       </div>
@@ -90,9 +141,9 @@
         <div class="panel-heading">
           <div>
             <h2>首頁流程</h2>
-            <p class="hint small">v0.7.5 延續正式首頁流程，並修正手機選牌上浮時的牌面裁切問題。</p>
+            <p class="hint small">v0.8.0 可安裝到手機桌面，支援離線開啟單人遊戲、新版更新提示與首次使用導覽。</p>
           </div>
-          <span class="pill ok">正式發布候選版</span>
+          <span class="pill ok">PWA 正式公開版</span>
         </div>
         <div class="home-actions">
           <button id="quickSingleBtn" class="primary-btn" type="button">單人遊戲</button>
@@ -116,9 +167,9 @@
         <div class="panel-heading">
           <div>
             <h2>手機實戰與同步穩定</h2>
-            <p class="hint small">v0.7.5 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
+            <p class="hint small">v0.8.0 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
           </div>
-          <span class="pill ok">v0.7.5</span>
+          <span class="pill ok">v0.8.0</span>
         </div>
         <div class="check-grid compact-check-grid">
           <div><strong>牌桌靠近手牌</strong><span>手機依序顯示牌桌、自己的手牌、操作按鈕，減少上下捲動。</span></div>
@@ -131,13 +182,37 @@
         </div>
       </section>
 
+
+      <section class="pwa-release-panel" aria-label="PWA 正式公開功能">
+        <div class="panel-heading">
+          <div>
+            <h2>PWA 正式公開功能</h2>
+            <p class="hint small">可從瀏覽器安裝到手機或電腦桌面，以獨立視窗開啟；首頁與單人牌局資源可離線載入，多人功能仍需要網路。</p>
+          </div>
+          <span id="pwaStatusBadge" class="pill ok">PWA 就緒</span>
+        </div>
+        <div class="check-grid compact-check-grid">
+          <div><strong>安裝到桌面</strong><span>Android、Chrome、Edge 可使用「安裝遊戲」；iPhone 可由 Safari 分享選單加入主畫面。</span></div>
+          <div><strong>獨立視窗</strong><span>從桌面圖示開啟時減少網址列占用，讓手機牌桌有更多空間。</span></div>
+          <div><strong>離線單人</strong><span>Service Worker 會快取首頁、規則引擎、AI、主題與牌面；多人房間需連線 Firebase。</span></div>
+          <div><strong>版本更新</strong><span>偵測到新版時顯示提示，由玩家確認後重新載入，避免牌局中被強制更新。</span></div>
+          <div><strong>分享預覽</strong><span>加入 Open Graph 圖片與描述，分享至 LINE、Facebook 等平台時更容易辨識。</span></div>
+          <div><strong>首次導覽</strong><span>第一次開啟會顯示四步驟教學，也可從右上角「使用導覽」重新觀看。</span></div>
+        </div>
+        <div id="pwaInstallHelp" class="pwa-install-help hidden" aria-live="polite">
+          <strong>安裝方式</strong>
+          <p id="pwaInstallHelpText">瀏覽器支援安裝時，右上角會顯示「安裝遊戲」。</p>
+          <button id="closeInstallHelpBtn" class="secondary-btn" type="button">關閉說明</button>
+        </div>
+      </section>
+
       <section class="settings-panel" aria-label="正式規則與計分設定">
         <div class="panel-heading">
           <div>
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.7.5</span>
+          <span class="pill">v0.8.0</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -169,7 +244,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.7.5 正式上線實測修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
+            <p class="hint small">v0.8.0 正式上線實測修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -263,7 +338,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.7.5 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.8.0 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -271,8 +346,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.7.5。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.7.5 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.8.0。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.8.0 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -284,11 +359,11 @@
           </div>
           <div class="button-row compact-actions">
             <button id="copyDebugBtn" class="secondary-btn" type="button">複製偵錯資訊</button>
-            <span class="pill">v0.7.5</span>
+            <span class="pill">v0.8.0</span>
           </div>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.7.5</span></div>
+          <div><strong>版本</strong><span>v0.8.0</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -529,15 +604,15 @@
         <div class="panel-heading">
           <div>
             <h2>發布檢查清單</h2>
-            <p class="hint small">上傳 GitHub Pages 前請逐項確認。完整清單請看 docs/RELEASE_CHECKLIST.md。</p>
+            <p class="hint small">上傳 GitHub Pages 前請逐項確認。完整清單請看 docs/PWA_RELEASE_CHECKLIST.md。</p>
           </div>
           <span class="pill ok">免付費部署</span>
         </div>
         <div class="check-grid">
-          <div><strong>GitHub Pages</strong><span>解壓後只上傳根目錄檔案，不要多包一層資料夾。</span></div>
-          <div><strong>Firebase</strong><span>確認 src/firebase-config.js 已填入 Web App 設定，匿名登入已啟用。</span></div>
+          <div><strong>GitHub Pages</strong><span>解壓後把 index.html、manifest、service-worker、assets、src 等根目錄內容完整上傳，不要多包一層資料夾。</span></div>
+          <div><strong>Firebase</strong><span>保留你已設定好的 src/firebase-config.js，並確認匿名登入已啟用。</span></div>
           <div><strong>Firestore Rules</strong><span>貼上本版 firestore.rules 並 Publish，不要使用 Cloud Functions 版 Rules。</span></div>
-          <div><strong>不要上傳</strong><span>不要上傳 functions/、node_modules/、.env、serviceAccountKey.json 或任何私鑰。</span></div>
+          <div><strong>不要上傳</strong><span>要上傳 manifest.webmanifest、service-worker.js 與 assets/；不要上傳 functions/、node_modules/、.env 或任何私鑰。</span></div>
         </div>
       </section>
 
@@ -553,10 +628,60 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v0.7.5</span>
-      <span>可上傳 GitHub Pages；Firebase 設定請看 docs/FIREBASE_SETUP.md；v0.7.5 手機選牌裁切修正版</span>
+      <span>Big2 TW v0.8.0</span>
+      <span>GitHub Pages PWA｜免 Cloud Functions｜<a href="privacy.html">隱私與資料使用</a>｜設定請看 docs/PWA_RELEASE_CHECKLIST.md</span>
     </footer>
 
-    <script type="module" src="src/main.js?v=0.7.5"></script>
+
+    <dialog id="onboardingDialog" class="onboarding-dialog" aria-labelledby="onboardingTitle">
+      <div class="onboarding-shell">
+        <div class="panel-heading compact">
+          <div>
+            <p class="eyebrow">Big2 TW v0.8.0</p>
+            <h2 id="onboardingTitle">第一次玩？四步快速上手</h2>
+          </div>
+          <button id="closeOnboardingBtn" class="icon-close-btn" type="button" aria-label="關閉使用導覽">×</button>
+        </div>
+        <div class="onboarding-progress" aria-hidden="true">
+          <span class="active"></span><span></span><span></span><span></span>
+        </div>
+        <div class="onboarding-step active" data-step="0">
+          <img src="assets/icons/icon-192.png" alt="台灣大老二圖示" width="112" height="112" />
+          <h3>選擇單人或多人</h3>
+          <p>單人模式可直接和 3 家 AI 對戰；多人模式建立房間後，可用連結或 QR Code 邀請朋友。</p>
+        </div>
+        <div class="onboarding-step" data-step="1">
+          <div class="onboarding-card-demo"><span>♣3</span><span>♥3</span></div>
+          <h3>選牌後按出牌</h3>
+          <p>點選手牌會向上浮起。第一手依預設規則必須包含梅花 3；出牌提示會告訴你牌型是否合法。</p>
+        </div>
+        <div class="onboarding-step" data-step="2">
+          <div class="onboarding-room-demo">房號 <strong>BIG2TW</strong></div>
+          <h3>分享房間給朋友</h3>
+          <p>建立房間後複製邀請連結或顯示 QR Code；不足四人可由房主補上 AI 空位。</p>
+        </div>
+        <div class="onboarding-step" data-step="3">
+          <div class="onboarding-install-demo">＋ 加入主畫面</div>
+          <h3>安裝到手機桌面</h3>
+          <p>支援的瀏覽器可直接按「安裝遊戲」。iPhone 請在 Safari 點分享，再選「加入主畫面」。</p>
+        </div>
+        <label class="onboarding-never-show"><input id="onboardingRememberCheck" type="checkbox" checked /> 完成或略過後不再自動顯示</label>
+        <div class="onboarding-actions">
+          <button id="onboardingSkipBtn" class="secondary-btn" type="button">略過教學</button>
+          <div class="button-row compact">
+            <button id="onboardingPrevBtn" class="secondary-btn" type="button" disabled>上一步</button>
+            <button id="onboardingNextBtn" class="primary-btn" type="button">下一步</button>
+          </div>
+        </div>
+      </div>
+    </dialog>
+
+    <noscript>
+      <style>.pwa-splash{display:none!important}</style>
+      <div class="noscript-warning">台灣大老二需要 JavaScript 才能執行，請在瀏覽器設定中啟用 JavaScript。</div>
+    </noscript>
+
+    <script type="module" src="src/pwa.js?v=0.8.0"></script>
+    <script type="module" src="src/main.js?v=0.8.0"></script>
   </body>
 </html>

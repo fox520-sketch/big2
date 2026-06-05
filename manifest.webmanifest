@@ -1,0 +1,70 @@
+{
+  "id": "./",
+  "name": "台灣大老二 Big2 TW",
+  "short_name": "台灣大老二",
+  "description": "台灣大老二網頁遊戲，支援單人 AI、Firebase 好友房間、排行榜、手機 PWA 與多種主題。",
+  "lang": "zh-TW",
+  "dir": "ltr",
+  "start_url": "./?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
+  "orientation": "any",
+  "background_color": "#060b14",
+  "theme_color": "#060b14",
+  "categories": [
+    "games",
+    "entertainment"
+  ],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "assets/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "開始單人遊戲",
+      "short_name": "單人遊戲",
+      "description": "開啟台灣大老二單人 AI 對戰",
+      "url": "./?action=single",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "加入好友房間",
+      "short_name": "加入房間",
+      "description": "開啟多人房間加入畫面",
+      "url": "./?action=join",
+      "icons": [
+        {
+          "src": "assets/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ]
+}

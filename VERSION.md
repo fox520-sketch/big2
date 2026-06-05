@@ -1,5 +1,32 @@
 # 版本說明
 
+## v0.8.0 - 2026-06-05
+### PWA 正式公開版
+- 新增 `manifest.webmanifest`，支援安裝到 Android、Chrome、Edge 與電腦桌面。
+- 新增獨立視窗模式、App 圖示、maskable icon、Apple Touch Icon、favicon 與啟動畫面。
+- 新增 `service-worker.js`，快取首頁、單人規則引擎、AI、牌面、主題與必要資源。
+- 離線時可開啟首頁與單人遊戲；Firebase 多人房間仍需要網路。
+- 新增新版偵測與「立即更新／稍後」提示，避免牌局進行中被強制重新載入。
+- 新增安裝按鈕與 iPhone Safari「加入主畫面」說明。
+- 新增原生分享功能，不支援時改為複製遊戲連結。
+
+### SEO 與分享
+- 新增 canonical URL、Open Graph、Twitter Card 與 1200×630 分享預覽圖。
+- 新增 `robots.txt`、`sitemap.xml`、正式網頁標題與描述。
+- 新增 `privacy.html` 與 `docs/PRIVACY_AND_DATA.md`。
+
+### 首次使用導覽
+- 新增四步驟首次使用導覽：單人／多人、選牌出牌、邀請房間、安裝到桌面。
+- 可略過、不再自動顯示，也可從右上角「使用導覽」重新開啟。
+- 新增 PWA 啟動載入畫面與離線提示。
+
+### 發布與測試
+- 新增 `docs/PWA_RELEASE_CHECKLIST.md`。
+- 新增 `scripts/test-pwa-release.js`，檢查 manifest、圖示尺寸、Service Worker、SEO、導覽、隱私頁及 GitHub Pages 相對路徑。
+- 維持免 Cloud Functions、不需要 Blaze，不包含 `functions/`。
+- 本版未新增 Firestore 文件欄位。
+
+---
 ## v0.7.5 - 2026-06-05
 ### 手機實戰回歸與效能穩定
 - 使用 `visualViewport` 與 CSS `--app-height` 同步手機可視高度，降低 Android Chrome、iPhone Safari 網址列伸縮造成的畫面跳動。

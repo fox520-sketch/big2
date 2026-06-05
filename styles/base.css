@@ -2497,3 +2497,333 @@ body {
     height: 4.05rem;
   }
 }
+
+/* v0.8.0 PWA 正式公開版 */
+.pwa-splash {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom);
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--primary) 28%, transparent), transparent 40%),
+    #060b14;
+  color: #f7fbff;
+  text-align: center;
+  transition: opacity .38s ease, visibility .38s ease;
+}
+
+.pwa-splash img {
+  width: 96px;
+  height: 96px;
+  border-radius: 24px;
+  box-shadow: 0 18px 50px #0009;
+}
+
+.pwa-splash strong {
+  font-size: clamp(1.65rem, 6vw, 2.4rem);
+  letter-spacing: .06em;
+}
+
+.pwa-splash span {
+  color: #c8d9ec;
+}
+
+.pwa-splash.is-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.pwa-banner,
+.pwa-offline-banner {
+  position: sticky;
+  top: env(safe-area-inset-top, 0px);
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 10px max(16px, env(safe-area-inset-left)) 10px max(16px, env(safe-area-inset-right));
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface) 94%, var(--primary) 6%);
+  color: var(--text);
+  box-shadow: 0 10px 25px #0003;
+}
+
+.pwa-offline-banner {
+  background: #55210d;
+  color: #fff7ed;
+  border-color: #fdba74;
+}
+
+.pwa-banner.hidden,
+.pwa-offline-banner.hidden,
+.pwa-install-help.hidden {
+  display: none !important;
+}
+
+.pwa-release-panel {
+  border-color: color-mix(in srgb, var(--primary) 65%, var(--border));
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--primary) 9%, transparent), transparent 58%),
+    var(--surface);
+}
+
+.pwa-install-help {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px dashed var(--primary);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-2, var(--surface)) 90%, var(--primary) 10%);
+}
+
+.pwa-install-help p {
+  margin: 8px 0 12px;
+  line-height: 1.7;
+}
+
+.onboarding-dialog {
+  width: min(620px, calc(100vw - 24px));
+  max-height: min(780px, calc(var(--app-height, 100vh) - 24px));
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 24px 90px #000a;
+}
+
+.onboarding-dialog::backdrop {
+  background: rgb(0 0 0 / .72);
+  backdrop-filter: blur(5px);
+}
+
+.onboarding-shell {
+  padding: clamp(18px, 4vw, 30px);
+  max-height: min(780px, calc(var(--app-height, 100vh) - 24px));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.icon-close-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-2, var(--surface));
+  color: var(--text);
+  font-size: 1.65rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.onboarding-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 18px 0 24px;
+}
+
+.onboarding-progress span {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--border);
+  transition: background .2s ease, transform .2s ease;
+}
+
+.onboarding-progress span.active {
+  background: var(--primary);
+  transform: scaleY(1.2);
+}
+
+.onboarding-step {
+  display: none;
+  min-height: 280px;
+  align-content: center;
+  justify-items: center;
+  gap: 14px;
+  text-align: center;
+  animation: pwaStepIn .25s ease both;
+}
+
+.onboarding-step.active {
+  display: grid;
+}
+
+.onboarding-step img {
+  border-radius: 24px;
+  box-shadow: 0 14px 35px #0005;
+}
+
+.onboarding-step h3 {
+  margin: 4px 0 0;
+  font-size: clamp(1.45rem, 5vw, 2rem);
+}
+
+.onboarding-step p {
+  max-width: 460px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.8;
+}
+
+.onboarding-card-demo {
+  display: flex;
+  gap: 12px;
+  font-size: 2.2rem;
+  font-weight: 900;
+}
+
+.onboarding-card-demo span {
+  display: grid;
+  place-items: center;
+  width: 88px;
+  height: 118px;
+  border-radius: 14px;
+  background: #fff;
+  color: #111827;
+  border: 2px solid #cbd5e1;
+  box-shadow: 0 12px 28px #0004;
+}
+
+.onboarding-card-demo span:last-child {
+  color: #b42318;
+  transform: translateY(-10px);
+}
+
+.onboarding-room-demo,
+.onboarding-install-demo {
+  padding: 18px 28px;
+  border: 1px solid var(--primary);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 86%, var(--primary) 14%);
+  font-size: 1.15rem;
+}
+
+.onboarding-room-demo strong {
+  letter-spacing: .16em;
+  color: var(--primary);
+}
+
+.onboarding-never-show {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin: 16px 0;
+  color: var(--muted);
+}
+
+.onboarding-never-show input {
+  width: 20px;
+  height: 20px;
+}
+
+.onboarding-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.noscript-warning {
+  position: fixed;
+  inset: auto 12px 12px;
+  z-index: 9999;
+  padding: 16px;
+  border-radius: 14px;
+  background: #7f1d1d;
+  color: white;
+  text-align: center;
+}
+
+body[data-display-mode="standalone"] .app-header {
+  padding-top: calc(18px + env(safe-area-inset-top));
+}
+
+body[data-display-mode="standalone"] .pwa-release-panel [id="installAppBtn"] {
+  display: none;
+}
+
+body[data-offline="true"] .room-panel .primary-btn,
+body[data-offline="true"] .room-panel .secondary-btn {
+  filter: saturate(.55);
+}
+
+.app-footer a {
+  color: var(--primary);
+}
+
+@keyframes pwaStepIn {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (max-width: 760px) {
+  .pwa-banner,
+  .pwa-offline-banner {
+    justify-content: flex-start;
+    gap: 8px;
+    font-size: .9rem;
+  }
+
+  .pwa-banner .button-row {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .toolbar #installAppBtn,
+  .toolbar #shareGameBtn,
+  .toolbar #openOnboardingBtn {
+    min-height: 44px;
+  }
+
+  .onboarding-dialog {
+    width: calc(100vw - 16px);
+    border-radius: 20px;
+  }
+
+  .onboarding-shell {
+    padding: 18px;
+  }
+
+  .onboarding-step {
+    min-height: 250px;
+  }
+
+  .onboarding-actions {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
+
+  .onboarding-actions > button,
+  .onboarding-actions .button-row,
+  .onboarding-actions .button-row button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pwa-splash,
+  .onboarding-step,
+  .onboarding-progress span {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* 牌局專注模式同時隱藏 PWA 發布說明與非必要工具 */
+body[data-gameplay-focus='on'] .pwa-release-panel,
+body[data-gameplay-focus='on'] #installAppBtn,
+body[data-gameplay-focus='on'] #shareGameBtn,
+body[data-gameplay-focus='on'] #openOnboardingBtn {
+  display: none !important;
+}

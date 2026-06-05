@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fox520-sketch.github.io/big2/sitemap.xml
