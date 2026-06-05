@@ -1,4 +1,4 @@
-import { DEFAULT_AI_LEVEL } from './constants.js';
+import { DEFAULT_AI_LEVEL, VERSION } from './constants.js';
 import { createNewGame, passTurn, playCards, runAITurn, setAILevel } from './game-state.js';
 import { applyTheme, getSavedTheme } from './themes.js';
 import { clearSelection, getHandSortMode, getSelectedCards, hasPlayableMove, render, renderThemeNote, selectRecommendedPlay, setActionLock, setHandSortMode } from './ui.js';
@@ -430,7 +430,7 @@ function renderDebugPanel(room = latestRoom) {
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
   const game = room?.game || null;
   const items = [
-    ['版本', `v${game?.version || room?.version || '0.7.0'}`],
+    ['版本', `v${game?.version || room?.version || VERSION}`],
     ['房號', room?.roomId || currentRoomId || '—'],
     ['狀態', room?.status || '尚未連線'],
     ['我的座位', localSeatText],
@@ -470,7 +470,7 @@ function buildDebugReport() {
     isHost: seat.uid === room.hostUid
   } : { seat: index, empty: true });
   const report = {
-    version: `v${game.version || room.version || '0.7.0'}`,
+    version: `v${game.version || room.version || VERSION}`,
     url: window.location.href,
     roomId: room.roomId || currentRoomId || null,
     roomStatus: room.status || null,
@@ -604,9 +604,44 @@ function setRoomMessage(message, level = 'info') {
   roomMessage.dataset.level = level;
 }
 
+function focusRoomPasswordForRetry() {
+  const input = el('roomPasswordInput');
+  if (!input) return;
+  input.focus();
+  input.select?.();
+  scrollToPanel('.room-panel', '#roomPasswordInput');
+}
+
+async function runButtonLocked(buttonId, busyText, action) {
+  const button = el(buttonId);
+  const originalText = button?.textContent || '';
+  if (button?.disabled) return;
+  if (button) {
+    button.disabled = true;
+    button.textContent = busyText;
+    button.setAttribute('aria-busy', 'true');
+  }
+  try {
+    return await action();
+  } finally {
+    if (button) {
+      button.disabled = false;
+      button.textContent = originalText;
+      button.removeAttribute('aria-busy');
+    }
+  }
+}
 
 function makeFriendlyError(error) {
-  return explainFirebaseError(error);
+  const text = explainFirebaseError(error);
+  if (/密碼/.test(text)) {
+    window.setTimeout(focusRoomPasswordForRetry, 60);
+    return `${text} 請在「房間密碼」欄位輸入正確密碼後再按加入。`;
+  }
+  if (/找不到房間|不存在/.test(text)) return `${text} 請確認房號是否為 6 碼，或請房主重新複製邀請連結。`;
+  if (/Firestore|Rules|權限|permission/i.test(text)) return `${text} 若剛更新版本，請重新貼上本版 firestore.rules 並 Publish。`;
+  if (/網路|Failed to fetch|network/i.test(text)) return `${text} 手機請確認網路穩定，或改用瀏覽器重新開啟邀請連結。`;
+  return text;
 }
 
 function renderFirebaseDiagnosticPanel(result = null) {
@@ -620,7 +655,7 @@ function renderFirebaseDiagnosticPanel(result = null) {
       { label: 'Firebase Config', ok: setup.ok, text: setup.text },
       { label: '匿名登入', ok: null, text: '按「執行檢查」後確認。' },
       { label: 'Firestore 寫入', ok: null, text: '按「執行檢查」後建立暫存房間測試。' },
-      { label: 'Cloud Functions', ok: true, text: '未使用。v0.7.0 不需要 functions/，也不需要 Blaze。' }
+      { label: 'Cloud Functions', ok: true, text: `未使用。v${VERSION} 不需要 functions/，也不需要 Blaze。` }
     ];
     grid.innerHTML = rows.map(renderFirebaseCheckItem).join('');
     summary.textContent = setup.ok ? '已偵測到 Firebase Config。可按「執行檢查」確認 Auth 與 Firestore Rules。' : '尚未填入 Firebase Config。';
@@ -812,59 +847,67 @@ async function bindRoomEvents() {
   });
 
   el('createRoomBtn').addEventListener('click', async () => {
-    try {
-      setRoomMessage('正在建立 Firebase 房間...');
-      const result = await createRoom({ playerName: getPlayerName(), aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules(), roomPassword: el('roomPasswordInput')?.value || '' });
-      currentRoomId = result.roomId;
-      latestInviteUrl = result.inviteUrl;
-      await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${makeFriendlyError(error)}`, 'warn'));
-      playSound('join');
-      setRoomMessage(`已建立房間 ${result.roomId}，可以複製連結或顯示 QR Code。`, 'ok');
-    } catch (error) {
-      setRoomMessage(makeFriendlyError(error) || '建立房間失敗，請檢查 Firebase 設定。', 'warn');
-    }
+    await runButtonLocked('createRoomBtn', '建立中...', async () => {
+      try {
+        setRoomMessage('正在建立 Firebase 房間...');
+        const result = await createRoom({ playerName: getPlayerName(), aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules(), roomPassword: el('roomPasswordInput')?.value || '' });
+        currentRoomId = result.roomId;
+        latestInviteUrl = result.inviteUrl;
+        await listenRoom(result.roomId, renderRoom, (error) => setRoomMessage(`房間同步失敗：${makeFriendlyError(error)}`, 'warn'));
+        playSound('join');
+        setRoomMessage(`已建立房間 ${result.roomId}，可以複製連結或顯示 QR Code。`, 'ok');
+      } catch (error) {
+        setRoomMessage(makeFriendlyError(error) || '建立房間失敗，請檢查 Firebase 設定。', 'warn');
+      }
+    });
   });
 
   el('joinRoomBtn').addEventListener('click', async () => {
-    await connectRoom(el('roomCodeInput').value, 'join');
+    await runButtonLocked('joinRoomBtn', '加入中...', async () => connectRoom(el('roomCodeInput').value, 'join'));
   });
 
   el('fillAIBtn').addEventListener('click', async () => {
-    try {
-      await fillAISeats(currentRoomId || el('roomCodeInput').value);
-      setRoomMessage('已補滿 AI 空位。', 'ok');
-    } catch (error) {
-      setRoomMessage(makeFriendlyError(error) || '補 AI 空位失敗。', 'warn');
-    }
+    await runButtonLocked('fillAIBtn', '補位中...', async () => {
+      try {
+        await fillAISeats(currentRoomId || el('roomCodeInput').value);
+        setRoomMessage('已補滿 AI 空位。', 'ok');
+      } catch (error) {
+        setRoomMessage(makeFriendlyError(error) || '補 AI 空位失敗。', 'warn');
+      }
+    });
   });
 
   el('startMultiplayerBtn').addEventListener('click', async () => {
-    try {
-      setRoomMessage(latestRoom?.status === 'finished' ? '正在開始下一局並保留累計總分...' : '正在同步洗牌、發牌並開始多人遊戲...');
-      await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
-      playSound('start');
-      setRoomMessage(latestRoom?.status === 'finished' ? '下一局已開始，累計總分已保留。' : '多人遊戲已開始。', 'ok');
-    } catch (error) {
-      setRoomMessage(makeFriendlyError(error) || '開始多人遊戲失敗。', 'warn');
-    }
+    await runButtonLocked('startMultiplayerBtn', latestRoom?.status === 'finished' ? '下一局中...' : '開始中...', async () => {
+      try {
+        setRoomMessage(latestRoom?.status === 'finished' ? '正在開始下一局並保留累計總分...' : '正在同步洗牌、發牌並開始多人遊戲...');
+        await startMultiplayerGame(currentRoomId || el('roomCodeInput').value, { aiLevel: getSavedAILevel(), rules: getSavedRules(), scoringRules: getSavedScoringRules() });
+        playSound('start');
+        setRoomMessage(latestRoom?.status === 'finished' ? '下一局已開始，累計總分已保留。' : '多人遊戲已開始。', 'ok');
+      } catch (error) {
+        setRoomMessage(makeFriendlyError(error) || '開始多人遊戲失敗。', 'warn');
+      }
+    });
   });
 
   el('leaveRoomBtn').addEventListener('click', async () => {
-    try {
-      await leaveRoom(currentRoomId);
-      currentRoomId = null;
-      latestInviteUrl = '';
-      latestRoom = null;
-      el('inviteLinkInput').value = '';
-      el('roomBadge').textContent = '尚未建立';
-      el('qrBox').classList.add('hidden');
-      setRoomControlsConnected(false);
-      renderEmptySeats();
-      resetGame();
-      setRoomMessage('已離開房間。');
-    } catch (error) {
-      setRoomMessage(makeFriendlyError(error) || '離開房間失敗。', 'warn');
-    }
+    await runButtonLocked('leaveRoomBtn', '離開中...', async () => {
+      try {
+        await leaveRoom(currentRoomId);
+        currentRoomId = null;
+        latestInviteUrl = '';
+        latestRoom = null;
+        el('inviteLinkInput').value = '';
+        el('roomBadge').textContent = '尚未建立';
+        el('qrBox').classList.add('hidden');
+        setRoomControlsConnected(false);
+        renderEmptySeats();
+        resetGame();
+        setRoomMessage('已離開房間。');
+      } catch (error) {
+        setRoomMessage(makeFriendlyError(error) || '離開房間失敗。', 'warn');
+      }
+    });
   });
 
   el('copyInviteBtn').addEventListener('click', async () => {
@@ -880,7 +923,23 @@ async function bindRoomEvents() {
 
   el('showQrBtn').addEventListener('click', () => {
     if (!latestInviteUrl) return;
-    el('qrCodeImage').src = qrCodeImageUrl(latestInviteUrl);
+    const qrImage = el('qrCodeImage');
+    const qrStatus = el('qrStatusText');
+    const qrFallback = el('qrFallbackLink');
+    const qrUrl = qrCodeImageUrl(latestInviteUrl);
+    if (qrFallback) {
+      qrFallback.href = qrUrl;
+      qrFallback.classList.remove('hidden');
+    }
+    if (qrStatus) qrStatus.textContent = '正在產生 QR Code... 若圖片未出現，可直接複製邀請連結。';
+    qrImage.onload = () => {
+      if (qrStatus) qrStatus.textContent = 'QR Code 已產生，手機掃描後會開啟同一房間並自動加入。';
+    };
+    qrImage.onerror = () => {
+      if (qrStatus) qrStatus.textContent = 'QR Code 圖片服務暫時無法載入，請改用複製邀請連結。';
+      setRoomMessage('QR Code 圖片載入失敗，請改用複製邀請連結。', 'warn');
+    };
+    qrImage.src = qrUrl;
     el('qrBox').classList.remove('hidden');
     setRoomMessage('已顯示 QR Code，手機掃描後會自動加入房間。', 'ok');
   });
@@ -905,7 +964,7 @@ async function bindRoomEvents() {
           summary: makeFriendlyError(error),
           checks: [
             { label: 'Firebase 設定檢查', ok: false, text: makeFriendlyError(error) },
-            { label: 'Cloud Functions', ok: true, text: '未使用。v0.7.0 不需要 functions/，也不需要 Blaze。' }
+            { label: 'Cloud Functions', ok: true, text: `未使用。v${VERSION} 不需要 functions/，也不需要 Blaze。` }
           ]
         };
         renderFirebaseDiagnosticPanel(result);

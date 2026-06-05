@@ -1,17 +1,18 @@
 {
   "name": "big2-tw",
-  "version": "0.7.0",
-  "description": "台灣大老二網頁遊戲 v0.7.0：正式發布候選版，免 Cloud Functions 穩定版",
+  "version": "0.7.1",
+  "description": "台灣大老二網頁遊戲 v0.7.1：正式上線實測修正版，免 Cloud Functions 穩定版",
   "type": "module",
   "scripts": {
-    "test": "node scripts/test-rules.js && node scripts/test-rule-boundaries.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js && node scripts/test-release-readiness.js",
+    "test": "node scripts/test-rules.js && node scripts/test-rule-boundaries.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js && node scripts/test-release-readiness.js && node scripts/test-online-readiness.js",
     "test:rules": "node scripts/test-rules.js",
     "test:ai": "node scripts/test-ai.js",
     "test:multiplayer": "node scripts/test-multiplayer-state.js",
     "test:settings": "node scripts/test-settings.js",
     "test:contrast": "node scripts/test-contrast.js",
     "test:rule-boundaries": "node scripts/test-rule-boundaries.js",
-    "test:release": "node scripts/test-release-readiness.js"
+    "test:release": "node scripts/test-release-readiness.js",
+    "test:online": "node scripts/test-online-readiness.js"
   },
   "keywords": [
     "big-two",

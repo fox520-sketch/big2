@@ -1766,7 +1766,7 @@ body[data-motion='on'] .player-card.active {
   }
 }
 
-/* v0.7.0 正式發布候選版：首頁流程、新手教學與發布檢查 */
+/* v0.7.1 正式發布候選版：首頁流程、新手教學與發布檢查 */
 .home-panel,
 .tutorial-panel,
 .release-panel {
@@ -1836,5 +1836,48 @@ body[data-gameplay-focus='on'] .release-panel {
   .home-actions,
   .home-flow-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* v0.7.1 正式上線實測修正：QR 備援與手機按鈕防呆 */
+.secondary-link {
+  color: var(--primary);
+  font-weight: 850;
+  text-decoration-thickness: 0.12em;
+  text-underline-offset: 0.18em;
+}
+
+.online-fix-panel {
+  border: 1.5px solid var(--border);
+  border-radius: 1.15rem;
+  padding: 1rem;
+  background: color-mix(in srgb, var(--success) 8%, var(--surface));
+}
+
+.compact-check-grid {
+  margin-top: 0.7rem;
+}
+
+button[aria-busy="true"] {
+  cursor: wait;
+  filter: saturate(0.85);
+}
+
+@media (max-width: 720px) {
+  .room-controls .button-row,
+  .invite-card .button-row,
+  .compact-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .table-actions {
+    position: sticky;
+    bottom: 0.35rem;
+    z-index: 5;
+    padding: 0.55rem;
+    border-radius: 1rem;
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    backdrop-filter: blur(10px);
   }
 }

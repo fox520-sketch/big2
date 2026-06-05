@@ -1,14 +1,16 @@
-# 台灣大老二 Big2 TW v0.7.0
+# 台灣大老二 Big2 TW v0.7.1
 
 這是一個可上傳 GitHub Pages 的純前端台灣大老二網頁遊戲，支援單人 AI 對戰、Firebase 多人房間、多人同步牌局、連續對戰、規則設定、計分設定、主題切換、手機 UI、音效、動畫、出牌輔助與發布前檢查。
 
-## v0.7.0 修正重點
+## v0.7.1 修正重點
 
-- 整理首頁流程，將單人遊戲、建立房間、加入房間、最近房間、新手教學與設定集中成快速入口。
-- 新增新手教學模式，說明牌型、梅花 3 起手、壓牌、Pass、計分與邀請朋友流程。
-- 強化房間體驗說明，讓密碼房、邀請連結、QR Code、自動加入、進行中回房更容易理解。
-- 增加多人體驗防呆：同一裝置重複開啟同房間時會提示，避免同一玩家開兩個視窗造成誤操作。
-- 新增發布檢查清單 `docs/RELEASE_CHECKLIST.md`，整理 GitHub Pages、Firebase Config、Firestore Rules、手機多人測試與不可上傳檔案。
+- GitHub Pages 上線穩定性修正：CSS / JS 加入版本參數，降低瀏覽器快取造成舊版檔案殘留的機率。
+- Firebase 建立房間 / 加入房間防連點：建立、加入、補 AI、開始多人遊戲、離開房間都會在執行中暫時鎖定按鈕。
+- QR Code 顯示強化：新增載入狀態、載入失敗提示與備援圖片連結；掃碼失敗時可改複製邀請連結。
+- 密碼房提示強化：密碼錯誤時會自動聚焦到房間密碼欄位，並提示重新輸入。
+- 多人同步與下一局穩定性維持：保留出牌 / Pass revision 檢查、下一局 gameId 重建、排行榜防重複累加。
+- 手機操作修正：房間操作按鈕維持單欄大按鈕，牌局操作區在手機上靠近手牌並降低誤觸。
+- 新增 `docs/ONLINE_TEST_FIX_CHECKLIST.md` 與 `scripts/test-online-readiness.js`。
 - 維持免 Cloud Functions 架構，不需要 Blaze 付費方案，也不需要 `functions/`。
 
 ## 功能
@@ -62,7 +64,7 @@
 docs/FIREBASE_SETUP.md
 ```
 
-v0.7.0 是免 Cloud Functions 版。更新後請務必把本版 `firestore.rules` 貼到 Firebase Console → Firestore Database → Rules → Publish。若你曾經貼過 Cloud Functions 防作弊版 Rules，請改貼回本版 Rules。
+v0.7.1 是免 Cloud Functions 版。更新後請務必把本版 `firestore.rules` 貼到 Firebase Console → Firestore Database → Rules → Publish。若你曾經貼過 Cloud Functions 防作弊版 Rules，請改貼回本版 Rules。
 
 ## 文件
 
@@ -89,9 +91,9 @@ npm test
 
 ## GitHub Pages 上傳提醒
 
-請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.7.0` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
+請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.7.1` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
 
-v0.7.0 不需要上傳：
+v0.7.1 不需要上傳：
 
 ```txt
 functions/
