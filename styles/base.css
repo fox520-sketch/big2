@@ -1766,7 +1766,7 @@ body[data-motion='on'] .player-card.active {
   }
 }
 
-/* v0.7.3 正式發布候選版：首頁流程、新手教學與發布檢查 */
+/* v0.7.4 正式發布候選版：首頁流程、新手教學與發布檢查 */
 .home-panel,
 .tutorial-panel,
 .release-panel {
@@ -1839,7 +1839,7 @@ body[data-gameplay-focus='on'] .release-panel {
   }
 }
 
-/* v0.7.3 正式上線實測修正：QR 備援與手機按鈕防呆 */
+/* v0.7.4 正式上線實測修正：QR 備援與手機按鈕防呆 */
 .secondary-link {
   color: var(--primary);
   font-weight: 850;
@@ -1882,7 +1882,7 @@ button[aria-busy="true"] {
   }
 }
 
-/* v0.7.3 手機牌桌 UI：讓牌桌牌緊鄰自己的手牌 */
+/* v0.7.4 手機牌桌 UI：讓牌桌牌緊鄰自己的手牌 */
 .table-area {
   grid-template-columns: minmax(0, 1.55fr) minmax(18rem, 1fr);
   grid-template-areas:
@@ -2118,7 +2118,7 @@ button[aria-busy="true"] {
   }
 }
 
-/* v0.7.3 手機操作精簡：預設收合推薦出牌與進階提示 */
+/* v0.7.4 手機操作精簡：預設收合推薦出牌與進階提示 */
 .compact-action-panel .main-actions {
   margin-top: 0.55rem;
 }
@@ -2227,5 +2227,66 @@ button[aria-busy="true"] {
 
   .play-assist-content .assist-actions #clearSelectionBtn {
     grid-column: 1 / -1;
+  }
+}
+
+
+/* v0.7.4 手機選牌裁切修正：保留上浮效果但確保完整牌面可見 */
+@media (max-width: 760px) {
+  .hand-section {
+    overflow: visible;
+  }
+
+  .hand-section .hand {
+    box-sizing: border-box;
+    min-height: 6.35rem;
+    padding-top: 1.25rem;
+    padding-bottom: 0.82rem;
+    align-items: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-padding-inline: 0.35rem;
+  }
+
+  .hand-section .hand .playing-card {
+    z-index: 1;
+  }
+
+  .hand-section .hand .playing-card.selected {
+    z-index: 4;
+    transform: translateY(-0.58rem) scale(1.025);
+  }
+
+  .hand-section .hand .playing-card.selected::after {
+    top: 0.08rem;
+    right: 0.08rem;
+    width: 1.18rem;
+    height: 1.18rem;
+    border-width: 1.5px;
+    font-size: 0.78rem;
+  }
+}
+
+@media (max-width: 390px) {
+  .hand-section .hand {
+    min-height: 6.15rem;
+    padding-top: 1.15rem;
+    padding-bottom: 0.76rem;
+  }
+
+  .hand-section .hand .playing-card.selected {
+    transform: translateY(-0.5rem) scale(1.02);
+  }
+}
+
+@media (max-width: 900px) and (orientation: landscape) and (max-height: 520px) {
+  .hand-section .hand {
+    min-height: 5.85rem;
+    padding-top: 1rem;
+    padding-bottom: 0.68rem;
+  }
+
+  .hand-section .hand .playing-card.selected {
+    transform: translateY(-0.44rem) scale(1.018);
   }
 }

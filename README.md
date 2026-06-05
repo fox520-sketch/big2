@@ -1,15 +1,15 @@
-# 台灣大老二 Big2 TW v0.7.3
+# 台灣大老二 Big2 TW v0.7.4
 
 這是一個可上傳 GitHub Pages 的純前端台灣大老二網頁遊戲，支援單人 AI 對戰、Firebase 多人房間、多人同步牌局、連續對戰、規則設定、計分設定、主題切換、手機 UI、音效、動畫、出牌輔助與發布前檢查。
 
-## v0.7.3 手機操作精簡重點
+## v0.7.4 手機選牌裁切修正重點
 
-- 手機牌局維持「牌桌／上一手 → 我的手牌 → 操作」，上一手牌直接靠近自己的牌。
-- 操作面板預設只顯示目前選牌狀態、出牌與 Pass，避免建議與設定占滿手機畫面。
-- 「推薦出牌」、「最小可出」、「清除選牌」、牌型建議與 Pass 設定收進可展開的「出牌輔助與 Pass 設定」。
-- 出牌輔助預設收合，需要時才展開，原有功能皆保留。
-- 縮小手機操作區的內距與按鈕間距，讓牌桌、手牌、出牌與 Pass 更集中。
-- 保留玩家狀態橫向滑動、座位雙欄小卡、上一手置中與底部黏附操作。
+- 修正手機版選中牌向上浮起時，上緣、外框或勾勾被手牌捲動區裁切的問題。
+- 增加手牌區上方安全留白，並降低手機版上浮距離，保留清楚選牌效果。
+- 選牌勾勾改放在牌面內側，避免超出可視區。
+- 選中的牌提高堆疊層級，外框不會被相鄰牌遮住。
+- 針對窄螢幕與手機橫向畫面分別微調。
+- 保留 v0.7.3 的精簡操作面板、牌桌緊鄰手牌與出牌輔助收合功能。
 - 維持免 Cloud Functions 架構，不需要 Blaze 付費方案，也不需要 `functions/`。
 
 ## 功能
@@ -63,7 +63,7 @@
 docs/FIREBASE_SETUP.md
 ```
 
-v0.7.3 是免 Cloud Functions 版。更新後請務必把本版 `firestore.rules` 貼到 Firebase Console → Firestore Database → Rules → Publish。若你曾經貼過 Cloud Functions 防作弊版 Rules，請改貼回本版 Rules。
+v0.7.4 是免 Cloud Functions 版。本次只調整手機牌面 CSS，沒有變更 Firestore 欄位或權限；若 v0.7.3 多人房間已可正常使用，不需要重新發布 `firestore.rules`。首次設定 Firebase，或目前仍使用 Cloud Functions 防作弊版 Rules 時，才需要依 `docs/FIREBASE_SETUP.md` 貼上本版 Rules。
 
 ## 文件
 
@@ -90,9 +90,9 @@ npm test
 
 ## GitHub Pages 上傳提醒
 
-請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.7.3` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
+請把解壓縮後資料夾裡面的檔案放到 GitHub repository 根目錄，不要把整個 `big2-tw-v0.7.4` 資料夾丟上去，否則 GitHub Pages 可能找不到 `index.html`。
 
-v0.7.3 不需要上傳：
+v0.7.4 不需要上傳：
 
 ```txt
 functions/
