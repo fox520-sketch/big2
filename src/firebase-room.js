@@ -124,7 +124,7 @@ export function explainFirebaseError(error) {
   const code = error?.code || '';
   const message = error?.message || String(error || '未知錯誤');
   if (code.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
-    return 'Firestore 寫入被拒絕。通常是 Firebase Console 的 Rules 沒有套用本版 firestore.rules；請貼上 v0.8.3 的 firestore.rules 後 Publish。';
+    return 'Firestore 寫入被拒絕。通常是 Firebase Console 的 Rules 沒有套用本版 firestore.rules；請貼上 v0.8.4 的 firestore.rules 後 Publish。';
   }
   if (code.includes('unauthenticated') || message.includes('auth')) {
     return '匿名登入失敗。請到 Firebase Console → Authentication → Sign-in method 啟用 Anonymous。';
@@ -140,7 +140,7 @@ export function explainFirebaseError(error) {
 
 export async function runFirebaseDiagnostics() {
   const checks = [];
-  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.8.3 是免 Cloud Functions PWA 正式上線驗證版，不需要 Blaze。' });
+  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.8.4 是免 Cloud Functions PWA 正式上線驗證版，不需要 Blaze。' });
 
   if (!hasFirebaseConfig()) {
     checks.push({ label: 'Firebase Config', ok: false, text: '尚未填入 src/firebase-config.js。' });
@@ -167,7 +167,7 @@ export async function runFirebaseDiagnostics() {
       aiLevel: 8,
       rules: normalizeRules(),
       scoringRules: normalizeScoringRules(),
-      securityVersion: 'client-validated-v0.8.3',
+      securityVersion: 'client-validated-v0.8.4',
       version: VERSION,
       passwordEnabled: false,
       passwordHash: '',
@@ -177,7 +177,7 @@ export async function runFirebaseDiagnostics() {
       presenceUpdatedAt: sdk.firestore.serverTimestamp(),
       invitePath: buildInviteUrl(testRoomId),
       gameNo: 0,
-      lastEvent: 'v0.8.3 Firebase 設定檢查用暫存房間。',
+      lastEvent: 'v0.8.4 Firebase 設定檢查用暫存房間。',
       totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
       seats: { 0: hostSeat }
     };
@@ -189,7 +189,7 @@ export async function runFirebaseDiagnostics() {
     if (!snap.exists()) throw new Error('測試房間建立後讀取失敗。');
     await sdk.firestore.deleteDoc(ref);
     firebaseMetrics.writeOperations += 1;
-    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.8.3。' });
+    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.8.4。' });
     return { ok: true, checks, summary: 'Firebase 設定檢查通過，可以建立房間。' };
   } catch (error) {
     checks.push({ label: 'Firestore 寫入', ok: false, text: explainFirebaseError(error) });
@@ -552,7 +552,7 @@ export async function createRoom({ playerName, aiLevel, rules, scoringRules, roo
       aiLevel: Number(aiLevel) || 8,
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.8.3',
+      securityVersion: 'client-validated-v0.8.4',
       version: VERSION,
       passwordEnabled: Boolean(passwordHash),
       passwordHash,
@@ -733,7 +733,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
     });
     game.version = VERSION;
-    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.8.3' };
+    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.8.4' };
     game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
 
     const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
@@ -764,7 +764,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       aiLevel: Number(aiLevel || room.aiLevel || 8),
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.8.3',
+      securityVersion: 'client-validated-v0.8.4',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
@@ -826,7 +826,7 @@ async function updateMultiplayerGame(roomId, action, options = {}) {
       lastActorUid: user.uid,
       lastActorSeat: Number.isInteger(seat) ? seat : null,
       updatedAtMs: Date.now(),
-      version: 'client-validated-v0.8.3'
+      version: 'client-validated-v0.8.4'
     };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {
@@ -891,9 +891,16 @@ export async function reconcileRoomPresence(roomId) {
     const snap = await transaction.get(ref);
     if (!snap.exists()) return;
     const room = snap.data();
-    if (currentUser?.uid && room.hostUid !== currentUser.uid) return;
     const seats = normalizeSeats(room.seats);
     const now = nowMs();
+    const callerSeat = currentUser?.uid ? findSeatForUid(room, currentUser.uid) : null;
+    if (callerSeat === null) return;
+    const initialHostSeat = findHostSeat(seats, room.hostUid);
+    const initialHostStale = initialHostSeat === null
+      || !seats[initialHostSeat]?.connected
+      || isSeatStale(seats[initialHostSeat], now);
+    // 房主在線時只由房主整理 presence；房主失聯時，任何仍在房內的真人都可用 transaction 觸發確定性的房主轉移。
+    if (room.hostUid !== currentUser.uid && !initialHostStale) return;
     let changed = false;
     const events = [];
     let game = room.game ? cloneGame(room.game) : null;
@@ -1017,7 +1024,7 @@ function schedulePresenceHeartbeat({ immediate = false } = {}) {
 function handlePresenceVisibilityChange() {
   if (!activeRoomId) return;
   schedulePresenceHeartbeat({ immediate: document.visibilityState === 'visible' });
-  if (document.visibilityState === 'visible' && latestRoomData?.hostUid === currentUser?.uid) {
+  if (document.visibilityState === 'visible' && activeRoomId) {
     reconcileRoomPresence(activeRoomId).catch(() => {});
   }
 }
@@ -1027,7 +1034,7 @@ function startPresenceTimers(roomId) {
   stopPresenceTimers();
   schedulePresenceHeartbeat({ immediate: true });
   reconcileTimer = window.setInterval(() => {
-    if (canRunBackgroundSync() && latestRoomData?.hostUid === currentUser?.uid) {
+    if (canRunBackgroundSync() && activeRoomId) {
       reconcileRoomPresence(activeRoomId).catch(() => {});
     }
   }, RECONCILE_INTERVAL_MS);
@@ -1035,7 +1042,7 @@ function startPresenceTimers(roomId) {
     document.removeEventListener('visibilitychange', handlePresenceVisibilityChange);
     document.addEventListener('visibilitychange', handlePresenceVisibilityChange);
   }
-  if (latestRoomData?.hostUid === currentUser?.uid && canRunBackgroundSync()) {
+  if (activeRoomId && canRunBackgroundSync()) {
     reconcileRoomPresence(activeRoomId).catch(() => {});
   }
 }
@@ -1221,7 +1228,7 @@ export async function listenRoom(roomId, onRoom, onError) {
       if (!snap.metadata.fromCache && localSeat !== null && now - lastHeartbeatAt > 12000 && canRunBackgroundSync()) {
         sendHeartbeat(normalizedRoomId).catch(() => {});
       }
-      if (!snap.metadata.fromCache && data.hostUid === user.uid && now - lastReconcileAt > 25000 && canRunBackgroundSync()) {
+      if (!snap.metadata.fromCache && localSeat !== null && now - lastReconcileAt > 25000 && canRunBackgroundSync()) {
         lastReconcileAt = now;
         reconcileRoomPresence(normalizedRoomId).catch(() => {});
       }
@@ -1294,7 +1301,7 @@ export async function refreshActiveRoomConnection() {
 
   lastHeartbeatAt = 0;
   await sendHeartbeat(activeRoomId).catch(() => {});
-  if (latestRoomData?.hostUid === currentUser?.uid) {
+  if (activeRoomId) {
     await reconcileRoomPresence(activeRoomId).catch(() => {});
   }
   return { ok: true, roomId: activeRoomId, seat: activeSeat };

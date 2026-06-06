@@ -28,13 +28,13 @@ for (const item of forbidden) {
 }
 
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
-for (const text of ['v0.8.3', '首頁流程', '新手教學模式', '發布檢查清單', '免 Cloud Functions', '手機牌桌 UI 優化']) {
+for (const text of ['v0.8.4', '首頁流程', '新手教學模式', '發布檢查清單', '免 Cloud Functions', '手機牌桌 UI 優化']) {
   if (!index.includes(text)) throw new Error(`index.html 缺少：${text}`);
 }
 
 const constants = fs.readFileSync(path.join(root, 'src/constants.js'), 'utf8');
-if (!constants.includes("VERSION = '0.8.3'")) {
-  throw new Error('src/constants.js 版本不是 0.8.3');
+if (!constants.includes("VERSION = '0.8.4'")) {
+  throw new Error('src/constants.js 版本不是 0.8.4');
 }
 
 console.log('Release readiness tests passed.');

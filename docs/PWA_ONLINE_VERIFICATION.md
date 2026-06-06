@@ -1,4 +1,4 @@
-# v0.8.3 PWA 正式上線驗證與修正清單
+# v0.8.4 PWA 正式上線驗證與修正清單
 
 本版維持 GitHub Pages + Firebase Auth + Cloud Firestore 的免 Cloud Functions 架構，不需要 Blaze。
 
@@ -7,7 +7,7 @@
 - `manifest.webmanifest` 的 `start_url` 與 `scope` 必須維持相對路徑。
 - Service Worker 使用 `self.registration.scope` 組合快取網址，可部署在 `https://帳號.github.io/big2/` 子目錄。
 - repository 根目錄必須直接看到 `index.html`、`service-worker.js`、`manifest.webmanifest`、`assets/`、`src/`。
-- 不要再多包一層 `big2-tw-v0.8.3/`。
+- 不要再多包一層 `big2-tw-v0.8.4/`。
 
 ## 二、安裝驗證
 

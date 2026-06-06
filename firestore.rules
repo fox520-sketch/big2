@@ -18,25 +18,66 @@ service cloud.firestore {
       ]);
     }
 
+    function seatOwnedBy(data, key) {
+      return data.seats.keys().hasAny([key]) && data.seats[key].uid == request.auth.uid;
+    }
+
+    function isRoomMember(data) {
+      return seatOwnedBy(data, '0') || seatOwnedBy(data, '1')
+        || seatOwnedBy(data, '2') || seatOwnedBy(data, '3');
+    }
+
+    function joinKeepsProtectedFields() {
+      return request.resource.data.roomId == resource.data.roomId
+        && request.resource.data.status == resource.data.status
+        && request.resource.data.hostUid == resource.data.hostUid
+        && request.resource.data.hostName == resource.data.hostName
+        && request.resource.data.aiLevel == resource.data.aiLevel
+        && request.resource.data.rules == resource.data.rules
+        && request.resource.data.scoringRules == resource.data.scoringRules
+        && request.resource.data.securityVersion == resource.data.securityVersion
+        && request.resource.data.version == resource.data.version
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.invitePath == resource.data.invitePath
+        && request.resource.data.gameNo == resource.data.gameNo
+        && request.resource.data.passwordEnabled == resource.data.passwordEnabled
+        && request.resource.data.passwordHash == resource.data.passwordHash
+        && request.resource.data.passwordHint == resource.data.passwordHint
+        && request.resource.data.game == resource.data.game;
+    }
+
+    function validNewMemberJoin() {
+      return !isRoomMember(resource.data)
+        && isRoomMember(request.resource.data)
+        && (resource.data.status == 'waiting' || resource.data.status == 'finished')
+        && joinKeepsProtectedFields()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'seats', 'totalScores', 'updatedAt', 'presenceUpdatedAt', 'lastEvent'
+        ])
+        && request.resource.data.seats.diff(resource.data.seats).affectedKeys().size() == 1;
+    }
+
     match /rooms/{roomId} {
+      // 加入房間前必須能以房號讀取房間，因此朋友休閒版仍允許所有匿名登入者讀取。
       allow read: if signedIn();
 
-      // v0.7.5 朋友休閒版安全規則：
-      // 1. 僅允許登入玩家讀寫房間。
-      // 2. 限制房間文件欄位，避免寫入未預期資料。
-      // 3. 前端交易會再驗證目前座位、回合、手牌與 revision。
-      // 4. 若要正式防作弊，請改用 Cloud Functions 洗牌、發牌與驗證出牌。
       allow create: if signedIn()
         && request.resource.data.roomId == roomId
         && request.resource.data.hostUid == request.auth.uid
         && request.resource.data.status == 'waiting'
+        && isRoomMember(request.resource.data)
         && validRoomKeys();
 
+      // 只有既有房內成員，或在等待／結束狀態加入單一座位的新玩家可以更新。
+      // 牌型與回合合法性仍由前端 transaction 驗證；真正不可繞過的防作弊仍需要可信任後端。
       allow update: if signedIn()
         && sameRoomId(roomId)
-        && validRoomKeys();
+        && validRoomKeys()
+        && (isRoomMember(resource.data) || validNewMemberJoin());
 
-      allow delete: if signedIn() && resource.data.hostUid == request.auth.uid;
+      allow delete: if signedIn()
+        && isRoomMember(resource.data)
+        && resource.data.hostUid == request.auth.uid;
     }
   }
 }

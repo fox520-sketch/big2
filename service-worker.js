@@ -1,7 +1,9 @@
-const APP_VERSION = '0.8.3';
+const APP_VERSION = '0.8.4';
 const CACHE_PREFIX = 'big2-tw-';
 const STATIC_CACHE = `${CACHE_PREFIX}static-v${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v${APP_VERSION}`;
+const META_CACHE = `${CACHE_PREFIX}meta`;
+const ROLLBACK_META_URL = new URL('./__pwa_rollback__.json', self.registration.scope).href;
 const OFFLINE_URL = new URL('./offline.html', self.registration.scope).href;
 const INDEX_URL = new URL('./index.html', self.registration.scope).href;
 const SCOPE_PATH = new URL(self.registration.scope).pathname;
@@ -50,12 +52,81 @@ async function precacheAppShell() {
   }));
 }
 
-async function cleanupAppCaches({ includeCurrent = false } = {}) {
+async function versionedStaticCaches() {
   const keys = await caches.keys();
-  const targets = keys.filter((key) => key.startsWith(CACHE_PREFIX)
-    && (includeCurrent || ![STATIC_CACHE, RUNTIME_CACHE].includes(key)));
+  return keys.filter((key) => key.startsWith(`${CACHE_PREFIX}static-v`))
+    .sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
+}
+
+async function readRollbackState() {
+  const cache = await caches.open(META_CACHE);
+  const response = await cache.match(ROLLBACK_META_URL);
+  if (!response) return { activeCache: null };
+  try { return await response.json(); } catch { return { activeCache: null }; }
+}
+
+async function writeRollbackState(activeCache = null) {
+  const cache = await caches.open(META_CACHE);
+  if (!activeCache) {
+    await cache.delete(ROLLBACK_META_URL);
+    return { activeCache: null };
+  }
+  const payload = { activeCache, selectedAt: Date.now(), currentVersion: APP_VERSION };
+  await cache.put(ROLLBACK_META_URL, new Response(JSON.stringify(payload), { headers: { 'Content-Type': 'application/json' } }));
+  return payload;
+}
+
+async function getRollbackInfo() {
+  const staticCaches = await versionedStaticCaches();
+  const previousCaches = staticCaches.filter((key) => key !== STATIC_CACHE);
+  const state = await readRollbackState();
+  const activeCache = state.activeCache && staticCaches.includes(state.activeCache) ? state.activeCache : null;
+  if (state.activeCache && !activeCache) await writeRollbackState(null);
+  const previousCache = previousCaches[0] || null;
+  return {
+    currentVersion: APP_VERSION,
+    currentCache: STATIC_CACHE,
+    previousCache,
+    previousVersion: previousCache?.replace(`${CACHE_PREFIX}static-v`, '') || null,
+    rollbackActive: Boolean(activeCache),
+    activeCache,
+    activeVersion: activeCache?.replace(`${CACHE_PREFIX}static-v`, '') || APP_VERSION,
+    availableCaches: staticCaches
+  };
+}
+
+async function cleanupAppCaches({ includeCurrent = false, preservePrevious = true } = {}) {
+  const keys = await caches.keys();
+  const staticCaches = await versionedStaticCaches();
+  const previousStatic = preservePrevious ? staticCaches.find((key) => key !== STATIC_CACHE) : null;
+  const rollback = await readRollbackState();
+  const keep = new Set(includeCurrent ? [META_CACHE] : [STATIC_CACHE, RUNTIME_CACHE, META_CACHE]);
+  if (previousStatic) keep.add(previousStatic);
+  if (rollback.activeCache) keep.add(rollback.activeCache);
+  const targets = keys.filter((key) => key.startsWith(CACHE_PREFIX) && !keep.has(key));
   const results = await Promise.all(targets.map(async (key) => ({ key, deleted: await caches.delete(key) })));
   return results.filter((item) => item.deleted).map((item) => item.key);
+}
+
+async function rollbackNavigationResponse(cache, activeCache) {
+  const source = (await cache.match(INDEX_URL)) || (await cache.match(new URL('./', self.registration.scope).href));
+  if (!source) return null;
+  const version = activeCache.replace(`${CACHE_PREFIX}static-v`, '');
+  const html = await source.text();
+  const recovery = `<div id="big2RollbackRecovery" style="position:fixed;left:8px;right:8px;top:8px;z-index:2147483647;padding:10px 12px;border-radius:12px;background:#fff3cd;color:#352a00;border:2px solid #a36b00;font:600 14px/1.45 system-ui,sans-serif;box-shadow:0 6px 22px rgba(0,0,0,.25)">目前以回復模式執行 v${version}。<button id="big2RestoreLatestInline" style="margin-left:8px;padding:7px 12px;border:1px solid #352a00;border-radius:8px;background:#352a00;color:#fff;font:inherit">恢復最新版 v${APP_VERSION}</button></div><script>(function(){var b=document.getElementById('big2RestoreLatestInline');if(!b)return;b.onclick=function(){b.disabled=true;var c=new MessageChannel();c.port1.onmessage=function(e){if(e.data&&e.data.ok)location.reload();else{b.disabled=false;alert((e.data&&e.data.message)||'恢復最新版失敗');}};navigator.serviceWorker.controller.postMessage({type:'RESTORE_CURRENT_VERSION'},[c.port2]);};})();</script>`;
+  const body = html.includes('</body>') ? html.replace('</body>', `${recovery}</body>`) : `${html}${recovery}`;
+  const headers = new Headers(source.headers);
+  headers.set('Content-Type', 'text/html; charset=utf-8');
+  headers.set('Cache-Control', 'no-store');
+  return new Response(body, { status: source.status, statusText: source.statusText, headers });
+}
+
+async function matchRollback(request, { navigation = false } = {}) {
+  const state = await readRollbackState();
+  if (!state.activeCache) return null;
+  const cache = await caches.open(state.activeCache);
+  if (navigation) return rollbackNavigationResponse(cache, state.activeCache);
+  return (await cache.match(request)) || (await cache.match(normalizedRequest(request)));
 }
 
 self.addEventListener('install', (event) => {
@@ -106,10 +177,39 @@ self.addEventListener('message', (event) => {
     })());
     return;
   }
+  if (type === 'GET_ROLLBACK_STATE') {
+    event.waitUntil((async () => {
+      try { event.ports?.[0]?.postMessage({ ok: true, ...(await getRollbackInfo()) }); }
+      catch (error) { event.ports?.[0]?.postMessage({ ok: false, message: error?.message || String(error) }); }
+    })());
+    return;
+  }
+  if (type === 'ROLLBACK_TO_PREVIOUS') {
+    event.waitUntil((async () => {
+      try {
+        const info = await getRollbackInfo();
+        if (!info.previousCache) throw new Error('這台裝置沒有可回復的上一版快取。');
+        await writeRollbackState(info.previousCache);
+        event.ports?.[0]?.postMessage({ ok: true, activeCache: info.previousCache, version: info.previousVersion });
+      } catch (error) { event.ports?.[0]?.postMessage({ ok: false, message: error?.message || String(error) }); }
+    })());
+    return;
+  }
+  if (type === 'RESTORE_CURRENT_VERSION') {
+    event.waitUntil((async () => {
+      try {
+        await writeRollbackState(null);
+        await precacheAppShell();
+        event.ports?.[0]?.postMessage({ ok: true, version: APP_VERSION });
+      } catch (error) { event.ports?.[0]?.postMessage({ ok: false, message: error?.message || String(error) }); }
+    })());
+    return;
+  }
   if (type === 'REPAIR_PWA') {
     event.waitUntil((async () => {
       try {
-        const deleted = await cleanupAppCaches({ includeCurrent: true });
+        await writeRollbackState(null);
+        const deleted = await cleanupAppCaches({ includeCurrent: true, preservePrevious: false });
         await precacheAppShell();
         event.ports?.[0]?.postMessage({ ok: true, deleted, version: APP_VERSION });
         const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
@@ -140,6 +240,8 @@ async function fetchWithTimeout(request, timeoutMs = 5500) {
 
 async function navigationNetworkFirst(event) {
   const request = event.request;
+  const rollback = await matchRollback(request, { navigation: true });
+  if (rollback) return rollback;
   const cacheKey = normalizedRequest(request);
   try {
     const preload = await event.preloadResponse;
@@ -161,6 +263,8 @@ async function navigationNetworkFirst(event) {
 }
 
 async function networkFirstAsset(request) {
+  const rollback = await matchRollback(request);
+  if (rollback) return rollback;
   try {
     const response = await fetchWithTimeout(request, 7000);
     if (response?.ok && response.type === 'basic') {
@@ -176,6 +280,8 @@ async function networkFirstAsset(request) {
 }
 
 async function cacheFirstImage(request) {
+  const rollback = await matchRollback(request);
+  if (rollback) return rollback;
   const cached = await caches.match(request);
   if (cached) return cached;
   try {

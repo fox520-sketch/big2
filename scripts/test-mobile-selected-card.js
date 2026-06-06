@@ -21,8 +21,8 @@ for (const text of required) {
   }
 }
 
-if (!index.includes('styles/base.css?v=0.8.3') || !index.includes('src/main.js?v=0.8.3')) {
-  throw new Error('GitHub Pages 快取版本參數未更新為 v0.8.3。');
+if (!index.includes('styles/base.css?v=0.8.4') || !index.includes('src/main.js?v=0.8.4')) {
+  throw new Error('GitHub Pages 快取版本參數未更新為 v0.8.4。');
 }
 
 console.log('Mobile selected card clipping tests passed.');

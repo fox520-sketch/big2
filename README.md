@@ -1,4 +1,15 @@
-# 台灣大老二 Big2 TW v0.8.3
+# 台灣大老二 Big2 TW v0.8.4
+
+
+## v0.8.4 正式發布候選版（RC）
+
+- 修正房主真正斷線後，其他已連線真人無法觸發房主轉移的問題。
+- 同一房主多分頁加入本機 AI 回合租約，降低重複控制 AI 的機率；Firestore transaction revision 仍作最後防線。
+- Service Worker 保留最近一版靜態快取，新增「回復上一版／恢復最新版」。
+- Firestore Rules 改為只有房內成員可更新既有房間，並保留等待／結束房間的安全加入流程。
+- 新增 RC 驗收、已知限制、回復指南、Firebase 用量與 Rules 安全檢查文件。
+
+> 本版維持免 Cloud Functions、不需要 Blaze；因此仍定位為朋友休閒版，而非競技級防作弊版。
 
 台灣大老二網頁遊戲，支援單人與 3 家 AI 對戰、Firebase 好友房間、AI 難度 1～20 級、13 種主題、連續對戰、排行榜、手機牌桌與 PWA 安裝。
 
@@ -99,7 +110,7 @@ VERSION.md
 不要多包一層：
 
 ```txt
-big2/big2-tw-v0.8.3/index.html   ← 錯誤
+big2/big2-tw-v0.8.4/index.html   ← 錯誤
 big2/index.html                  ← 正確
 ```
 
@@ -122,7 +133,7 @@ firebase-adminsdk.json
 - 正式上線驗收：`docs/FINAL_ACCEPTANCE_CHECKLIST.md`
 - 疑難排解：`docs/TROUBLESHOOTING.md`
 - 診斷資訊說明：`docs/DIAGNOSTIC_REPORT.md`
-- v0.8.3 實機驗收：`docs/REAL_DEVICE_ACCEPTANCE_V083.md`
+- v0.8.4 實機驗收：`docs/REAL_DEVICE_ACCEPTANCE_V083.md`
 - 錯誤紀錄中心：`docs/ERROR_LOG_CENTER.md`
 - 隱私與資料使用：`docs/PRIVACY_AND_DATA.md`
 - Firebase 設定：`docs/FIREBASE_SETUP.md`

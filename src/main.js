@@ -59,12 +59,15 @@ let lastRoomMessage = '尚未連線房間。';
 let reconnectInProgress = false;
 let viewportRaf = null;
 const RUNTIME_ERROR_LIMIT = 20;
-const ERROR_LOG_KEY = 'big2-runtime-errors-v083';
-const ACCEPTANCE_KEY = 'big2-acceptance-v083';
+const ERROR_LOG_KEY = 'big2-runtime-errors-v084';
+const LEGACY_ERROR_LOG_KEYS = ['big2-runtime-errors-v083'];
+const ACCEPTANCE_KEY = 'big2-acceptance-v084';
+const LEGACY_ACCEPTANCE_KEYS = ['big2-acceptance-v083'];
 const ACCEPTANCE_ITEMS = [
   'android-pwa', 'ios-pwa', 'desktop-pwa', 'pwa-update',
   'two-human', 'three-human', 'four-human', 'disconnect-reconnect',
-  'host-transfer', 'next-game', 'mobile-ui', 'firebase-health'
+  'host-transfer', 'next-game', 'mobile-ui', 'firebase-health',
+  'rules-security', 'rollback-drill'
 ];
 let lastUserAction = '啟動遊戲';
 let errorCenterTimer = null;
@@ -78,7 +81,20 @@ function readJsonStorage(key, fallback) {
   }
 }
 
-const storedRuntimeErrors = readJsonStorage(ERROR_LOG_KEY, []);
+function migrateJsonStorage(currentKey, legacyKeys, fallback) {
+  const current = readJsonStorage(currentKey, null);
+  if (current !== null) return current;
+  for (const legacyKey of legacyKeys) {
+    const legacy = readJsonStorage(legacyKey, null);
+    if (legacy !== null) {
+      try { localStorage.setItem(currentKey, JSON.stringify(legacy)); } catch { /* ignore */ }
+      return legacy;
+    }
+  }
+  return fallback;
+}
+
+const storedRuntimeErrors = migrateJsonStorage(ERROR_LOG_KEY, LEGACY_ERROR_LOG_KEYS, []);
 const runtimeErrors = Array.isArray(storedRuntimeErrors) ? storedRuntimeErrors : [];
 runtimeErrors.splice(RUNTIME_ERROR_LIMIT);
 
@@ -832,7 +848,7 @@ function clearErrorLog() {
 }
 
 function readAcceptanceState() {
-  const saved = readJsonStorage(ACCEPTANCE_KEY, {});
+  const saved = migrateJsonStorage(ACCEPTANCE_KEY, LEGACY_ACCEPTANCE_KEYS, {});
   return Object.fromEntries(ACCEPTANCE_ITEMS.map((id) => [id, Boolean(saved[id])]));
 }
 
@@ -977,6 +993,37 @@ function scheduleAIIfNeeded() {
   }
 }
 
+const AI_TURN_LEASE_PREFIX = 'big2-ai-turn-lease:';
+const AI_TURN_LEASE_MS = 4200;
+
+function claimMultiplayerAITurnLease(room) {
+  const game = room?.game;
+  if (!room?.roomId || !game) return { acquired: false, key: null };
+  const key = `${AI_TURN_LEASE_PREFIX}${room.roomId}`;
+  const target = `${game.gameId || room.gameNo || 'game'}:${game.security?.revision || 0}:${game.currentTurnSeat}`;
+  const now = Date.now();
+  try {
+    const current = JSON.parse(localStorage.getItem(key) || 'null');
+    if (current?.target === target && current?.owner !== SESSION_TAB_ID && Number(current.expiresAt || 0) > now) {
+      return { acquired: false, key, target };
+    }
+    localStorage.setItem(key, JSON.stringify({ owner: SESSION_TAB_ID, target, expiresAt: now + AI_TURN_LEASE_MS }));
+    const confirmed = JSON.parse(localStorage.getItem(key) || 'null');
+    return { acquired: confirmed?.owner === SESSION_TAB_ID && confirmed?.target === target, key, target };
+  } catch {
+    // localStorage 被禁用時仍依 Firestore transaction 的 revision 防止重複 AI 行動。
+    return { acquired: true, key: null, target };
+  }
+}
+
+function releaseMultiplayerAITurnLease(lease) {
+  if (!lease?.key) return;
+  try {
+    const current = JSON.parse(localStorage.getItem(lease.key) || 'null');
+    if (current?.owner === SESSION_TAB_ID && current?.target === lease.target) localStorage.removeItem(lease.key);
+  } catch { /* ignore */ }
+}
+
 function scheduleMultiplayerAIIfNeeded(room = latestRoom) {
   window.clearTimeout(multiplayerAiTimer);
   if (!room || !room.isHost || room.status !== 'playing' || !room.game || room.game.finished) return;
@@ -984,10 +1031,16 @@ function scheduleMultiplayerAIIfNeeded(room = latestRoom) {
   if (!current?.isAI) return;
 
   multiplayerAiTimer = window.setTimeout(async () => {
+    const lease = claimMultiplayerAITurnLease(room);
+    if (!lease.acquired) return;
     try {
       await runMultiplayerAITurn(room.roomId);
     } catch (error) {
-      setRoomMessage(makeFriendlyError(error, 'AI 接管出牌') || 'AI 接管出牌失敗。', 'warn');
+      const text = makeFriendlyError(error, 'AI 接管出牌') || 'AI 接管出牌失敗。';
+      // 另一個分頁已先完成回合時，transaction 會拒絕舊 revision；不再顯示成嚴重錯誤。
+      if (!/牌局已更新|回合已更新|不是 AI/.test(text)) setRoomMessage(text, 'warn');
+    } finally {
+      releaseMultiplayerAITurnLease(lease);
     }
   }, 680);
 }

@@ -1,4 +1,4 @@
-const APP_VERSION = '0.8.3';
+const APP_VERSION = '0.8.4';
 const ONBOARDING_KEY = 'big2-onboarding-complete-v1';
 const LEGACY_ONBOARDING_PREFIX = 'big2-onboarding-';
 const INSTALL_HELP_KEY = 'big2-install-help-seen';
@@ -377,12 +377,21 @@ async function refreshOfflineFiles() {
 
 async function clearOldPwaCaches({ includeCurrent = false } = {}) {
   if (!('caches' in window)) return { ok: false, deleted: [], message: '瀏覽器不支援 Cache Storage。' };
+  const worker = navigator.serviceWorker?.controller || serviceWorkerRegistration?.active;
+  if (!includeCurrent && worker) {
+    const result = await postWorkerMessage(worker, 'CLEAR_OLD_CACHES', {}, 8000);
+    await updateStorageStatus();
+    await updateRollbackStatus();
+    return result;
+  }
   const keys = await caches.keys();
   const targets = keys.filter((key) => key.startsWith(APP_CACHE_PREFIX)
+    && key !== `${APP_CACHE_PREFIX}meta`
     && (includeCurrent || !key.includes(`v${APP_VERSION}`)));
   const results = await Promise.all(targets.map(async (key) => ({ key, deleted: await caches.delete(key) })));
   const deleted = results.filter((item) => item.deleted).map((item) => item.key);
   await updateStorageStatus();
+  await updateRollbackStatus();
   return { ok: true, deleted, checked: targets.length };
 }
 
@@ -438,6 +447,64 @@ async function repairPwa() {
   }
 }
 
+async function getRollbackState() {
+  const worker = navigator.serviceWorker?.controller || serviceWorkerRegistration?.active;
+  if (!worker) return { ok: false, message: 'Service Worker 尚未就緒。' };
+  return postWorkerMessage(worker, 'GET_ROLLBACK_STATE', {}, 5000);
+}
+
+async function rollbackToPreviousVersion() {
+  const button = byId('pwaRollbackBtn');
+  if (button) button.disabled = true;
+  setPwaActionStatus('正在尋找上一版離線快取…', 'neutral');
+  try {
+    const worker = navigator.serviceWorker?.controller || serviceWorkerRegistration?.active;
+    const result = await postWorkerMessage(worker, 'ROLLBACK_TO_PREVIOUS', {}, 8000);
+    if (!result.ok) throw new Error(result.message || '無法回復上一版');
+    setPwaActionStatus(`已切換至上一版 v${result.version || '未知'}，正在重新載入。`, 'warn');
+    window.setTimeout(() => window.location.reload(), 500);
+  } catch (error) {
+    capturePwaError(error, 'PWA 回復上一版');
+    setPwaActionStatus(`回復失敗：${error?.message || error}`, 'warn');
+    if (button) button.disabled = false;
+  }
+}
+
+async function restoreCurrentVersion() {
+  const button = byId('pwaRestoreCurrentBtn');
+  if (button) button.disabled = true;
+  setPwaActionStatus('正在恢復目前正式版本…', 'neutral');
+  try {
+    const worker = navigator.serviceWorker?.controller || serviceWorkerRegistration?.active;
+    const result = await postWorkerMessage(worker, 'RESTORE_CURRENT_VERSION', {}, 12000);
+    if (!result.ok) throw new Error(result.message || '無法恢復目前版本');
+    setPwaActionStatus(`已恢復 v${result.version || APP_VERSION}，正在重新載入。`, 'ok');
+    window.setTimeout(() => window.location.reload(), 500);
+  } catch (error) {
+    capturePwaError(error, 'PWA 恢復目前版本');
+    setPwaActionStatus(`恢復失敗：${error?.message || error}`, 'warn');
+    if (button) button.disabled = false;
+  }
+}
+
+async function updateRollbackStatus() {
+  const node = byId('pwaRollbackStatus');
+  if (!node) return;
+  try {
+    const state = await getRollbackState();
+    if (!state.ok) throw new Error(state.message || '無法讀取回復狀態');
+    node.textContent = state.rollbackActive
+      ? `目前使用回復快取 v${state.activeVersion}；可按「恢復最新版」。`
+      : state.previousVersion
+        ? `可回復上一版 v${state.previousVersion}；回復只影響此裝置的 PWA 快取。`
+        : '這台裝置尚無可回復的上一版快取。';
+    byId('pwaRollbackBtn')?.toggleAttribute('disabled', !state.previousVersion || state.rollbackActive);
+    byId('pwaRestoreCurrentBtn')?.toggleAttribute('disabled', !state.rollbackActive);
+  } catch (error) {
+    node.textContent = `回復狀態讀取失敗：${error?.message || error}`;
+  }
+}
+
 async function getPwaDiagnostics() {
   const registrations = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistrations().catch(() => []) : [];
   const cacheNames = 'caches' in window ? await caches.keys().catch(() => []) : [];
@@ -454,8 +521,10 @@ async function getPwaDiagnostics() {
   const estimate = navigator.storage?.estimate ? await navigator.storage.estimate().catch(() => null) : null;
   const controller = navigator.serviceWorker?.controller || null;
   const controllerVersion = await getWorkerVersion(controller);
+  const rollback = await getRollbackState().catch(() => null);
   return {
     appVersion: APP_VERSION,
+    rollback,
     displayMode: isStandalone() ? 'standalone' : 'browser',
     online: navigator.onLine !== false,
     secureContext: window.isSecureContext,
@@ -517,6 +586,7 @@ async function registerServiceWorker() {
       if (event.data?.type === 'CACHE_READY') {
         setPwaActionStatus(`離線資源已就緒（v${event.data.version || APP_VERSION}）。`, 'ok');
         updateStorageStatus();
+        updateRollbackStatus();
       }
     });
     window.setTimeout(() => checkForUpdates(false), 5000);
@@ -525,6 +595,7 @@ async function registerServiceWorker() {
     setPwaStatus(isStandalone() ? '已安裝' : 'PWA 就緒', 'ok');
     setPwaActionStatus(`Service Worker v${APP_VERSION} 已就緒。`, 'ok');
     await updateStorageStatus();
+    await updateRollbackStatus();
   } catch (error) {
     capturePwaError(error, 'Service Worker 註冊');
     console.warn('PWA 註冊失敗', error);
@@ -574,6 +645,8 @@ function bindPwaEvents() {
   });
   byId('pwaRepairBtn')?.addEventListener('click', repairPwa);
   byId('pwaReloadBtn')?.addEventListener('click', () => window.location.reload());
+  byId('pwaRollbackBtn')?.addEventListener('click', rollbackToPreviousVersion);
+  byId('pwaRestoreCurrentBtn')?.addEventListener('click', restoreCurrentVersion);
   byId('closeInstallHelpBtn')?.addEventListener('click', () => byId('pwaInstallHelp')?.classList.add('hidden'));
   byId('pwaUpdateBtn')?.addEventListener('click', () => {
     controllerReloadRequested = true;
@@ -592,7 +665,10 @@ window.big2PwaApi = Object.freeze({
   repair: repairPwa,
   clearOldCaches: clearOldPwaCaches,
   checkForUpdates,
-  refreshOfflineFiles
+  refreshOfflineFiles,
+  getRollbackState,
+  rollbackToPreviousVersion,
+  restoreCurrentVersion
 });
 
 function init() {

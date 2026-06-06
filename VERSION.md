@@ -1,5 +1,15 @@
 # 版本說明
 
+## v0.8.4 - 2026-06-06
+### 正式發布候選版（RC）
+- 修正房主離線後的跨用戶房主轉移：房主逾時時，任何仍在房內的真人可透過 transaction 觸發確定性轉移。
+- 加入同裝置多分頁 AI 回合租約，降低兩個房主分頁同時控制 AI；舊 revision 仍會被 Firestore transaction 拒絕。
+- PWA 保留最近一版靜態快取，新增回復上一版、恢復最新版與回復狀態診斷。
+- 強化 Firestore Rules：非房內成員不可修改既有房間；新玩家只能在等待／結束狀態加入單一座位。
+- 實機驗收項目增加 Rules 安全檢查與回復演練。
+- 新增 `RC_ACCEPTANCE_CHECKLIST.md`、`KNOWN_LIMITATIONS.md`、`ROLLBACK_GUIDE.md`、`FIREBASE_USAGE_GUIDE.md`、`FIRESTORE_RULES_SECURITY_REVIEW.md`。
+- 維持免 Cloud Functions、不需要 Blaze。
+
 ## v0.8.3 - 2026-06-06
 ### 正式上線實機驗收中心
 - 新增 Android、iPhone／iPad、桌機 PWA、2～4 位真人、斷線重連、房主轉移、下一局、手機 UI 與 Firebase 讀寫等 12 項實機驗收清單。
