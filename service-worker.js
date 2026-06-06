@@ -1,6 +1,12 @@
-const CACHE_NAME = 'big2-tw-v0.8.0';
-const OFFLINE_URL = './offline.html';
-const APP_SHELL = [
+const APP_VERSION = '0.8.1';
+const CACHE_PREFIX = 'big2-tw-';
+const STATIC_CACHE = `${CACHE_PREFIX}static-v${APP_VERSION}`;
+const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v${APP_VERSION}`;
+const OFFLINE_URL = new URL('./offline.html', self.registration.scope).href;
+const INDEX_URL = new URL('./index.html', self.registration.scope).href;
+const SCOPE_PATH = new URL(self.registration.scope).pathname;
+
+const APP_SHELL_PATHS = [
   './',
   './index.html',
   './offline.html',
@@ -33,50 +39,124 @@ const APP_SHELL = [
   './assets/splash/splash-landscape.png'
 ];
 
+const APP_SHELL = APP_SHELL_PATHS.map((path) => new URL(path, self.registration.scope).href);
+
+async function precacheAppShell() {
+  const cache = await caches.open(STATIC_CACHE);
+  await Promise.all(APP_SHELL.map(async (url) => {
+    const response = await fetch(url, { cache: 'reload' });
+    if (!response.ok) throw new Error(`無法快取 ${url}: ${response.status}`);
+    await cache.put(url, response);
+  }));
+}
+
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
-  );
+  event.waitUntil(precacheAppShell());
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))))
-      .then(() => self.clients.claim())
-  );
+  event.waitUntil((async () => {
+    const keys = await caches.keys();
+    await Promise.all(keys
+      .filter((key) => key.startsWith(CACHE_PREFIX) && ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
+      .map((key) => caches.delete(key)));
+    if (self.registration.navigationPreload) {
+      await self.registration.navigationPreload.enable().catch(() => {});
+    }
+    await self.clients.claim();
+    const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    clients.forEach((client) => client.postMessage({ type: 'CACHE_READY', version: APP_VERSION }));
+  })());
 });
 
 self.addEventListener('message', (event) => {
-  if (event.data?.type === 'SKIP_WAITING') self.skipWaiting();
+  const type = event.data?.type;
+  if (type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
+  if (type === 'GET_VERSION') {
+    event.ports?.[0]?.postMessage({ version: APP_VERSION });
+    return;
+  }
+  if (type === 'REFRESH_APP_SHELL') {
+    event.waitUntil((async () => {
+      try {
+        await precacheAppShell();
+        event.ports?.[0]?.postMessage({ ok: true, version: APP_VERSION });
+      } catch (error) {
+        event.ports?.[0]?.postMessage({ ok: false, message: error?.message || String(error) });
+      }
+    })());
+  }
 });
 
-async function networkFirst(request) {
+function normalizedRequest(request) {
+  const url = new URL(request.url);
+  url.search = '';
+  url.hash = '';
+  return new Request(url.href, { method: 'GET', headers: request.headers });
+}
+
+async function fetchWithTimeout(request, timeoutMs = 5500) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(request);
-    if (response?.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put('./index.html', response.clone());
-    }
-    return response;
-  } catch {
-    return (await caches.match('./index.html', { ignoreSearch: true }))
-      || (await caches.match(OFFLINE_URL));
+    return await fetch(request, { signal: controller.signal, cache: 'no-store' });
+  } finally {
+    clearTimeout(timer);
   }
 }
 
-async function cacheFirst(request) {
-  const cached = await caches.match(request, { ignoreSearch: true });
+async function navigationNetworkFirst(event) {
+  const request = event.request;
+  const cacheKey = normalizedRequest(request);
+  try {
+    const preload = await event.preloadResponse;
+    const response = preload || await fetchWithTimeout(request);
+    if (response?.ok) {
+      const cache = await caches.open(RUNTIME_CACHE);
+      await cache.put(cacheKey, response.clone());
+    }
+    return response;
+  } catch {
+    const exact = await caches.match(cacheKey);
+    if (exact) return exact;
+    const url = new URL(request.url);
+    if (url.pathname === SCOPE_PATH || url.pathname === `${SCOPE_PATH}index.html`) {
+      return (await caches.match(INDEX_URL)) || (await caches.match(OFFLINE_URL));
+    }
+    return (await caches.match(OFFLINE_URL)) || new Response('Offline', { status: 503 });
+  }
+}
+
+async function networkFirstAsset(request) {
+  try {
+    const response = await fetchWithTimeout(request, 7000);
+    if (response?.ok && response.type === 'basic') {
+      const cache = await caches.open(RUNTIME_CACHE);
+      await cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    return (await caches.match(request))
+      || (await caches.match(normalizedRequest(request)))
+      || new Response('Offline', { status: 503, statusText: 'Offline' });
+  }
+}
+
+async function cacheFirstImage(request) {
+  const cached = await caches.match(request);
   if (cached) return cached;
   try {
     const response = await fetch(request);
     if (response?.ok && response.type === 'basic') {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
+      const cache = await caches.open(RUNTIME_CACHE);
+      await cache.put(request, response.clone());
     }
     return response;
   } catch {
-    return new Response('Offline', { status: 503, statusText: 'Offline' });
+    return new Response('', { status: 503, statusText: 'Offline' });
   }
 }
 
@@ -85,9 +165,25 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+  if (url.pathname.endsWith('/service-worker.js')) return;
+
   if (request.mode === 'navigate') {
-    event.respondWith(networkFirst(request));
+    event.respondWith(navigationNetworkFirst(event));
     return;
   }
-  event.respondWith(cacheFirst(request));
+
+  if (request.destination === 'script'
+    || request.destination === 'style'
+    || request.destination === 'manifest'
+    || /\.(?:js|css|json|webmanifest)$/i.test(url.pathname)) {
+    event.respondWith(networkFirstAsset(request));
+    return;
+  }
+
+  if (request.destination === 'image' || /\.(?:png|svg|jpg|jpeg|webp|ico)$/i.test(url.pathname)) {
+    event.respondWith(cacheFirstImage(request));
+    return;
+  }
+
+  event.respondWith(networkFirstAsset(request));
 });

@@ -1,2 +1,29 @@
 <!doctype html>
-<html lang="zh-Hant"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#060b14"><title>目前離線｜台灣大老二</title><link rel="icon" href="assets/icons/favicon.svg"><style>html{color-scheme:dark}body{margin:0;min-height:100vh;display:grid;place-items:center;background:#060b14;color:#f5f9ff;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;padding:24px}.card{max-width:520px;text-align:center;border:1px solid #52698d;border-radius:24px;background:#111b31;padding:32px;box-shadow:0 20px 60px #0008}.card img{border-radius:22px}.card h1{font-size:2rem;margin:18px 0 8px}.card p{color:#c7d5ea;line-height:1.7}.card a,.card button{display:inline-block;margin-top:12px;padding:12px 22px;border-radius:999px;border:1px solid #85c6ff;background:#74b7f5;color:#05101f;font-weight:800;text-decoration:none;cursor:pointer}</style></head><body><main class="card"><img src="assets/icons/icon-192.png" width="112" height="112" alt="台灣大老二"><h1>目前沒有網路</h1><p>多人房間需要網路連線。若本裝置已完成 PWA 快取，可返回首頁繼續單人遊戲；恢復網路後再進入好友房間。</p><a href="./">返回遊戲首頁</a><br><button type="button" onclick="location.reload()">重新檢查網路</button></main></body></html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#060b14" />
+  <meta name="color-scheme" content="dark" />
+  <title>目前離線｜台灣大老二</title>
+  <link rel="icon" href="assets/icons/favicon.svg" />
+  <style>
+    *{box-sizing:border-box}html{-webkit-text-size-adjust:100%;text-size-adjust:100%;color-scheme:dark}
+    body{margin:0;min-height:100dvh;display:grid;place-items:center;background:#060b14;color:#f5f9ff;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif;padding:max(24px,env(safe-area-inset-top)) max(24px,env(safe-area-inset-right)) max(24px,env(safe-area-inset-bottom)) max(24px,env(safe-area-inset-left))}
+    .card{width:min(100%,520px);text-align:center;border:2px solid #7188ad;border-radius:24px;background:#111b31;padding:clamp(24px,6vw,36px);box-shadow:0 20px 60px #0008}
+    .card img{border-radius:22px}.card h1{font-size:clamp(1.7rem,7vw,2.2rem);margin:18px 0 8px}.card p{color:#d6e2f2;line-height:1.75}
+    .actions{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-top:18px}.card a,.card button{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 22px;border-radius:999px;border:2px solid #85c6ff;background:#74b7f5;color:#05101f;font:inherit;font-weight:800;text-decoration:none;cursor:pointer}.card a:focus-visible,.card button:focus-visible{outline:3px solid #fff;outline-offset:4px}
+  </style>
+</head>
+<body>
+  <main class="card" aria-labelledby="offlineTitle">
+    <img src="assets/icons/icon-192.png" width="112" height="112" alt="台灣大老二圖示" />
+    <h1 id="offlineTitle">目前沒有網路</h1>
+    <p role="status">多人房間需要網路連線。若本裝置已完成 PWA 快取，可返回首頁繼續單人遊戲；恢復網路後再進入好友房間。</p>
+    <div class="actions">
+      <a href="./">返回遊戲首頁</a>
+      <button type="button" onclick="location.reload()">重新檢查網路</button>
+    </div>
+  </main>
+</body>
+</html>

@@ -75,6 +75,8 @@ function updateViewportMetrics() {
     const actionHeight = actionPanel && window.matchMedia('(max-width: 760px)').matches
       ? Math.ceil(actionPanel.getBoundingClientRect().height)
       : 0;
+    const keyboardOpen = Boolean(viewport && window.innerHeight - height > 160);
+    document.body.dataset.keyboard = keyboardOpen ? 'open' : 'closed';
     document.documentElement.style.setProperty('--action-panel-height', `${actionHeight}px`);
     viewportRaf = null;
   });
@@ -128,6 +130,10 @@ function bindViewportAndNetworkEvents() {
   window.visualViewport?.addEventListener('scroll', updateViewportMetrics, { passive: true });
   window.addEventListener('offline', () => renderNetworkStatus('offline'));
   window.addEventListener('online', reconnectActiveRoom);
+  window.addEventListener('pageshow', () => {
+    updateViewportMetrics();
+    if (navigator.onLine !== false) reconnectActiveRoom();
+  });
   document.addEventListener('visibilitychange', () => {
     updateViewportMetrics();
     if (document.visibilityState === 'visible' && navigator.onLine !== false) reconnectActiveRoom();

@@ -10,8 +10,8 @@ const requiredIndex = [
   'networkStatusBar',
   'retryConnectionBtn',
   'cleanupRoomsBtn',
-  'styles/base.css?v=0.8.0',
-  'src/main.js?v=0.8.0'
+  'styles/base.css?v=0.8.1',
+  'src/main.js?v=0.8.1'
 ];
 for (const token of requiredIndex) {
   if (!index.includes(token)) throw new Error(`缺少上線穩定標記：${token}`);

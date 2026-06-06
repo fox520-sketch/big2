@@ -2498,7 +2498,7 @@ body {
   }
 }
 
-/* v0.8.0 PWA 正式公開版 */
+/* v0.8.1 PWA 正式公開版 */
 .pwa-splash {
   position: fixed;
   inset: 0;
@@ -2826,4 +2826,161 @@ body[data-gameplay-focus='on'] #installAppBtn,
 body[data-gameplay-focus='on'] #shareGameBtn,
 body[data-gameplay-focus='on'] #openOnboardingBtn {
   display: none !important;
+}
+
+/* v0.8.1 PWA 正式上線驗證：路徑、更新、手機縮放與無障礙 */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+.skip-link {
+  position: fixed;
+  left: max(0.75rem, env(safe-area-inset-left));
+  top: max(0.75rem, env(safe-area-inset-top));
+  z-index: 10050;
+  padding: 0.75rem 1rem;
+  border: 2px solid CanvasText;
+  border-radius: 0.75rem;
+  background: Canvas;
+  color: CanvasText;
+  font-weight: 800;
+  text-decoration: none;
+  transform: translateY(-180%);
+  transition: transform 0.15s ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+}
+
+#mainContent:focus {
+  outline: none;
+}
+
+.pwa-health-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content)) minmax(14rem, 1fr);
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.pwa-action-status,
+.pwa-storage-status {
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.pwa-action-status[data-state='warn'] {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.pwa-action-status[data-state='ok'] {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.pwa-storage-status {
+  grid-column: 3;
+  font-size: 0.88rem;
+}
+
+button,
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--primary) 82%, white 18%);
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .pwa-health-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pwa-health-actions > button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .pwa-action-status,
+  .pwa-storage-status {
+    grid-column: 1 / -1;
+  }
+
+  .app-header,
+  .panel-heading,
+  .network-status-bar,
+  .pwa-banner,
+  .pwa-offline-banner {
+    overflow-wrap: anywhere;
+  }
+
+  body[data-keyboard='open'] .mobile-orientation-tip,
+  body[data-keyboard='open'] .focus-mode-note {
+    display: none;
+  }
+}
+
+@media (max-width: 420px) {
+  .pwa-health-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .pwa-action-status,
+  .pwa-storage-status {
+    grid-column: 1;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .panel,
+  section,
+  .playing-card,
+  button,
+  input,
+  select {
+    border-width: 2px;
+  }
+
+  .hint,
+  .pwa-action-status,
+  .pwa-storage-status {
+    color: var(--text);
+  }
+}
+
+@media (forced-colors: active) {
+  .playing-card.selected,
+  button,
+  input,
+  select,
+  .pill,
+  .network-status-bar {
+    forced-color-adjust: auto;
+  }
+
+  .playing-card.selected {
+    outline: 3px solid Highlight;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skip-link {
+    transition: none;
+  }
 }

@@ -31,6 +31,7 @@ let latestRoomData = null;
 let latestRoomSignature = '';
 let latestRoomCallback = null;
 let latestRoomErrorCallback = null;
+let lastListenError = null;
 
 function nowMs() {
   return Date.now();
@@ -97,7 +98,7 @@ export function explainFirebaseError(error) {
   const code = error?.code || '';
   const message = error?.message || String(error || '未知錯誤');
   if (code.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
-    return 'Firestore 寫入被拒絕。通常是 Firebase Console 的 Rules 沒有套用本版 firestore.rules；請貼上 v0.8.0 的 firestore.rules 後 Publish。';
+    return 'Firestore 寫入被拒絕。通常是 Firebase Console 的 Rules 沒有套用本版 firestore.rules；請貼上 v0.8.1 的 firestore.rules 後 Publish。';
   }
   if (code.includes('unauthenticated') || message.includes('auth')) {
     return '匿名登入失敗。請到 Firebase Console → Authentication → Sign-in method 啟用 Anonymous。';
@@ -113,7 +114,7 @@ export function explainFirebaseError(error) {
 
 export async function runFirebaseDiagnostics() {
   const checks = [];
-  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.8.0 是免 Cloud Functions 正式發布候選版，不需要 Blaze。' });
+  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.8.1 是免 Cloud Functions PWA 正式上線驗證版，不需要 Blaze。' });
 
   if (!hasFirebaseConfig()) {
     checks.push({ label: 'Firebase Config', ok: false, text: '尚未填入 src/firebase-config.js。' });
@@ -140,7 +141,7 @@ export async function runFirebaseDiagnostics() {
       aiLevel: 8,
       rules: normalizeRules(),
       scoringRules: normalizeScoringRules(),
-      securityVersion: 'client-validated-v0.8.0',
+      securityVersion: 'client-validated-v0.8.1',
       version: VERSION,
       passwordEnabled: false,
       passwordHash: '',
@@ -150,7 +151,7 @@ export async function runFirebaseDiagnostics() {
       presenceUpdatedAt: sdk.firestore.serverTimestamp(),
       invitePath: buildInviteUrl(testRoomId),
       gameNo: 0,
-      lastEvent: 'v0.8.0 Firebase 設定檢查用暫存房間。',
+      lastEvent: 'v0.8.1 Firebase 設定檢查用暫存房間。',
       totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
       seats: { 0: hostSeat }
     };
@@ -159,7 +160,7 @@ export async function runFirebaseDiagnostics() {
     const snap = await sdk.firestore.getDoc(ref);
     if (!snap.exists()) throw new Error('測試房間建立後讀取失敗。');
     await sdk.firestore.deleteDoc(ref);
-    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.8.0。' });
+    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.8.1。' });
     return { ok: true, checks, summary: 'Firebase 設定檢查通過，可以建立房間。' };
   } catch (error) {
     checks.push({ label: 'Firestore 寫入', ok: false, text: explainFirebaseError(error) });
@@ -173,7 +174,13 @@ async function loadFirebaseSdk() {
       import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-app.js`),
       import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-auth.js`),
       import(`https://www.gstatic.com/firebasejs/${FIREBASE_VERSION}/firebase-firestore.js`)
-    ]).then(([app, auth, firestore]) => ({ app, auth, firestore }));
+    ])
+      .then(([app, auth, firestore]) => ({ app, auth, firestore }))
+      .catch((error) => {
+        // 網路中斷時動態 import 會失敗；清掉 rejected Promise，恢復網路後才能重新載入 SDK。
+        sdkPromise = null;
+        throw error;
+      });
   }
   return sdkPromise;
 }
@@ -501,7 +508,7 @@ export async function createRoom({ playerName, aiLevel, rules, scoringRules, roo
       aiLevel: Number(aiLevel) || 8,
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.8.0',
+      securityVersion: 'client-validated-v0.8.1',
       version: VERSION,
       passwordEnabled: Boolean(passwordHash),
       passwordHash,
@@ -676,7 +683,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
     });
     game.version = VERSION;
-    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.8.0' };
+    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.8.1' };
     game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
 
     const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
@@ -707,7 +714,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       aiLevel: Number(aiLevel || room.aiLevel || 8),
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.8.0',
+      securityVersion: 'client-validated-v0.8.1',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
@@ -767,7 +774,7 @@ async function updateMultiplayerGame(roomId, action, options = {}) {
       lastActorUid: user.uid,
       lastActorSeat: Number.isInteger(seat) ? seat : null,
       updatedAtMs: Date.now(),
-      version: 'client-validated-v0.8.0'
+      version: 'client-validated-v0.8.1'
     };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {
@@ -1119,6 +1126,7 @@ export async function listenRoom(roomId, onRoom, onError) {
         return;
       }
       const data = snap.data();
+      lastListenError = null;
       latestRoomData = data;
       const localSeat = findSeatForUid(data, user.uid);
       activeSeat = localSeat;
@@ -1148,6 +1156,7 @@ export async function listenRoom(roomId, onRoom, onError) {
       }
     },
     (error) => {
+      lastListenError = error;
       if (typeof latestRoomErrorCallback === 'function') latestRoomErrorCallback(error);
     }
   );
@@ -1161,13 +1170,25 @@ export function stopListeningRoom() {
   listeningRoomId = null;
   latestRoomData = null;
   latestRoomSignature = '';
+  lastListenError = null;
 }
 
 
 
 export async function refreshActiveRoomConnection() {
   if (!activeRoomId || !canUseNetwork()) return { ok: false, roomId: activeRoomId, reason: 'offline' };
-  await ensureFirebaseReady();
+  const { sdk, db } = await ensureFirebaseReady();
+  await sdk.firestore.enableNetwork(db).catch(() => {});
+
+  // 權限或暫時性網路錯誤可能使監聽終止；網路恢復後用原 callback 重新掛上 listener。
+  if (lastListenError && typeof latestRoomCallback === 'function') {
+    const roomId = activeRoomId;
+    const roomCallback = latestRoomCallback;
+    const errorCallback = latestRoomErrorCallback;
+    stopListeningRoom();
+    await listenRoom(roomId, roomCallback, errorCallback);
+  }
+
   lastHeartbeatAt = 0;
   await sendHeartbeat(activeRoomId).catch(() => {});
   if (latestRoomData?.hostUid === currentUser?.uid) {

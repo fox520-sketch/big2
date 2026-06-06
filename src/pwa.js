@@ -1,11 +1,16 @@
-const APP_VERSION = '0.8.0';
-const ONBOARDING_KEY = `big2-onboarding-${APP_VERSION}`;
+const APP_VERSION = '0.8.1';
+const ONBOARDING_KEY = 'big2-onboarding-complete-v1';
+const LEGACY_ONBOARDING_PREFIX = 'big2-onboarding-';
 const INSTALL_HELP_KEY = 'big2-install-help-seen';
+const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
 
 let deferredInstallPrompt = null;
 let pendingWorker = null;
+let serviceWorkerRegistration = null;
 let onboardingStep = 0;
+let onboardingOpener = null;
 let controllerReloadRequested = false;
+let updateCheckTimer = null;
 
 function byId(id) {
   return document.getElementById(id);
@@ -33,6 +38,13 @@ function setPwaStatus(text, state = 'ok') {
   badge.classList.toggle('warn', state === 'warn');
 }
 
+function setPwaActionStatus(text, state = 'neutral') {
+  const status = byId('pwaActionStatus');
+  if (!status) return;
+  status.textContent = text;
+  status.dataset.state = state;
+}
+
 function hideSplash() {
   const splash = byId('pwaSplash');
   if (!splash) return;
@@ -40,13 +52,35 @@ function hideSplash() {
   window.setTimeout(() => splash.remove(), 500);
 }
 
-function showUpdateBanner(worker) {
+async function getWorkerVersion(worker) {
+  if (!worker) return null;
+  return new Promise((resolve) => {
+    const channel = new MessageChannel();
+    const timer = window.setTimeout(() => resolve(null), 1200);
+    channel.port1.onmessage = (event) => {
+      window.clearTimeout(timer);
+      resolve(event.data?.version || null);
+    };
+    worker.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
+  });
+}
+
+async function showUpdateBanner(worker) {
   pendingWorker = worker || pendingWorker;
+  const version = await getWorkerVersion(pendingWorker);
+  const text = byId('pwaUpdateText');
+  if (text) {
+    text.textContent = version
+      ? `v${version} 已可使用，重新載入即可套用最新牌桌。`
+      : '發現新版本，重新載入即可套用最新牌桌。';
+  }
   byId('pwaUpdateBanner')?.classList.remove('hidden');
+  setPwaStatus('有新版可更新', 'warn');
 }
 
 function hideUpdateBanner() {
   byId('pwaUpdateBanner')?.classList.add('hidden');
+  if (navigator.onLine !== false) setPwaStatus(isStandalone() ? '已安裝' : 'PWA 就緒', 'ok');
 }
 
 function updateOfflineBanner() {
@@ -55,9 +89,13 @@ function updateOfflineBanner() {
   const offline = navigator.onLine === false;
   banner.classList.toggle('hidden', !offline);
   document.body.dataset.offline = offline ? 'true' : 'false';
-  if (offline) setPwaStatus('目前離線', 'warn');
-  else if (isStandalone()) setPwaStatus('已安裝', 'ok');
-  else setPwaStatus('PWA 就緒', 'ok');
+  if (offline) {
+    setPwaStatus('目前離線', 'warn');
+    setPwaActionStatus('多人房間暫停；恢復網路後會重新同步。', 'warn');
+  } else {
+    setPwaStatus(isStandalone() ? '已安裝' : 'PWA 就緒', 'ok');
+    setPwaActionStatus('網路正常，離線資源與更新檢查可用。', 'ok');
+  }
 }
 
 function showInstallHelp() {
@@ -153,14 +191,29 @@ function renderOnboardingStep(step) {
   const next = byId('onboardingNextBtn');
   if (previous) previous.disabled = onboardingStep === 0;
   if (next) next.textContent = onboardingStep === steps.length - 1 ? '開始遊戲' : '下一步';
+  steps[onboardingStep]?.setAttribute('tabindex', '-1');
+  steps[onboardingStep]?.focus({ preventScroll: true });
+}
+
+function hasCompletedOnboarding() {
+  if (localStorage.getItem(ONBOARDING_KEY)) return true;
+  for (let index = 0; index < localStorage.length; index += 1) {
+    const key = localStorage.key(index) || '';
+    if (key.startsWith(LEGACY_ONBOARDING_PREFIX) && localStorage.getItem(key)) {
+      localStorage.setItem(ONBOARDING_KEY, '1');
+      return true;
+    }
+  }
+  return false;
 }
 
 function openOnboarding() {
   const dialog = byId('onboardingDialog');
   if (!dialog) return;
-  renderOnboardingStep(0);
+  onboardingOpener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   if (typeof dialog.showModal === 'function') dialog.showModal();
   else dialog.setAttribute('open', '');
+  renderOnboardingStep(0);
 }
 
 function closeOnboarding(remember = true) {
@@ -170,6 +223,7 @@ function closeOnboarding(remember = true) {
   if (remember && rememberChecked) localStorage.setItem(ONBOARDING_KEY, '1');
   if (typeof dialog.close === 'function') dialog.close();
   else dialog.removeAttribute('open');
+  window.setTimeout(() => onboardingOpener?.focus?.(), 0);
 }
 
 function bindOnboarding() {
@@ -185,9 +239,13 @@ function bindOnboarding() {
   byId('onboardingDialog')?.addEventListener('click', (event) => {
     if (event.target === event.currentTarget) closeOnboarding(false);
   });
+  byId('onboardingDialog')?.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    closeOnboarding(false);
+  });
   const launchParams = new URL(window.location.href).searchParams;
   const isDirectLaunch = launchParams.has('room') || launchParams.get('join') === '1' || launchParams.has('action');
-  if (!localStorage.getItem(ONBOARDING_KEY) && !isDirectLaunch) {
+  if (!hasCompletedOnboarding() && !isDirectLaunch) {
     window.setTimeout(() => {
       if (document.body.dataset.gameplayFocus !== 'on') openOnboarding();
     }, 1050);
@@ -219,6 +277,76 @@ function syncThemeColor() {
   if (meta) meta.setAttribute('content', themeColors[document.body.dataset.theme] || '#060b14');
 }
 
+async function updateStorageStatus() {
+  const status = byId('pwaStorageStatus');
+  if (!status || !navigator.storage?.estimate) return;
+  try {
+    const { usage = 0, quota = 0 } = await navigator.storage.estimate();
+    const usageMb = usage / 1024 / 1024;
+    const quotaMb = quota / 1024 / 1024;
+    status.textContent = quotaMb > 0
+      ? `離線快取約 ${usageMb.toFixed(1)} MB／可用 ${Math.round(quotaMb)} MB`
+      : `離線快取約 ${usageMb.toFixed(1)} MB`;
+  } catch {
+    status.textContent = '無法讀取瀏覽器快取容量。';
+  }
+}
+
+async function checkForUpdates(manual = false) {
+  if (!serviceWorkerRegistration) {
+    if (manual) setPwaActionStatus('Service Worker 尚未就緒，請稍後再試。', 'warn');
+    return;
+  }
+  if (navigator.onLine === false) {
+    if (manual) setPwaActionStatus('目前離線，無法檢查更新。', 'warn');
+    return;
+  }
+  if (manual) setPwaActionStatus('正在檢查新版…', 'neutral');
+  try {
+    await serviceWorkerRegistration.update();
+    if (serviceWorkerRegistration.waiting) {
+      await showUpdateBanner(serviceWorkerRegistration.waiting);
+    } else if (manual) {
+      setPwaActionStatus(`目前已是最新版本 v${APP_VERSION}。`, 'ok');
+    }
+  } catch (error) {
+    if (manual) setPwaActionStatus(`檢查更新失敗：${error?.message || error}`, 'warn');
+  }
+}
+
+async function refreshOfflineFiles() {
+  const button = byId('pwaRefreshCacheBtn');
+  const worker = navigator.serviceWorker.controller || serviceWorkerRegistration?.active;
+  if (!worker) {
+    setPwaActionStatus('Service Worker 尚未控制此頁，請重新整理後再試。', 'warn');
+    return;
+  }
+  if (navigator.onLine === false) {
+    setPwaActionStatus('目前離線，無法重新下載離線檔案。', 'warn');
+    return;
+  }
+  if (button) button.disabled = true;
+  setPwaActionStatus('正在重新整理離線檔案…', 'neutral');
+  try {
+    const result = await new Promise((resolve, reject) => {
+      const channel = new MessageChannel();
+      const timer = window.setTimeout(() => reject(new Error('更新逾時')), 12000);
+      channel.port1.onmessage = (event) => {
+        window.clearTimeout(timer);
+        resolve(event.data || {});
+      };
+      worker.postMessage({ type: 'REFRESH_APP_SHELL' }, [channel.port2]);
+    });
+    if (!result.ok) throw new Error(result.message || '離線檔案更新失敗');
+    setPwaActionStatus(`離線檔案已更新為 v${result.version || APP_VERSION}。`, 'ok');
+    await updateStorageStatus();
+  } catch (error) {
+    setPwaActionStatus(`離線檔案更新失敗：${error?.message || error}`, 'warn');
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
 async function registerServiceWorker() {
   if (!('serviceWorker' in navigator)) {
     setPwaStatus('瀏覽器不支援 PWA', 'warn');
@@ -229,8 +357,12 @@ async function registerServiceWorker() {
     return;
   }
   try {
-    const registration = await navigator.serviceWorker.register('./service-worker.js', { scope: './' });
-    if (registration.waiting && navigator.serviceWorker.controller) showUpdateBanner(registration.waiting);
+    const registration = await navigator.serviceWorker.register('./service-worker.js', {
+      scope: './',
+      updateViaCache: 'none'
+    });
+    serviceWorkerRegistration = registration;
+    if (registration.waiting && navigator.serviceWorker.controller) await showUpdateBanner(registration.waiting);
     registration.addEventListener('updatefound', () => {
       const worker = registration.installing;
       if (!worker) return;
@@ -243,11 +375,22 @@ async function registerServiceWorker() {
       controllerReloadRequested = false;
       window.location.reload();
     });
-    window.setTimeout(() => registration.update().catch(() => {}), 5000);
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data?.type === 'CACHE_READY') {
+        setPwaActionStatus(`離線資源已就緒（v${event.data.version || APP_VERSION}）。`, 'ok');
+        updateStorageStatus();
+      }
+    });
+    window.setTimeout(() => checkForUpdates(false), 5000);
+    window.clearInterval(updateCheckTimer);
+    updateCheckTimer = window.setInterval(() => checkForUpdates(false), UPDATE_CHECK_INTERVAL_MS);
     setPwaStatus(isStandalone() ? '已安裝' : 'PWA 就緒', 'ok');
+    setPwaActionStatus(`Service Worker v${APP_VERSION} 已就緒。`, 'ok');
+    await updateStorageStatus();
   } catch (error) {
     console.warn('PWA 註冊失敗', error);
     setPwaStatus('PWA 快取失敗', 'warn');
+    setPwaActionStatus(`Service Worker 註冊失敗：${error?.message || error}`, 'warn');
   }
 }
 
@@ -261,16 +404,33 @@ function bindPwaEvents() {
     deferredInstallPrompt = null;
     updateInstallButton();
     setPwaStatus('安裝完成', 'ok');
+    setPwaActionStatus('遊戲已安裝到裝置。', 'ok');
   });
-  window.addEventListener('online', updateOfflineBanner);
+  window.addEventListener('online', () => {
+    updateOfflineBanner();
+    checkForUpdates(false);
+  });
   window.addEventListener('offline', updateOfflineBanner);
-  window.matchMedia('(display-mode: standalone)').addEventListener?.('change', updateInstallButton);
+  window.addEventListener('pageshow', () => {
+    updateInstallButton();
+    updateOfflineBanner();
+    if (navigator.onLine !== false) checkForUpdates(false);
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && navigator.onLine !== false) checkForUpdates(false);
+  });
+  const displayMode = window.matchMedia('(display-mode: standalone)');
+  if (typeof displayMode.addEventListener === 'function') displayMode.addEventListener('change', updateInstallButton);
+  else displayMode.addListener?.(updateInstallButton);
   byId('installAppBtn')?.addEventListener('click', installApp);
   byId('shareGameBtn')?.addEventListener('click', shareGame);
+  byId('pwaCheckUpdateBtn')?.addEventListener('click', () => checkForUpdates(true));
+  byId('pwaRefreshCacheBtn')?.addEventListener('click', refreshOfflineFiles);
   byId('closeInstallHelpBtn')?.addEventListener('click', () => byId('pwaInstallHelp')?.classList.add('hidden'));
   byId('pwaUpdateBtn')?.addEventListener('click', () => {
     controllerReloadRequested = true;
-    pendingWorker?.postMessage({ type: 'SKIP_WAITING' });
+    if (pendingWorker) pendingWorker.postMessage({ type: 'SKIP_WAITING' });
+    else window.location.reload();
   });
   byId('pwaUpdateLaterBtn')?.addEventListener('click', hideUpdateBanner);
 
@@ -279,6 +439,7 @@ function bindPwaEvents() {
 }
 
 function init() {
+  document.querySelectorAll('[data-app-version]').forEach((node) => { node.textContent = APP_VERSION; });
   bindPwaEvents();
   bindOnboarding();
   updateInstallButton();

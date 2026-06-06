@@ -13,6 +13,7 @@ const requiredFiles = [
   'src/pwa.js',
   'docs/PWA_RELEASE_CHECKLIST.md',
   'docs/PRIVACY_AND_DATA.md',
+  'docs/PWA_ONLINE_VERIFICATION.md',
   'assets/icons/favicon.svg',
   'assets/icons/favicon-32.png',
   'assets/icons/apple-touch-icon.png',
@@ -33,6 +34,7 @@ if (manifest.name !== '台灣大老二 Big2 TW') throw new Error('manifest 名�
 if (manifest.start_url !== './?source=pwa') throw new Error('manifest start_url 必須使用 GitHub Pages 相對路徑');
 if (manifest.scope !== './') throw new Error('manifest scope 必須使用 GitHub Pages 相對路徑');
 if (manifest.display !== 'standalone') throw new Error('manifest display 應為 standalone');
+if (!manifest.launch_handler?.client_mode?.includes('navigate-existing')) throw new Error('manifest 缺少重用既有 PWA 視窗設定');
 if (!Array.isArray(manifest.icons) || manifest.icons.length < 3) throw new Error('manifest 圖示不足');
 if (!manifest.icons.some((icon) => String(icon.purpose).includes('maskable'))) throw new Error('manifest 缺少 maskable icon');
 
@@ -58,19 +60,24 @@ for (const [file, width, height] of [
 
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 for (const token of [
-  'manifest.webmanifest?v=0.8.0',
-  'src/pwa.js?v=0.8.0',
+  'manifest.webmanifest?v=0.8.1',
+  'src/pwa.js?v=0.8.1',
   'installAppBtn',
   'pwaUpdateBanner',
   'pwaOfflineBanner',
+  'pwaCheckUpdateBtn',
+  'pwaRefreshCacheBtn',
   'onboardingDialog',
   'openOnboardingBtn',
   'shareGameBtn',
+  'class="skip-link"',
+  'id="mainContent"',
   'https://fox520-sketch.github.io/big2/',
+  'og:image:type',
   'og-big2.png',
   'privacy.html'
 ]) {
-  if (!index.includes(token)) throw new Error(`index.html 缺少 PWA／SEO 標記：${token}`);
+  if (!index.includes(token)) throw new Error(`index.html 缺少 PWA／SEO／無障礙標記：${token}`);
 }
 
 const pwa = fs.readFileSync(path.join(root, 'src/pwa.js'), 'utf8');
@@ -78,26 +85,35 @@ for (const token of [
   'beforeinstallprompt',
   'navigator.share',
   'serviceWorker.register',
+  "updateViaCache: 'none'",
   'SKIP_WAITING',
+  'REFRESH_APP_SHELL',
   'showInstallHelp',
   'openOnboarding',
-  'controllerchange'
+  'controllerchange',
+  'checkForUpdates',
+  'navigator.storage?.estimate'
 ]) {
   if (!pwa.includes(token)) throw new Error(`src/pwa.js 缺少功能：${token}`);
 }
 
 const sw = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
 for (const token of [
-  "CACHE_NAME = 'big2-tw-v0.8.0'",
-  'APP_SHELL',
+  "APP_VERSION = '0.8.1'",
+  'self.registration.scope',
+  'APP_SHELL_PATHS',
   "self.addEventListener('install'",
   "self.addEventListener('fetch'",
-  'networkFirst',
-  'cacheFirst',
-  'SKIP_WAITING'
+  'navigationNetworkFirst',
+  'networkFirstAsset',
+  'REFRESH_APP_SHELL',
+  'SKIP_WAITING',
+  'navigationPreload'
 ]) {
   if (!sw.includes(token)) throw new Error(`service-worker.js 缺少功能：${token}`);
 }
+if (sw.includes('ignoreSearch: true')) throw new Error('Service Worker 不可再忽略版本 query，否則可能混用新舊 JS/CSS');
+if (sw.includes("cache.put('./index.html'")) throw new Error('Service Worker 不可把所有導覽頁覆寫成 index.html');
 
 for (const forbidden of ['functions', 'firebase.json', '.firebaserc']) {
   if (fs.existsSync(path.join(root, forbidden))) throw new Error(`免 Cloud Functions 版不應包含：${forbidden}`);

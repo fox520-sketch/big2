@@ -1,8 +1,6 @@
-# v0.8.0 PWA 正式發布檢查清單
+# v0.8.1 PWA 正式發布檢查清單
 
-## 一、上傳檔案
-
-確認 repository 根目錄包含：
+## 必須上傳到 repository 根目錄
 
 - `.nojekyll`
 - `index.html`
@@ -12,77 +10,55 @@
 - `privacy.html`
 - `robots.txt`
 - `sitemap.xml`
-- `assets/icons/`
-- `assets/social/`
-- `assets/splash/`
+- `assets/`
 - `src/`
 - `styles/`
+- `docs/`
+- `scripts/`
+- `firestore.rules`
+- `package.json`
+- `README.md`
+- `VERSION.md`
 
-不要把整個 `big2-tw-v0.8.0` 資料夾再包在 repository 裡。
+不要把整個 `big2-tw-v0.8.1` 資料夾再包在 repository 裡。
 
-## 二、Firebase
+## Firebase
 
-- 保留原本已填好的 `src/firebase-config.js`。
-- 確認 Firebase Authentication 的 Anonymous 已啟用。
-- 確認 Firestore 使用免 Cloud Functions 版本規則。
-- v0.8.0 沒有新增 Firestore 欄位；v0.7.5 正常時通常不用重貼 Rules。
+- 保留已設定好的 `src/firebase-config.js`，不要被 `PASTE_...` 範例覆蓋。
+- Authentication 必須啟用 Anonymous。
+- 首次部署或權限錯誤時，把本版 `firestore.rules` 貼到 Firestore Rules 並 Publish。
+- v0.8.1 沒有新增 Firestore 欄位；v0.7.5 之後多人正常時通常不用重貼 Rules。
+- 不使用 Cloud Functions，不需要 Blaze。
 
-## 三、PWA 安裝
+## PWA
 
-### Android / Chrome
+- GitHub Pages 必須使用 HTTPS。
+- `manifest.webmanifest` 與 `service-worker.js` 必須可直接開啟，不能回傳 404 HTML。
+- Service Worker scope 應為 `/big2/`。
+- Android／桌機測試安裝；iPhone 使用 Safari 加入主畫面。
+- 發布新版後按「檢查更新」，再按更新提示的「立即更新」。
+- 若仍是舊版，可按「更新離線檔案」或從瀏覽器網站設定清除快取。
 
-- 網址使用 HTTPS。
-- 開啟後可看到「安裝遊戲」或瀏覽器安裝選單。
-- 安裝後桌面圖示清楚，啟動時使用獨立視窗。
-- 開啟後不會顯示過期版本。
+## 分享與 SEO
 
-### iPhone / Safari
+- canonical、Open Graph 與 sitemap 使用正式網址 `https://fox520-sketch.github.io/big2/`。
+- `assets/social/og-big2.png` 必須可公開讀取。
+- `privacy.html`、`robots.txt`、`sitemap.xml` 均須正常開啟。
 
-- 以 Safari 開啟。
-- 分享 → 加入主畫面。
-- 圖示與名稱正確。
-- 從桌面啟動後 safe-area 不遮住內容。
+## 實機與無障礙
 
-## 四、離線測試
+依 `docs/PWA_ONLINE_VERIFICATION.md` 完成：
 
-1. 在線狀態完整開啟一次遊戲。
-2. 等待約數秒，確認 Service Worker 完成安裝。
-3. 關閉網路後重新開啟。
-4. 首頁、主題、牌面與單人遊戲可載入。
-5. 多人功能顯示離線提示，不應假裝出牌成功。
+- Android、iPhone、平板、桌機 UI。
+- 安裝、離線、更新。
+- 2～4 位真人多人實戰、AI 補位、斷線重連與下一局。
+- 鍵盤焦點、跳至主要內容、減少動態效果、200% 文字縮放與高對比。
 
-## 五、版本更新測試
-
-1. 先開啟舊版本。
-2. 上傳新版並修改 Service Worker 的 `CACHE_NAME`。
-3. 回到已開啟頁面，等待更新偵測。
-4. 應顯示「發現新版本」。
-5. 按「立即更新」後重新載入新版。
-6. 按「稍後」時不可中斷目前牌局。
-
-## 六、分享與 SEO
-
-- 分享 LINE / Facebook 時顯示 `assets/social/og-big2.png`。
-- 標題為「台灣大老二｜單人 AI 與好友連線 PWA」。
-- canonical 指向 `https://fox520-sketch.github.io/big2/`。
-- `robots.txt` 與 `sitemap.xml` 可正常開啟。
-- `privacy.html` 可正常開啟。
-
-## 七、安全
-
-不要上傳：
+## 不要上傳
 
 - `functions/`
 - `node_modules/`
-- `.env`
+- `.env`、`.env.local`
 - `serviceAccountKey.json`
-- `firebase-adminsdk.json`
-- 任何私鑰或管理員金鑰
-
-## 八、最後實機測試
-
-- 單人完整玩完一局。
-- 兩位真人 + 兩位 AI 完整玩完一局。
-- 下一局、總分、排行榜正常。
-- 鎖定螢幕與切換 App 後可恢復房間。
-- Android、iPhone、平板與桌機至少各測一次主要畫面。
+- `firebase-adminsdk*.json`
+- 任何私鑰、管理員憑證或其他服務密碼

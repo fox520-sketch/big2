@@ -1,30 +1,31 @@
 # 版本說明
 
-## v0.8.0 - 2026-06-05
-### PWA 正式公開版
-- 新增 `manifest.webmanifest`，支援安裝到 Android、Chrome、Edge 與電腦桌面。
-- 新增獨立視窗模式、App 圖示、maskable icon、Apple Touch Icon、favicon 與啟動畫面。
-- 新增 `service-worker.js`，快取首頁、單人規則引擎、AI、牌面、主題與必要資源。
-- 離線時可開啟首頁與單人遊戲；Firebase 多人房間仍需要網路。
-- 新增新版偵測與「立即更新／稍後」提示，避免牌局進行中被強制重新載入。
-- 新增安裝按鈕與 iPhone Safari「加入主畫面」說明。
-- 新增原生分享功能，不支援時改為複製遊戲連結。
+## v0.8.1 - 2026-06-06
+### PWA 安裝、路徑與更新修正
+- Service Worker 使用 `self.registration.scope` 建立 GitHub Pages 子目錄網址，避免 `/big2/` 部署路徑錯誤。
+- 修正所有導覽回應都寫入 `index.html` 快取的問題；隱私頁與首頁現在各自快取。
+- JavaScript、CSS、manifest 改為網路優先並保留版本 query，不再用 `ignoreSearch` 混用新舊資源。
+- 加入 navigation preload、網路逾時與離線 fallback。
+- 新增「檢查更新」、「更新離線檔案」、快取容量與版本狀態。
+- 更新檢查會在定期、恢復網路、頁面回到前景與 PWA 再次開啟時執行。
 
-### SEO 與分享
-- 新增 canonical URL、Open Graph、Twitter Card 與 1200×630 分享預覽圖。
-- 新增 `robots.txt`、`sitemap.xml`、正式網頁標題與描述。
-- 新增 `privacy.html` 與 `docs/PRIVACY_AND_DATA.md`。
+### Firebase 多人恢復
+- Firebase SDK 動態 import 失敗時會清除 rejected Promise，恢復網路後可重新載入。
+- 重新連線時呼叫 Firestore `enableNetwork()`。
+- 房間 listener 因錯誤中止後，會使用原 callback 重新掛上監聽。
+- 新增 `pageshow` 恢復處理，改善從背景、BFCache 或鎖定螢幕返回時的同步。
 
-### 首次使用導覽
-- 新增四步驟首次使用導覽：單人／多人、選牌出牌、邀請房間、安裝到桌面。
-- 可略過、不再自動顯示，也可從右上角「使用導覽」重新開啟。
-- 新增 PWA 啟動載入畫面與離線提示。
+### 手機、SEO 與無障礙
+- 偵測手機虛擬鍵盤，開啟時隱藏非必要提示，避免輸入欄位被擠壓。
+- 新增 Firebase CDN preconnect、Open Graph secure URL 與圖片 MIME 類型。
+- 新增跳至主要內容連結、強化鍵盤焦點、200% 文字縮放、高對比與 forced-colors 支援。
+- 首次使用導覽改用穩定旗標，已完成的使用者不會在每次更新後重複看到。
 
-### 發布與測試
-- 新增 `docs/PWA_RELEASE_CHECKLIST.md`。
-- 新增 `scripts/test-pwa-release.js`，檢查 manifest、圖示尺寸、Service Worker、SEO、導覽、隱私頁及 GitHub Pages 相對路徑。
-- 維持免 Cloud Functions、不需要 Blaze，不包含 `functions/`。
-- 本版未新增 Firestore 文件欄位。
+### 文件與測試
+- 新增 `docs/PWA_ONLINE_VERIFICATION.md`。
+- 更新 `docs/PWA_RELEASE_CHECKLIST.md`。
+- 新增 `scripts/test-pwa-online-verification.js`，檢查 scope、更新策略、Firebase 重連、手機鍵盤與無障礙。
+- 維持免 Cloud Functions、不需要 Blaze，本版未新增 Firestore 文件欄位。
 
 ---
 ## v0.7.5 - 2026-06-05

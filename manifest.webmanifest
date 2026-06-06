@@ -2,7 +2,7 @@
   "id": "./",
   "name": "台灣大老二 Big2 TW",
   "short_name": "台灣大老二",
-  "description": "台灣大老二網頁遊戲，支援單人 AI、Firebase 好友房間、排行榜、手機 PWA 與多種主題。",
+  "description": "台灣大老二網頁遊戲，支援單人 AI、Firebase 好友房間、排行榜、手機 PWA、離線單人與多種主題。",
   "lang": "zh-TW",
   "dir": "ltr",
   "start_url": "./?source=pwa",
@@ -66,5 +66,15 @@
         }
       ]
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  },
+  "handle_links": "preferred",
+  "edge_side_panel": {
+    "preferred_width": 420
+  }
 }

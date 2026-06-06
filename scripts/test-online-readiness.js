@@ -8,8 +8,8 @@ const css = fs.readFileSync(path.join(root, 'styles/base.css'), 'utf8');
 const docs = fs.readFileSync(path.join(root, 'docs/ONLINE_TEST_FIX_CHECKLIST.md'), 'utf8');
 
 const indexNeeds = [
-  'styles/base.css?v=0.8.0',
-  'src/main.js?v=0.8.0',
+  'styles/base.css?v=0.8.1',
+  'src/main.js?v=0.8.1',
   '手機牌桌 UI 優化',
   'qrStatusText',
   'qrFallbackLink'

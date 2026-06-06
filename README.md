@@ -1,22 +1,23 @@
-# 台灣大老二 Big2 TW v0.8.0
+# 台灣大老二 Big2 TW v0.8.1
 
 台灣大老二網頁遊戲，支援單人與 3 家 AI 對戰、Firebase 好友房間、AI 難度 1～20 級、13 種主題、連續對戰、排行榜、手機牌桌與 PWA 安裝。
 
 本版維持 **免 Cloud Functions、不需要 Blaze** 的 GitHub Pages + Firebase 休閒版架構。
 
-## v0.8.0 PWA 正式公開版
+## v0.8.1 PWA 正式上線驗證與修正版
 
-- 可安裝到 Android、電腦桌面；iPhone / iPad 可透過 Safari「加入主畫面」。
-- 以獨立視窗開啟，減少手機瀏覽器網址列占用。
-- 新增 `manifest.webmanifest` 與 `service-worker.js`。
-- 快取首頁、規則引擎、AI、牌面、主題與必要資源；離線時仍可開啟單人模式。
-- 多人房間、建立房間、加入房間與同步出牌仍需要網路。
-- 發現新版本時顯示更新提示，由玩家確認後重新載入，不會在牌局中強制更新。
-- 新增 PWA App 圖示、maskable icon、Apple Touch Icon、favicon 與啟動畫面。
-- 新增 Open Graph 分享預覽、Twitter Card、canonical URL、`robots.txt` 與 `sitemap.xml`。
-- 新增四步驟首次使用導覽，可略過、不再自動顯示或從右上角重新觀看。
-- 新增原生分享按鈕；不支援原生分享的瀏覽器會改為複製遊戲連結。
-- 新增 `privacy.html` 與正式發布文件。
+- Service Worker 改用 GitHub Pages scope 組合路徑，可穩定部署在 `/big2/` 子目錄。
+- 修正導覽頁快取：`privacy.html` 不會再覆蓋首頁快取。
+- JavaScript、CSS、manifest 改為網路優先且保留版本 query，降低新舊程式混用風險。
+- 新增「檢查更新」與「更新離線檔案」，並顯示快取容量。
+- 新增定期、回到前景與恢復網路時的更新檢查。
+- 首次使用導覽改為穩定完成旗標，不會每次小版本更新都重新自動跳出。
+- Firebase SDK 動態載入失敗後可重試；恢復網路時會重新啟用 Firestore 網路，必要時重新掛上房間 listener。
+- 手機鍵盤開啟時會隱藏非必要提示，減少房號、密碼欄位被遮住。
+- 新增 GitHub Pages preconnect、Open Graph 圖片類型與 secure URL。
+- 新增跳至主要內容、鍵盤焦點、高對比、強制色彩、降低動態效果及 200% 文字縮放支援。
+- 新增 `docs/PWA_ONLINE_VERIFICATION.md` 與 PWA 上線自動驗證測試。
+- 維持免 Cloud Functions、不需要 Blaze。
 
 ## 核心功能
 
@@ -102,7 +103,7 @@ VERSION.md
 不要多包一層：
 
 ```txt
-big2/big2-tw-v0.8.0/index.html   ← 錯誤
+big2/big2-tw-v0.8.1/index.html   ← 錯誤
 big2/index.html                  ← 正確
 ```
 
@@ -121,6 +122,7 @@ firebase-adminsdk.json
 ## 文件
 
 - PWA 正式發布：`docs/PWA_RELEASE_CHECKLIST.md`
+- PWA 上線驗證：`docs/PWA_ONLINE_VERIFICATION.md`
 - 隱私與資料使用：`docs/PRIVACY_AND_DATA.md`
 - Firebase 設定：`docs/FIREBASE_SETUP.md`
 - 規則與計分：`docs/RULES_AND_SCORING.md`
@@ -135,4 +137,4 @@ firebase-adminsdk.json
 npm test
 ```
 
-測試包含規則、AI、多人狀態、計分、主題對比、手機 UI、線上準備、效能穩定，以及 PWA manifest、圖示、Service Worker、SEO 與發布檔案完整性。
+測試包含規則、AI、多人狀態、計分、主題對比、手機 UI、線上準備、效能穩定、GitHub Pages scope、Service Worker 更新策略、Firebase 重連、SEO、無障礙與發布檔案完整性。
