@@ -36,13 +36,13 @@
     <meta name="twitter:description" content="免安裝即可玩，也可加入手機桌面。支援單人 AI 與 Firebase 好友連線。" />
     <meta name="twitter:image" content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" />
 
-    <link rel="manifest" href="manifest.webmanifest?v=0.8.1" />
+    <link rel="manifest" href="manifest.webmanifest?v=0.8.2" />
     <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
     <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png" />
     <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" sizes="180x180" />
     <link rel="apple-touch-startup-image" href="assets/splash/splash-portrait.png" media="(orientation: portrait)" />
     <link rel="apple-touch-startup-image" href="assets/splash/splash-landscape.png" media="(orientation: landscape)" />
-    <link rel="stylesheet" href="styles/base.css?v=0.8.1" />
+    <link rel="stylesheet" href="styles/base.css?v=0.8.2" />
   </head>
   <body data-theme="dark">
     <a class="skip-link" href="#mainContent">跳至主要內容</a>
@@ -68,7 +68,7 @@
       <div>
         <p class="eyebrow">Big2 TW</p>
         <h1>台灣大老二</h1>
-        <p class="subtitle">v0.8.1 PWA 正式上線驗證版｜免 Cloud Functions</p>
+        <p class="subtitle">v0.8.2 正式上線驗收版｜免 Cloud Functions</p>
       </div>
       <div class="toolbar" aria-label="遊戲工具列">
         <label class="field ai-level-field">
@@ -148,7 +148,7 @@
         <div class="panel-heading">
           <div>
             <h2>首頁流程</h2>
-            <p class="hint small">v0.8.1 可安裝到手機桌面，支援離線開啟單人遊戲、新版更新提示與首次使用導覽。</p>
+            <p class="hint small">v0.8.2 可安裝到手機桌面，支援離線開啟單人遊戲、新版更新提示與首次使用導覽。</p>
           </div>
           <span class="pill ok">PWA 上線驗證版</span>
         </div>
@@ -174,9 +174,9 @@
         <div class="panel-heading">
           <div>
             <h2>手機實戰與同步穩定</h2>
-            <p class="hint small">v0.8.1 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
+            <p class="hint small">v0.8.2 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
           </div>
-          <span class="pill ok">v0.8.1</span>
+          <span class="pill ok">v0.8.2</span>
         </div>
         <div class="check-grid compact-check-grid">
           <div><strong>牌桌靠近手牌</strong><span>手機依序顯示牌桌、自己的手牌、操作按鈕，減少上下捲動。</span></div>
@@ -194,7 +194,7 @@
         <div class="panel-heading">
           <div>
             <h2>PWA 安裝、更新與離線驗證</h2>
-            <p class="hint small">已強化 GitHub Pages 子目錄、Service Worker 更新、離線快取、分享預覽與無障礙；多人功能仍需要網路。</p>
+            <p class="hint small">加入一鍵修復、舊快取清理、診斷匯出與正式上線驗收工具；多人功能仍需要網路。</p>
           </div>
           <span id="pwaStatusBadge" class="pill ok">PWA 就緒</span>
         </div>
@@ -206,9 +206,13 @@
           <div><strong>分享預覽</strong><span>加入 Open Graph 圖片、類型與絕對網址，分享至 LINE、Facebook 等平台時更容易辨識。</span></div>
           <div><strong>無障礙</strong><span>加入跳至主要內容、鍵盤焦點、降低動態效果、高對比與 200% 文字縮放支援。</span></div>
         </div>
-        <div class="pwa-health-actions" aria-label="PWA 維護工具">
-          <button id="pwaCheckUpdateBtn" class="secondary-btn" type="button">檢查更新</button>
-          <button id="pwaRefreshCacheBtn" class="secondary-btn" type="button">更新離線檔案</button>
+        <div class="pwa-health-actions" aria-label="PWA 維護與一鍵修復工具">
+          <button id="pwaRepairBtn" class="primary-btn" type="button">一鍵修復 PWA</button>
+          <button id="pwaCheckUpdateBtn" class="secondary-btn" type="button">檢查新版</button>
+          <button id="pwaApplyUpdateBtn" class="secondary-btn" type="button">立即套用新版</button>
+          <button id="pwaRefreshCacheBtn" class="secondary-btn" type="button">重新下載離線檔案</button>
+          <button id="pwaClearCachesBtn" class="secondary-btn" type="button">清除舊版快取</button>
+          <button id="pwaReloadBtn" class="secondary-btn" type="button">重新載入遊戲</button>
           <span id="pwaActionStatus" class="pwa-action-status" role="status" aria-live="polite">正在檢查 PWA 狀態…</span>
           <span id="pwaStorageStatus" class="pwa-storage-status">正在讀取快取容量…</span>
         </div>
@@ -219,13 +223,31 @@
         </div>
       </section>
 
+      <section class="acceptance-panel" aria-label="正式上線驗收與效能保護">
+        <div class="panel-heading">
+          <div>
+            <h2>正式上線驗收與問題回報</h2>
+            <p class="hint small">遇到舊版快取、多人同步或手機異常時，可先執行一鍵修復，再匯出診斷文字檔。</p>
+          </div>
+          <span class="pill ok">免 Cloud Functions</span>
+        </div>
+        <div class="check-grid compact-check-grid">
+          <div><strong>PWA 一鍵修復</strong><span>檢查新版、清除 Big2 舊快取、重建離線資源並重新載入，不會清除玩家名稱與本機戰績。</span></div>
+          <div><strong>診斷資訊匯出</strong><span>包含裝置、PWA、Service Worker、快取、Firebase listener／心跳、房間回合與最近錯誤。</span></div>
+          <div><strong>Firebase 效能保護</strong><span>房間列表使用 15 秒快取；頁面在背景時降低心跳頻率；離房後解除 listener 與計時器。</span></div>
+          <div><strong>過期資料清理</strong><span>只清理自己建立、超過 24 小時且未進行中的房間，並回報略過原因與清理數量。</span></div>
+          <div><strong>多人體驗驗收</strong><span>請依 docs/FINAL_ACCEPTANCE_CHECKLIST.md 測試 2～4 位真人、AI 補位、下一局、鎖螢幕與斷線重連。</span></div>
+          <div><strong>疑難排解</strong><span>常見安裝、更新、Firebase 權限與房間問題請看 docs/TROUBLESHOOTING.md。</span></div>
+        </div>
+      </section>
+
       <section class="settings-panel" aria-label="正式規則與計分設定">
         <div class="panel-heading">
           <div>
             <h2>正式規則與計分設定</h2>
             <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
           </div>
-          <span class="pill">v0.8.1</span>
+          <span class="pill">v0.8.2</span>
         </div>
         <div class="settings-grid">
           <label class="field full">
@@ -257,7 +279,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.8.1 PWA 正式上線驗證與修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
+            <p class="hint small">v0.8.2 正式上線驗收與問題回報修正版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
           </div>
           <span id="firebaseStatusBadge" class="pill">檢查中</span>
         </div>
@@ -351,7 +373,7 @@
         <div class="panel-heading">
           <div>
             <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.8.1 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+            <p class="hint small">用來確認 v0.8.2 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
           </div>
           <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
         </div>
@@ -359,8 +381,8 @@
         <div id="firebaseCheckGrid" class="firebase-check-grid">
           <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
           <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.8.1。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.8.1 不需要 functions/，也不需要 Blaze。</p></div>
+          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.8.2。</p></div>
+          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.8.2 不需要 functions/，也不需要 Blaze。</p></div>
         </div>
       </section>
 
@@ -368,15 +390,16 @@
         <div class="panel-heading">
           <div>
             <h2>多人同步偵錯面板</h2>
-            <p class="hint small">回報問題時可按「複製偵錯資訊」，會包含房號、座位、回合、上一手、revision、玩家列表與最近歷史。</p>
+            <p class="hint small">回報問題時可按「複製偵錯資訊」，會包含房號、座位、回合、PWA／Service Worker、快取、Firebase 效能計數、裝置資訊與最近錯誤。</p>
           </div>
           <div class="button-row compact-actions">
-            <button id="copyDebugBtn" class="secondary-btn" type="button">複製偵錯資訊</button>
-            <span class="pill">v0.8.1</span>
+            <button id="copyDebugBtn" class="secondary-btn" type="button">複製問題回報</button>
+            <button id="downloadDebugBtn" class="secondary-btn" type="button">下載診斷檔</button>
+            <span class="pill">v0.8.2</span>
           </div>
         </div>
         <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.8.1</span></div>
+          <div><strong>版本</strong><span>v0.8.2</span></div>
           <div><strong>房號</strong><span>—</span></div>
           <div><strong>狀態</strong><span>尚未連線</span></div>
           <div><strong>我的座位</strong><span>未入座</span></div>
@@ -641,8 +664,8 @@
     </main>
 
     <footer class="app-footer">
-      <span>Big2 TW v<span data-app-version>0.8.1</span></span>
-      <span>GitHub Pages PWA｜免 Cloud Functions｜<a href="privacy.html">隱私與資料使用</a>｜設定請看 docs/PWA_RELEASE_CHECKLIST.md</span>
+      <span>Big2 TW v<span data-app-version>0.8.2</span></span>
+      <span>GitHub Pages PWA｜免 Cloud Functions｜<a href="privacy.html">隱私與資料使用</a>｜驗收請看 docs/FINAL_ACCEPTANCE_CHECKLIST.md</span>
     </footer>
 
 
@@ -650,7 +673,7 @@
       <div class="onboarding-shell">
         <div class="panel-heading compact">
           <div>
-            <p class="eyebrow">Big2 TW v<span data-app-version>0.8.1</span></p>
+            <p class="eyebrow">Big2 TW v<span data-app-version>0.8.2</span></p>
             <h2 id="onboardingTitle">第一次玩？四步快速上手</h2>
           </div>
           <button id="closeOnboardingBtn" class="icon-close-btn" type="button" aria-label="關閉使用導覽">×</button>
@@ -694,7 +717,7 @@
       <div class="noscript-warning">台灣大老二需要 JavaScript 才能執行，請在瀏覽器設定中啟用 JavaScript。</div>
     </noscript>
 
-    <script type="module" src="src/pwa.js?v=0.8.1"></script>
-    <script type="module" src="src/main.js?v=0.8.1"></script>
+    <script type="module" src="src/pwa.js?v=0.8.2"></script>
+    <script type="module" src="src/main.js?v=0.8.2"></script>
   </body>
 </html>

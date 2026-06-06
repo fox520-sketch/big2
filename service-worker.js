@@ -1,4 +1,4 @@
-const APP_VERSION = '0.8.1';
+const APP_VERSION = '0.8.2';
 const CACHE_PREFIX = 'big2-tw-';
 const STATIC_CACHE = `${CACHE_PREFIX}static-v${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v${APP_VERSION}`;
@@ -50,16 +50,21 @@ async function precacheAppShell() {
   }));
 }
 
+async function cleanupAppCaches({ includeCurrent = false } = {}) {
+  const keys = await caches.keys();
+  const targets = keys.filter((key) => key.startsWith(CACHE_PREFIX)
+    && (includeCurrent || ![STATIC_CACHE, RUNTIME_CACHE].includes(key)));
+  const results = await Promise.all(targets.map(async (key) => ({ key, deleted: await caches.delete(key) })));
+  return results.filter((item) => item.deleted).map((item) => item.key);
+}
+
 self.addEventListener('install', (event) => {
   event.waitUntil(precacheAppShell());
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    const keys = await caches.keys();
-    await Promise.all(keys
-      .filter((key) => key.startsWith(CACHE_PREFIX) && ![STATIC_CACHE, RUNTIME_CACHE].includes(key))
-      .map((key) => caches.delete(key)));
+    await cleanupAppCaches();
     if (self.registration.navigationPreload) {
       await self.registration.navigationPreload.enable().catch(() => {});
     }
@@ -84,6 +89,31 @@ self.addEventListener('message', (event) => {
       try {
         await precacheAppShell();
         event.ports?.[0]?.postMessage({ ok: true, version: APP_VERSION });
+      } catch (error) {
+        event.ports?.[0]?.postMessage({ ok: false, message: error?.message || String(error) });
+      }
+    })());
+    return;
+  }
+  if (type === 'CLEAR_OLD_CACHES') {
+    event.waitUntil((async () => {
+      try {
+        const deleted = await cleanupAppCaches();
+        event.ports?.[0]?.postMessage({ ok: true, deleted, version: APP_VERSION });
+      } catch (error) {
+        event.ports?.[0]?.postMessage({ ok: false, message: error?.message || String(error) });
+      }
+    })());
+    return;
+  }
+  if (type === 'REPAIR_PWA') {
+    event.waitUntil((async () => {
+      try {
+        const deleted = await cleanupAppCaches({ includeCurrent: true });
+        await precacheAppShell();
+        event.ports?.[0]?.postMessage({ ok: true, deleted, version: APP_VERSION });
+        const clients = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        clients.forEach((client) => client.postMessage({ type: 'CACHE_READY', version: APP_VERSION }));
       } catch (error) {
         event.ports?.[0]?.postMessage({ ok: false, message: error?.message || String(error) });
       }

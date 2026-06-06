@@ -1,5 +1,29 @@
 # 版本說明
 
+## v0.8.2 - 2026-06-06
+### PWA 一鍵修復與更新工具
+- 新增「一鍵修復 PWA」，會檢查新版、清除 Big2 舊快取、重建離線 App Shell 並重新載入。
+- 新增立即套用新版、重新下載離線檔案、清除舊版快取與重新載入遊戲等獨立操作。
+- Service Worker 新增 `REPAIR_PWA`、`CLEAR_OLD_CACHES` 訊息流程。
+
+### 問題回報與診斷匯出
+- 原偵錯資訊升級為完整問題回報，可複製或下載 `.txt` 診斷檔。
+- 診斷內容包含 PWA／Service Worker 版本、Cache Storage、儲存空間、顯示模式、裝置與視窗資訊。
+- 加入 Firebase listener、快照、心跳、查詢快取、文件讀取與寫入等本機計數。
+- 收集最近 20 筆 JavaScript error 與 unhandled rejection，便於追查實機問題。
+
+### Firebase 效能與過期資料保護
+- 最近房間列表加入 15 秒查詢快取，避免連續點擊重複讀取 Firestore。
+- 前景心跳維持 25 秒；背景心跳降為 75 秒，離線判定放寬為 180 秒，回到前景立即恢復同步。
+- 離房與更換 listener 時確實清除監聽及計時器。
+- 過期房間清理提供詳細結果，安全略過目前房間、進行中與近期房間。
+
+### 驗收文件與測試
+- 新增 `docs/FINAL_ACCEPTANCE_CHECKLIST.md`、`docs/TROUBLESHOOTING.md`、`docs/DIAGNOSTIC_REPORT.md`。
+- 新增 PWA 修復／診斷、Firebase 效能與正式驗收自動測試。
+- 維持免 Cloud Functions、不需要 Blaze，未新增 Firestore 文件欄位。
+
+---
 ## v0.8.1 - 2026-06-06
 ### PWA 安裝、路徑與更新修正
 - Service Worker 使用 `self.registration.scope` 建立 GitHub Pages 子目錄網址，避免 `/big2/` 部署路徑錯誤。

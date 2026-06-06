@@ -1,10 +1,10 @@
 {
   "name": "big2-tw",
-  "version": "0.8.1",
-  "description": "台灣大老二 v0.8.1 PWA 正式上線驗證與修正版：強化安裝、更新、GitHub Pages 路徑、Firebase 重連、手機 UI、效能與無障礙，免 Cloud Functions",
+  "version": "0.8.2",
+  "description": "台灣大老二 v0.8.2 正式上線驗收與問題回報修正版：PWA 一鍵修復、診斷匯出、Firebase 讀寫效能保護與正式驗收文件，免 Cloud Functions",
   "type": "module",
   "scripts": {
-    "test": "node scripts/test-rules.js && node scripts/test-rule-boundaries.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js && node scripts/test-release-readiness.js && node scripts/test-online-readiness.js && node scripts/test-mobile-table-layout.js && node scripts/test-compact-action-panel.js && node scripts/test-mobile-selected-card.js && node scripts/test-performance-stability.js && node scripts/test-pwa-release.js && node scripts/test-pwa-online-verification.js && node scripts/test-static-assets.js",
+    "test": "node scripts/test-rules.js && node scripts/test-rule-boundaries.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js && node scripts/test-release-readiness.js && node scripts/test-online-readiness.js && node scripts/test-mobile-table-layout.js && node scripts/test-compact-action-panel.js && node scripts/test-mobile-selected-card.js && node scripts/test-performance-stability.js && node scripts/test-pwa-release.js && node scripts/test-pwa-online-verification.js && node scripts/test-static-assets.js && node scripts/test-diagnostics-and-repair.js && node scripts/test-firebase-efficiency.js && node scripts/test-final-acceptance.js",
     "test:rules": "node scripts/test-rules.js",
     "test:ai": "node scripts/test-ai.js",
     "test:multiplayer": "node scripts/test-multiplayer-state.js",
@@ -19,7 +19,10 @@
     "test:stability": "node scripts/test-performance-stability.js",
     "test:pwa": "node scripts/test-pwa-release.js",
     "test:pwa-online": "node scripts/test-pwa-online-verification.js",
-    "test:assets": "node scripts/test-static-assets.js"
+    "test:assets": "node scripts/test-static-assets.js",
+    "test:diagnostics": "node scripts/test-diagnostics-and-repair.js",
+    "test:firebase-efficiency": "node scripts/test-firebase-efficiency.js",
+    "test:acceptance": "node scripts/test-final-acceptance.js"
   },
   "keywords": [
     "big-two",

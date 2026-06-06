@@ -60,8 +60,8 @@ for (const [file, width, height] of [
 
 const index = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 for (const token of [
-  'manifest.webmanifest?v=0.8.1',
-  'src/pwa.js?v=0.8.1',
+  'manifest.webmanifest?v=0.8.2',
+  'src/pwa.js?v=0.8.2',
   'installAppBtn',
   'pwaUpdateBanner',
   'pwaOfflineBanner',
@@ -99,7 +99,7 @@ for (const token of [
 
 const sw = fs.readFileSync(path.join(root, 'service-worker.js'), 'utf8');
 for (const token of [
-  "APP_VERSION = '0.8.1'",
+  "APP_VERSION = '0.8.2'",
   'self.registration.scope',
   'APP_SHELL_PATHS',
   "self.addEventListener('install'",

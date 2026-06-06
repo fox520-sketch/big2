@@ -1,22 +1,19 @@
-# 台灣大老二 Big2 TW v0.8.1
+# 台灣大老二 Big2 TW v0.8.2
 
 台灣大老二網頁遊戲，支援單人與 3 家 AI 對戰、Firebase 好友房間、AI 難度 1～20 級、13 種主題、連續對戰、排行榜、手機牌桌與 PWA 安裝。
 
 本版維持 **免 Cloud Functions、不需要 Blaze** 的 GitHub Pages + Firebase 休閒版架構。
 
-## v0.8.1 PWA 正式上線驗證與修正版
+## v0.8.2 正式上線驗收與問題回報修正版
 
-- Service Worker 改用 GitHub Pages scope 組合路徑，可穩定部署在 `/big2/` 子目錄。
-- 修正導覽頁快取：`privacy.html` 不會再覆蓋首頁快取。
-- JavaScript、CSS、manifest 改為網路優先且保留版本 query，降低新舊程式混用風險。
-- 新增「檢查更新」與「更新離線檔案」，並顯示快取容量。
-- 新增定期、回到前景與恢復網路時的更新檢查。
-- 首次使用導覽改為穩定完成旗標，不會每次小版本更新都重新自動跳出。
-- Firebase SDK 動態載入失敗後可重試；恢復網路時會重新啟用 Firestore 網路，必要時重新掛上房間 listener。
-- 手機鍵盤開啟時會隱藏非必要提示，減少房號、密碼欄位被遮住。
-- 新增 GitHub Pages preconnect、Open Graph 圖片類型與 secure URL。
-- 新增跳至主要內容、鍵盤焦點、高對比、強制色彩、降低動態效果及 200% 文字縮放支援。
-- 新增 `docs/PWA_ONLINE_VERIFICATION.md` 與 PWA 上線自動驗證測試。
+- 新增「一鍵修復 PWA」：檢查新版、清除 Big2 舊快取、重建離線檔案並重新載入。
+- 新增「立即套用新版」、「清除舊版快取」與「重新載入遊戲」獨立工具。
+- 問題回報可複製或下載診斷文字檔，包含裝置、PWA、Service Worker、快取、Firebase listener／心跳、房間與最近錯誤。
+- Firebase 房間列表加入 15 秒本機查詢快取，降低連續刷新造成的讀取。
+- 頁面在背景時將心跳降為 75 秒，離線判定放寬為 180 秒；回到前景後立即恢復 25 秒心跳與房主狀態整理。
+- 離開房間或切換 listener 時會解除監聽與計時器，並在診斷資料中顯示讀寫與監聽計數。
+- 過期房間清理會回報刪除數量，以及略過目前房間、進行中、近期與時間未知房間的數量。
+- 新增 `docs/FINAL_ACCEPTANCE_CHECKLIST.md`、`docs/TROUBLESHOOTING.md` 與 `docs/DIAGNOSTIC_REPORT.md`。
 - 維持免 Cloud Functions、不需要 Blaze。
 
 ## 核心功能
@@ -103,7 +100,7 @@ VERSION.md
 不要多包一層：
 
 ```txt
-big2/big2-tw-v0.8.1/index.html   ← 錯誤
+big2/big2-tw-v0.8.2/index.html   ← 錯誤
 big2/index.html                  ← 正確
 ```
 
@@ -123,6 +120,9 @@ firebase-adminsdk.json
 
 - PWA 正式發布：`docs/PWA_RELEASE_CHECKLIST.md`
 - PWA 上線驗證：`docs/PWA_ONLINE_VERIFICATION.md`
+- 正式上線驗收：`docs/FINAL_ACCEPTANCE_CHECKLIST.md`
+- 疑難排解：`docs/TROUBLESHOOTING.md`
+- 診斷資訊說明：`docs/DIAGNOSTIC_REPORT.md`
 - 隱私與資料使用：`docs/PRIVACY_AND_DATA.md`
 - Firebase 設定：`docs/FIREBASE_SETUP.md`
 - 規則與計分：`docs/RULES_AND_SCORING.md`
@@ -137,4 +137,4 @@ firebase-adminsdk.json
 npm test
 ```
 
-測試包含規則、AI、多人狀態、計分、主題對比、手機 UI、線上準備、效能穩定、GitHub Pages scope、Service Worker 更新策略、Firebase 重連、SEO、無障礙與發布檔案完整性。
+測試包含規則、AI、多人狀態、計分、主題對比、手機 UI、PWA 修復與診斷匯出、Firebase 查詢快取與背景心跳、GitHub Pages scope、Service Worker 更新策略、SEO、無障礙與正式驗收檔案完整性。

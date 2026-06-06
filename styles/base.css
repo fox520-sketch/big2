@@ -2498,7 +2498,7 @@ body {
   }
 }
 
-/* v0.8.1 PWA 正式公開版 */
+/* v0.8.2 PWA 正式公開版 */
 .pwa-splash {
   position: fixed;
   inset: 0;
@@ -2828,7 +2828,7 @@ body[data-gameplay-focus='on'] #openOnboardingBtn {
   display: none !important;
 }
 
-/* v0.8.1 PWA 正式上線驗證：路徑、更新、手機縮放與無障礙 */
+/* v0.8.2 正式上線驗收：一鍵修復、診斷匯出與效能保護 */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -2860,7 +2860,7 @@ html {
 
 .pwa-health-actions {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, max-content)) minmax(14rem, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: center;
   gap: 0.65rem;
   margin-top: 1rem;
@@ -2885,8 +2885,12 @@ html {
   font-weight: 700;
 }
 
+.pwa-action-status {
+  grid-column: 1 / -1;
+}
+
 .pwa-storage-status {
-  grid-column: 3;
+  grid-column: 1 / -1;
   font-size: 0.88rem;
 }
 
@@ -2982,5 +2986,47 @@ a:focus-visible,
 @media (prefers-reduced-motion: reduce) {
   .skip-link {
     transition: none;
+  }
+}
+
+
+/* v0.8.2 正式驗收與問題回報 */
+.acceptance-panel {
+  border: 2px solid var(--border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.pwa-health-actions #pwaRepairBtn {
+  font-weight: 900;
+}
+
+.debug-panel .compact-actions {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .acceptance-panel {
+    border-radius: 1rem;
+    padding: 0.75rem;
+  }
+
+  .pwa-health-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .debug-panel .compact-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+}
+
+@media (max-width: 420px) {
+  .pwa-health-actions,
+  .debug-panel .compact-actions {
+    grid-template-columns: 1fr;
   }
 }

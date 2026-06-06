@@ -1,8 +1,9 @@
-const APP_VERSION = '0.8.1';
+const APP_VERSION = '0.8.2';
 const ONBOARDING_KEY = 'big2-onboarding-complete-v1';
 const LEGACY_ONBOARDING_PREFIX = 'big2-onboarding-';
 const INSTALL_HELP_KEY = 'big2-install-help-seen';
 const UPDATE_CHECK_INTERVAL_MS = 30 * 60 * 1000;
+const APP_CACHE_PREFIX = 'big2-tw-';
 
 let deferredInstallPrompt = null;
 let pendingWorker = null;
@@ -11,9 +12,34 @@ let onboardingStep = 0;
 let onboardingOpener = null;
 let controllerReloadRequested = false;
 let updateCheckTimer = null;
+let lastPwaError = null;
+let repairInProgress = false;
 
 function byId(id) {
   return document.getElementById(id);
+}
+
+function serializeError(error) {
+  if (!error) return null;
+  return {
+    name: error.name || 'Error',
+    message: error.message || String(error),
+    stack: error.stack ? String(error.stack).slice(0, 2400) : null,
+    at: new Date().toISOString()
+  };
+}
+
+async function postWorkerMessage(worker, type, payload = {}, timeoutMs = 15000) {
+  if (!worker) throw new Error('Service Worker 尚未就緒。');
+  return new Promise((resolve, reject) => {
+    const channel = new MessageChannel();
+    const timer = window.setTimeout(() => reject(new Error(`${type} 逾時`)), timeoutMs);
+    channel.port1.onmessage = (event) => {
+      window.clearTimeout(timer);
+      resolve(event.data || {});
+    };
+    worker.postMessage({ type, ...payload }, [channel.port2]);
+  });
 }
 
 function isStandalone() {
@@ -53,16 +79,12 @@ function hideSplash() {
 }
 
 async function getWorkerVersion(worker) {
-  if (!worker) return null;
-  return new Promise((resolve) => {
-    const channel = new MessageChannel();
-    const timer = window.setTimeout(() => resolve(null), 1200);
-    channel.port1.onmessage = (event) => {
-      window.clearTimeout(timer);
-      resolve(event.data?.version || null);
-    };
-    worker.postMessage({ type: 'GET_VERSION' }, [channel.port2]);
-  });
+  try {
+    const result = await postWorkerMessage(worker, 'GET_VERSION', {}, 1600);
+    return result.version || null;
+  } catch {
+    return null;
+  }
 }
 
 async function showUpdateBanner(worker) {
@@ -319,32 +341,137 @@ async function refreshOfflineFiles() {
   const worker = navigator.serviceWorker.controller || serviceWorkerRegistration?.active;
   if (!worker) {
     setPwaActionStatus('Service Worker 尚未控制此頁，請重新整理後再試。', 'warn');
-    return;
+    return { ok: false };
   }
   if (navigator.onLine === false) {
     setPwaActionStatus('目前離線，無法重新下載離線檔案。', 'warn');
-    return;
+    return { ok: false };
   }
   if (button) button.disabled = true;
   setPwaActionStatus('正在重新整理離線檔案…', 'neutral');
   try {
-    const result = await new Promise((resolve, reject) => {
-      const channel = new MessageChannel();
-      const timer = window.setTimeout(() => reject(new Error('更新逾時')), 12000);
-      channel.port1.onmessage = (event) => {
-        window.clearTimeout(timer);
-        resolve(event.data || {});
-      };
-      worker.postMessage({ type: 'REFRESH_APP_SHELL' }, [channel.port2]);
-    });
+    const result = await postWorkerMessage(worker, 'REFRESH_APP_SHELL');
     if (!result.ok) throw new Error(result.message || '離線檔案更新失敗');
     setPwaActionStatus(`離線檔案已更新為 v${result.version || APP_VERSION}。`, 'ok');
     await updateStorageStatus();
+    return result;
   } catch (error) {
+    lastPwaError = serializeError(error);
     setPwaActionStatus(`離線檔案更新失敗：${error?.message || error}`, 'warn');
+    return { ok: false, message: error?.message || String(error) };
   } finally {
     if (button) button.disabled = false;
   }
+}
+
+async function clearOldPwaCaches({ includeCurrent = false } = {}) {
+  if (!('caches' in window)) return { ok: false, deleted: [], message: '瀏覽器不支援 Cache Storage。' };
+  const keys = await caches.keys();
+  const targets = keys.filter((key) => key.startsWith(APP_CACHE_PREFIX)
+    && (includeCurrent || !key.includes(`v${APP_VERSION}`)));
+  const results = await Promise.all(targets.map(async (key) => ({ key, deleted: await caches.delete(key) })));
+  const deleted = results.filter((item) => item.deleted).map((item) => item.key);
+  await updateStorageStatus();
+  return { ok: true, deleted, checked: targets.length };
+}
+
+async function applyAvailableUpdate() {
+  const button = byId('pwaApplyUpdateBtn');
+  if (button) button.disabled = true;
+  setPwaActionStatus('正在確認可套用的新版…', 'neutral');
+  try {
+    await serviceWorkerRegistration?.update();
+    const worker = serviceWorkerRegistration?.waiting || pendingWorker;
+    if (worker) {
+      controllerReloadRequested = true;
+      worker.postMessage({ type: 'SKIP_WAITING' });
+      setPwaActionStatus('正在套用新版並重新載入…', 'ok');
+      return;
+    }
+    setPwaActionStatus(`目前已是最新版本 v${APP_VERSION}，正在重新載入。`, 'ok');
+    window.setTimeout(() => window.location.reload(), 350);
+  } catch (error) {
+    lastPwaError = serializeError(error);
+    setPwaActionStatus(`套用新版失敗：${error?.message || error}`, 'warn');
+    if (button) button.disabled = false;
+  }
+}
+
+async function repairPwa() {
+  if (repairInProgress) return;
+  const button = byId('pwaRepairBtn');
+  repairInProgress = true;
+  if (button) button.disabled = true;
+  setPwaActionStatus('正在一鍵修復：檢查新版、清除舊快取並重建離線檔案…', 'neutral');
+  try {
+    if (navigator.onLine === false) throw new Error('目前離線，請恢復網路後再執行一鍵修復。');
+    if (!serviceWorkerRegistration) throw new Error('Service Worker 尚未就緒，請重新整理後再試。');
+    await serviceWorkerRegistration.update();
+    if (serviceWorkerRegistration.waiting) {
+      controllerReloadRequested = true;
+      serviceWorkerRegistration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      setPwaActionStatus('已找到新版，正在切換並重新載入…', 'ok');
+      return;
+    }
+    const worker = navigator.serviceWorker.controller || serviceWorkerRegistration.active;
+    const result = await postWorkerMessage(worker, 'REPAIR_PWA', {}, 22000);
+    if (!result.ok) throw new Error(result.message || 'PWA 修復失敗');
+    await updateStorageStatus();
+    setPwaActionStatus(`PWA 已修復並重建為 v${result.version || APP_VERSION}，即將重新載入。`, 'ok');
+    window.setTimeout(() => window.location.reload(), 700);
+  } catch (error) {
+    lastPwaError = serializeError(error);
+    setPwaActionStatus(`一鍵修復失敗：${error?.message || error}`, 'warn');
+    repairInProgress = false;
+    if (button) button.disabled = false;
+  }
+}
+
+async function getPwaDiagnostics() {
+  const registrations = 'serviceWorker' in navigator ? await navigator.serviceWorker.getRegistrations().catch(() => []) : [];
+  const cacheNames = 'caches' in window ? await caches.keys().catch(() => []) : [];
+  const cacheDetails = [];
+  for (const name of cacheNames.filter((item) => item.startsWith(APP_CACHE_PREFIX))) {
+    try {
+      const cache = await caches.open(name);
+      const requests = await cache.keys();
+      cacheDetails.push({ name, entries: requests.length });
+    } catch (error) {
+      cacheDetails.push({ name, error: error?.message || String(error) });
+    }
+  }
+  const estimate = navigator.storage?.estimate ? await navigator.storage.estimate().catch(() => null) : null;
+  const controller = navigator.serviceWorker?.controller || null;
+  const controllerVersion = await getWorkerVersion(controller);
+  return {
+    appVersion: APP_VERSION,
+    displayMode: isStandalone() ? 'standalone' : 'browser',
+    online: navigator.onLine !== false,
+    secureContext: window.isSecureContext,
+    serviceWorkerSupported: 'serviceWorker' in navigator,
+    controller: controller ? { scriptURL: controller.scriptURL, state: controller.state, version: controllerVersion } : null,
+    currentRegistration: serviceWorkerRegistration ? {
+      scope: serviceWorkerRegistration.scope,
+      active: serviceWorkerRegistration.active?.state || null,
+      waiting: serviceWorkerRegistration.waiting?.state || null,
+      installing: serviceWorkerRegistration.installing?.state || null
+    } : null,
+    registrationScopes: registrations.map((item) => item.scope),
+    caches: cacheDetails,
+    storage: estimate ? { usage: estimate.usage || 0, quota: estimate.quota || 0 } : null,
+    viewport: {
+      innerWidth: window.innerWidth,
+      innerHeight: window.innerHeight,
+      visualWidth: window.visualViewport?.width || null,
+      visualHeight: window.visualViewport?.height || null,
+      devicePixelRatio: window.devicePixelRatio || 1
+    },
+    screen: { width: screen.width, height: screen.height, orientation: screen.orientation?.type || null },
+    language: navigator.language,
+    platform: navigator.userAgentData?.platform || navigator.platform || null,
+    userAgent: navigator.userAgent,
+    lastPwaError
+  };
 }
 
 async function registerServiceWorker() {
@@ -388,6 +515,7 @@ async function registerServiceWorker() {
     setPwaActionStatus(`Service Worker v${APP_VERSION} 已就緒。`, 'ok');
     await updateStorageStatus();
   } catch (error) {
+    lastPwaError = serializeError(error);
     console.warn('PWA 註冊失敗', error);
     setPwaStatus('PWA 快取失敗', 'warn');
     setPwaActionStatus(`Service Worker 註冊失敗：${error?.message || error}`, 'warn');
@@ -425,7 +553,16 @@ function bindPwaEvents() {
   byId('installAppBtn')?.addEventListener('click', installApp);
   byId('shareGameBtn')?.addEventListener('click', shareGame);
   byId('pwaCheckUpdateBtn')?.addEventListener('click', () => checkForUpdates(true));
+  byId('pwaApplyUpdateBtn')?.addEventListener('click', applyAvailableUpdate);
   byId('pwaRefreshCacheBtn')?.addEventListener('click', refreshOfflineFiles);
+  byId('pwaClearCachesBtn')?.addEventListener('click', async () => {
+    const result = await clearOldPwaCaches();
+    setPwaActionStatus(result.deleted?.length
+      ? `已清除 ${result.deleted.length} 組舊版快取。`
+      : '未發現需要清除的舊版快取。', 'ok');
+  });
+  byId('pwaRepairBtn')?.addEventListener('click', repairPwa);
+  byId('pwaReloadBtn')?.addEventListener('click', () => window.location.reload());
   byId('closeInstallHelpBtn')?.addEventListener('click', () => byId('pwaInstallHelp')?.classList.add('hidden'));
   byId('pwaUpdateBtn')?.addEventListener('click', () => {
     controllerReloadRequested = true;
@@ -437,6 +574,15 @@ function bindPwaEvents() {
   const themeObserver = new MutationObserver(syncThemeColor);
   themeObserver.observe(document.body, { attributes: true, attributeFilter: ['data-theme'] });
 }
+
+window.big2PwaApi = Object.freeze({
+  version: APP_VERSION,
+  getDiagnostics: getPwaDiagnostics,
+  repair: repairPwa,
+  clearOldCaches: clearOldPwaCaches,
+  checkForUpdates,
+  refreshOfflineFiles
+});
 
 function init() {
   document.querySelectorAll('[data-app-version]').forEach((node) => { node.textContent = APP_VERSION; });

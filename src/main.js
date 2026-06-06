@@ -12,6 +12,7 @@ import {
   createRoom,
   fillAISeats,
   getFirebaseSetupState,
+  getPresenceDebugInfo,
   explainFirebaseError,
   getRoomIdFromUrl,
   joinRoom,
@@ -57,6 +58,17 @@ let lastFocusGameKey = null;
 let lastRoomMessage = '尚未連線房間。';
 let reconnectInProgress = false;
 let viewportRaf = null;
+const runtimeErrors = [];
+const RUNTIME_ERROR_LIMIT = 20;
+
+function recordRuntimeError(kind, value) {
+  const error = value instanceof Error ? value : new Error(typeof value === 'string' ? value : JSON.stringify(value));
+  runtimeErrors.unshift({ kind, name: error.name, message: error.message, stack: error.stack?.slice(0, 2400) || null, at: new Date().toISOString() });
+  runtimeErrors.splice(RUNTIME_ERROR_LIMIT);
+}
+
+window.addEventListener('error', (event) => recordRuntimeError('error', event.error || event.message));
+window.addEventListener('unhandledrejection', (event) => recordRuntimeError('unhandledrejection', event.reason));
 
 function el(id) {
   return document.getElementById(id);
@@ -481,7 +493,7 @@ async function refreshPublicRooms() {
   try {
     const rooms = await listRecentRoomsFromFirestore(12);
     renderRoomDirectory(rooms);
-    setRoomMessage(`已讀取 ${rooms.length} 個最近房間；若加入進行中房間，原玩家同裝置可取回座位。`, 'ok');
+    setRoomMessage(`${rooms.cacheHit ? '已使用 15 秒快取顯示' : '已讀取'} ${rooms.length} 個最近房間；若加入進行中房間，原玩家同裝置可取回座位。`, 'ok');
   } catch (error) {
     renderRoomDirectory(null, makeFriendlyError(error) || '無法讀取房間列表，仍可用最近房號或手動輸入房號加入。');
     setRoomMessage(makeFriendlyError(error) || '讀取房間列表失敗。', 'warn');
@@ -535,7 +547,7 @@ function renderDebugPanel(room = latestRoom) {
   `).join('');
 }
 
-function buildDebugReport() {
+async function buildDebugReport() {
   const room = latestRoom || {};
   const game = gameState || room.game || {};
   const localSeat = Number.isInteger(room.localSeat) ? room.localSeat : game.localSeat;
@@ -554,7 +566,14 @@ function buildDebugReport() {
     aiTakingOver: Boolean(seat.aiTakingOver),
     isHost: seat.uid === room.hostUid
   } : { seat: index, empty: true });
+  let pwaDiagnostics = null;
+  try {
+    pwaDiagnostics = await window.big2PwaApi?.getDiagnostics?.();
+  } catch (error) {
+    pwaDiagnostics = { error: error?.message || String(error) };
+  }
   const report = {
+    generatedAt: new Date().toISOString(),
     version: `v${game.version || room.version || VERSION}`,
     url: window.location.href,
     roomId: room.roomId || currentRoomId || null,
@@ -578,25 +597,45 @@ function buildDebugReport() {
     selectedCards: getSelectedCards(game).map((card) => card.id),
     players,
     seats,
-    historyTop: (game.history || []).slice(0, 8),
+    historyTop: (game.history || []).slice(0, 12),
     latestSnapshotAt: latestSnapshotAt ? latestSnapshotAt.toISOString() : null,
     online: navigator.onLine !== false,
+    visibility: document.visibilityState,
     viewport: { width: window.innerWidth, height: window.innerHeight, visualHeight: window.visualViewport?.height || null },
-    userAgent: navigator.userAgent
+    userAgent: navigator.userAgent,
+    firebasePresence: getPresenceDebugInfo(),
+    pwa: pwaDiagnostics,
+    runtimeErrors: [...runtimeErrors]
   };
   return JSON.stringify(report, null, 2);
 }
 
 async function copyDebugReport() {
-  const text = buildDebugReport();
+  const text = await buildDebugReport();
   try {
     await navigator.clipboard.writeText(text);
-    setRoomMessage('已複製偵錯資訊，可以直接貼給我判斷問題。', 'ok');
+    setRoomMessage('已複製完整問題回報，包含 PWA、Firebase、裝置與最近錯誤資訊。', 'ok');
   } catch {
     window.prompt('瀏覽器不允許自動複製，請手動複製以下偵錯資訊：', text);
-    setRoomMessage('已產生偵錯資訊，請手動複製。', 'warn');
+    setRoomMessage('已產生完整問題回報，請手動複製。', 'warn');
   }
 }
+
+async function downloadDebugReport() {
+  const text = await buildDebugReport();
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `big2-diagnostic-v${VERSION}-${stamp}.txt`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+  setRoomMessage('已下載診斷文字檔，可直接附檔回報問題。', 'ok');
+}
+
 
 function setMultiplayerActionSubmitting(locked, label = '同步中') {
   multiplayerActionSubmitting = Boolean(locked);
@@ -1034,6 +1073,7 @@ async function bindRoomEvents() {
 
   const copyDebugBtn = el('copyDebugBtn');
   if (copyDebugBtn) copyDebugBtn.addEventListener('click', copyDebugReport);
+  el('downloadDebugBtn')?.addEventListener('click', downloadDebugReport);
 
   const firebaseCheckBtn = el('runFirebaseCheckBtn');
   if (firebaseCheckBtn) {
@@ -1325,7 +1365,7 @@ function bindGameEvents() {
       await runButtonLocked('cleanupRoomsBtn', '清理中...', async () => {
         try {
           const result = await cleanupExpiredOwnedRooms();
-          setRoomMessage(`已檢查 ${result.checked} 個自己建立的房間，清理 ${result.deleted} 個超過 24 小時且未進行中的房間。`, 'ok');
+          setRoomMessage(`已檢查 ${result.checked} 個自己建立的房間，清理 ${result.deleted} 個過期房間；略過進行中 ${result.skippedPlaying}、目前房間 ${result.skippedActive}、近期房間 ${result.skippedRecent}。`, 'ok');
           await refreshPublicRooms();
         } catch (error) {
           setRoomMessage(makeFriendlyError(error) || '清理過期房間失敗。', 'warn');

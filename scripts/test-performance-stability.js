@@ -10,8 +10,8 @@ const requiredIndex = [
   'networkStatusBar',
   'retryConnectionBtn',
   'cleanupRoomsBtn',
-  'styles/base.css?v=0.8.1',
-  'src/main.js?v=0.8.1'
+  'styles/base.css?v=0.8.2',
+  'src/main.js?v=0.8.2'
 ];
 for (const token of requiredIndex) {
   if (!index.includes(token)) throw new Error(`缺少上線穩定標記：${token}`);
@@ -46,7 +46,7 @@ for (const token of requiredMain) {
 const requiredRoom = [
   'HEARTBEAT_INTERVAL_MS = 25000',
   'RECONCILE_INTERVAL_MS = 30000',
-  'STALE_PLAYER_MS = 90000',
+  'STALE_PLAYER_MS = 180000',
   'roomRenderSignature',
   'signature === latestRoomSignature',
   'room.hostUid !== currentUser.uid',
