@@ -1,4 +1,4 @@
-# Firestore Rules 安全檢查（v0.8.4）
+# Firestore Rules 安全檢查（v1.0.0）
 
 ## 已強化
 - 所有讀寫都要求 Firebase Authentication。

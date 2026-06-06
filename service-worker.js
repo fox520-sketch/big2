@@ -1,4 +1,4 @@
-const APP_VERSION = '0.8.4';
+const APP_VERSION = '1.0.0';
 const CACHE_PREFIX = 'big2-tw-';
 const STATIC_CACHE = `${CACHE_PREFIX}static-v${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v${APP_VERSION}`;
@@ -13,6 +13,9 @@ const APP_SHELL_PATHS = [
   './index.html',
   './offline.html',
   './privacy.html',
+  './docs/KNOWN_LIMITATIONS.md',
+  './docs/STABLE_RELEASE_CHECKLIST.md',
+  './docs/BACKUP_AND_RECOVERY.md',
   './manifest.webmanifest',
   './styles/base.css',
   './src/main.js',

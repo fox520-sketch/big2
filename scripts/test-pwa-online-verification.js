@@ -10,10 +10,12 @@ const sw = read('service-worker.js');
 const manifest = JSON.parse(read('manifest.webmanifest'));
 
 for (const token of [
-  'rel="preconnect" href="https://www.gstatic.com"',
+  'rel="preconnect"',
+  'href="https://www.gstatic.com"',
   'og:image:secure_url',
   'og:image:type',
-  'class="skip-link" href="#mainContent"',
+  'class="skip-link"',
+  'href="#mainContent"',
   'id="mainContent"',
   'pwaActionStatus',
   'pwaStorageStatus'

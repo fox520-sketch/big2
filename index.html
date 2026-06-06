@@ -1,770 +1,747 @@
 <!doctype html>
 <html lang="zh-Hant-TW">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#060b14" />
-    <meta name="color-scheme" content="dark light" />
-    <title>台灣大老二 Big2 TW｜單人 AI 與好友連線 PWA</title>
-    <meta name="description" content="台灣大老二 Big2 TW：支援單人 AI、Firebase 好友連線、手機安裝 PWA、13 種主題、排行榜與連續對戰；免 Cloud Functions、不需要 Blaze。" />
-    <meta name="application-name" content="台灣大老二 Big2 TW" />
-    <meta name="apple-mobile-web-app-title" content="台灣大老二" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="format-detection" content="telephone=no" />
-    <meta name="robots" content="index, follow" />
-    <link rel="canonical" href="https://fox520-sketch.github.io/big2/" />
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin />
-    <link rel="dns-prefetch" href="https://www.gstatic.com" />
-    <link rel="dns-prefetch" href="https://api.qrserver.com" />
-
-    <meta property="og:type" content="website" />
-    <meta property="og:locale" content="zh_TW" />
-    <meta property="og:site_name" content="台灣大老二 Big2 TW" />
-    <meta property="og:title" content="台灣大老二｜單人 AI 與好友連線 PWA" />
-    <meta property="og:description" content="台灣大老二網頁遊戲：單人 AI、Firebase 好友連線、手機安裝、排行榜與連續對戰。" />
-    <meta property="og:url" content="https://fox520-sketch.github.io/big2/" />
-    <meta property="og:image" content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" />
-    <meta property="og:image:secure_url" content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" />
-    <meta property="og:image:type" content="image/png" />
-    <meta property="og:image:width" content="1200" />
-    <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="台灣大老二 Big2 TW 遊戲預覽" />
-    <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="台灣大老二｜單人 AI 與好友連線 PWA" />
-    <meta name="twitter:description" content="免安裝即可玩，也可加入手機桌面。支援單人 AI 與 Firebase 好友連線。" />
-    <meta name="twitter:image" content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" />
-
-    <link rel="manifest" href="manifest.webmanifest?v=0.8.4" />
-    <link rel="icon" href="assets/icons/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="assets/icons/favicon-32.png" sizes="32x32" type="image/png" />
-    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" sizes="180x180" />
-    <link rel="apple-touch-startup-image" href="assets/splash/splash-portrait.png" media="(orientation: portrait)" />
-    <link rel="apple-touch-startup-image" href="assets/splash/splash-landscape.png" media="(orientation: landscape)" />
-    <link rel="stylesheet" href="styles/base.css?v=0.8.4" />
-  </head>
-  <body data-theme="dark">
-    <a class="skip-link" href="#mainContent">跳至主要內容</a>
-    <div id="pwaSplash" class="pwa-splash" role="status" aria-label="台灣大老二載入中">
-      <img src="assets/icons/icon-192.png" alt="" width="96" height="96" decoding="async" fetchpriority="high" />
-      <strong>台灣大老二</strong>
-      <span>正在準備牌桌…</span>
-    </div>
-
-    <div id="pwaUpdateBanner" class="pwa-banner hidden" role="status" aria-live="polite" aria-atomic="true">
-      <span><strong>發現新版本</strong>　<span id="pwaUpdateText">重新載入即可套用最新牌桌。</span></span>
-      <div class="button-row compact">
-        <button id="pwaUpdateBtn" class="primary-btn" type="button">立即更新</button>
-        <button id="pwaUpdateLaterBtn" class="secondary-btn" type="button">稍後</button>
-      </div>
-    </div>
-
-    <div id="pwaOfflineBanner" class="pwa-offline-banner hidden" role="status" aria-live="assertive" aria-atomic="true">
-      <strong>目前離線</strong>
-      <span>單人遊戲仍可使用；多人出牌請等網路恢復後再操作。</span>
-    </div>
-    <header class="app-header">
-      <div>
-        <p class="eyebrow">Big2 TW</p>
-        <h1>台灣大老二</h1>
-        <p class="subtitle">v0.8.4 正式發布候選版 RC｜免 Cloud Functions</p>
-      </div>
-      <div class="toolbar" aria-label="遊戲工具列">
-        <label class="field ai-level-field">
-          <span>AI 難度</span>
-          <select id="aiLevelSelect" aria-label="選擇 AI 難度">
-            <option value="1">Lv.1 新手隨機</option>
-            <option value="2">Lv.2 新手隨機</option>
-            <option value="3">Lv.3 新手隨機</option>
-            <option value="4">Lv.4 基礎保守</option>
-            <option value="5">Lv.5 基礎保守</option>
-            <option value="6">Lv.6 低牌優先</option>
-            <option value="7">Lv.7 低牌優先</option>
-            <option value="8">Lv.8 低牌優先</option>
-            <option value="9">Lv.9 牌型保留</option>
-            <option value="10">Lv.10 牌型保留</option>
-            <option value="11">Lv.11 節奏控制</option>
-            <option value="12">Lv.12 節奏控制</option>
-            <option value="13">Lv.13 節奏控制</option>
-            <option value="14">Lv.14 攔截防守</option>
-            <option value="15">Lv.15 攔截防守</option>
-            <option value="16">Lv.16 攔截防守</option>
-            <option value="17">Lv.17 高手判斷</option>
-            <option value="18">Lv.18 高手判斷</option>
-            <option value="19">Lv.19 高手判斷</option>
-            <option value="20">Lv.20 高手判斷</option>
-          </select>
-        </label>
-        <label class="field theme-field">
-          <span>顯示風格</span>
-          <select id="themeSelect" aria-label="選擇顯示風格">
-            <option value="dark">深色模式</option>
-            <option value="epaper">電子紙模式</option>
-            <option value="ocean">海洋風</option>
-            <option value="eye">護眼風</option>
-            <option value="twilight">暮光風</option>
-            <option value="sakura">櫻花風</option>
-            <option value="forest">森林風</option>
-            <option value="grassland">草原風</option>
-            <option value="night">夜航風</option>
-            <option value="sunset">夕陽風</option>
-            <option value="starry">星空風</option>
-            <option value="candy">糖果風</option>
-            <option value="neon">霓虹風</option>
-          </select>
-        </label>
-        <button id="soundToggleBtn" class="secondary-btn" type="button" aria-pressed="true">音效：開</button>
-        <button id="installAppBtn" class="primary-btn hidden" type="button">安裝遊戲</button>
-        <button id="shareGameBtn" class="secondary-btn" type="button">分享遊戲</button>
-        <button id="openOnboardingBtn" class="secondary-btn" type="button">使用導覽</button>
-        <button id="focusModeToggleBtn" class="secondary-btn" type="button" aria-pressed="true">顯示設定</button>
-        <button id="newGameBtn" class="secondary-btn" type="button">重新開局</button>
-      </div>
-    </header>
-
-    <main id="mainContent" class="game-shell" tabindex="-1">
-      <section class="focus-mode-note" aria-live="polite">
-        <strong>牌局專注模式：</strong>
-        <span>遊戲進行中已自動隱藏規則設定、房間列表、檢查面板、說明與紀錄等非必要區塊；需要查看時可按右上角「顯示設定」。</span>
-      </section>
-      <section class="notice" aria-live="polite">
-        <strong>目前狀態：</strong>
-        <span id="statusText">準備開始遊戲。</span>
-      </section>
-
-      <section id="networkStatusBar" class="network-status-bar" data-state="online" aria-live="polite" aria-label="網路與同步狀態">
-        <strong id="networkStatusTitle">網路正常</strong>
-        <span id="networkStatusText">已連線；多人房間會自動同步。</span>
-        <button id="retryConnectionBtn" class="secondary-btn compact-network-btn hidden" type="button">重新連線</button>
-      </section>
-
-      <section class="mobile-orientation-tip" aria-label="手機橫向提示">
-        <strong>手機提示：</strong>
-        <span>若手牌或結果表太寬，可以把手機轉成橫向，手牌也可左右滑動。</span>
-      </section>
-
-      <section class="home-panel" aria-label="首頁流程">
-        <div class="panel-heading">
-          <div>
-            <h2>首頁流程</h2>
-            <p class="hint small">v0.8.4 可安裝到手機桌面，支援離線開啟單人遊戲、新版更新提示與首次使用導覽。</p>
-          </div>
-          <span class="pill ok">PWA 正式發布候選版</span>
-        </div>
-        <div class="home-actions">
-          <button id="quickSingleBtn" class="primary-btn" type="button">單人遊戲</button>
-          <button id="quickCreateRoomBtn" class="secondary-btn" type="button">建立房間</button>
-          <button id="quickJoinRoomBtn" class="secondary-btn" type="button">加入房間</button>
-          <button id="quickRecentRoomBtn" class="secondary-btn" type="button">最近房間</button>
-          <button id="quickRulesBtn" class="secondary-btn" type="button">新手教學</button>
-          <button id="quickSettingsBtn" class="secondary-btn" type="button">設定</button>
-        </div>
-        <div class="home-flow-grid">
-          <div><strong>1. 單人練習</strong><span>先熟悉梅花 3 起手、壓牌、Pass 與結算。</span></div>
-          <div><strong>2. 建立房間</strong><span>輸入暱稱，可設定密碼，再複製連結或 QR Code 邀請朋友。</span></div>
-          <div><strong>3. 補 AI 空位</strong><span>不足四人時由 AI 補位，房主瀏覽器負責 AI 行動。</span></div>
-          <div><strong>4. 開始多人</strong><span>遊戲中自動進入專注模式，只保留出牌需要的區塊。</span></div>
-        </div>
-      </section>
-
-
-
-      <section class="online-fix-panel" aria-label="手機牌桌 UI 優化">
-        <div class="panel-heading">
-          <div>
-            <h2>手機實戰與同步穩定</h2>
-            <p class="hint small">v0.8.4 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
-          </div>
-          <span class="pill ok">v0.8.4</span>
-        </div>
-        <div class="check-grid compact-check-grid">
-          <div><strong>牌桌靠近手牌</strong><span>手機依序顯示牌桌、自己的手牌、操作按鈕，減少上下捲動。</span></div>
-          <div><strong>玩家資訊壓縮</strong><span>手機玩家狀態改為橫向滑動卡片，座位資訊在牌局中改為雙欄。</span></div>
-          <div><strong>牌面更集中</strong><span>上一手牌縮短留白並置中顯示，五張牌不再與自己的手牌距離過遠。</span></div>
-          <div><strong>觸控更順手</strong><span>手牌保留橫向滑動，出牌與 Pass 按鈕維持大尺寸及底部黏附。</span></div>
-          <div><strong>建議預設隱藏</strong><span>出牌建議與 Pass 細部設定改放在可展開的「出牌輔助」內，減少操作面板高度。</span></div>
-          <div><strong>動態視窗高度</strong><span>網址列展開或收合時使用 visualViewport 更新高度，降低畫面跳動。</span></div>
-          <div><strong>同步效能</strong><span>忽略只有心跳時間改變的快照，並只由房主執行離線狀態整理。</span></div>
-        </div>
-      </section>
-
-
-      <section class="pwa-release-panel" aria-label="PWA 安裝、更新與離線驗證">
-        <div class="panel-heading">
-          <div>
-            <h2>PWA 安裝、更新與離線驗證</h2>
-            <p class="hint small">加入一鍵修復、舊快取清理、診斷匯出與正式上線驗收工具；多人功能仍需要網路。</p>
-          </div>
-          <span id="pwaStatusBadge" class="pill ok">PWA 就緒</span>
-        </div>
-        <div class="check-grid compact-check-grid">
-          <div><strong>安裝到桌面</strong><span>Android、Chrome、Edge 可使用「安裝遊戲」；iPhone 可由 Safari 分享選單加入主畫面。</span></div>
-          <div><strong>GitHub Pages 路徑</strong><span>manifest、Service Worker 與離線頁全部使用相對路徑，可在 /big2/ 子目錄正常運作。</span></div>
-          <div><strong>離線單人</strong><span>Service Worker 會快取首頁、規則引擎、AI、主題與牌面；多人房間需連線 Firebase。</span></div>
-          <div><strong>版本更新</strong><span>JavaScript、CSS 採網路優先，避免新版首頁搭配舊版程式；更新仍由玩家確認後套用。</span></div>
-          <div><strong>分享預覽</strong><span>加入 Open Graph 圖片、類型與絕對網址，分享至 LINE、Facebook 等平台時更容易辨識。</span></div>
-          <div><strong>無障礙</strong><span>加入跳至主要內容、鍵盤焦點、降低動態效果、高對比與 200% 文字縮放支援。</span></div>
-          <div><strong>版本回復</strong><span>保留最近一版 PWA 靜態快取，可在單一裝置回復上一版並再次恢復最新版。</span></div>
-        </div>
-        <div class="pwa-health-actions" aria-label="PWA 維護與一鍵修復工具">
-          <button id="pwaRepairBtn" class="primary-btn" type="button">一鍵修復 PWA</button>
-          <button id="pwaCheckUpdateBtn" class="secondary-btn" type="button">檢查新版</button>
-          <button id="pwaApplyUpdateBtn" class="secondary-btn" type="button">立即套用新版</button>
-          <button id="pwaRefreshCacheBtn" class="secondary-btn" type="button">重新下載離線檔案</button>
-          <button id="pwaClearCachesBtn" class="secondary-btn" type="button">清除舊版快取</button>
-          <button id="pwaReloadBtn" class="secondary-btn" type="button">重新載入遊戲</button>
-          <button id="pwaRollbackBtn" class="secondary-btn" type="button">回復上一版</button>
-          <button id="pwaRestoreCurrentBtn" class="secondary-btn" type="button" disabled>恢復最新版</button>
-          <span id="pwaRollbackStatus" class="pwa-storage-status">正在讀取版本回復狀態…</span>
-          <span id="pwaActionStatus" class="pwa-action-status" role="status" aria-live="polite">正在檢查 PWA 狀態…</span>
-          <span id="pwaStorageStatus" class="pwa-storage-status">正在讀取快取容量…</span>
-        </div>
-        <div id="pwaInstallHelp" class="pwa-install-help hidden" aria-live="polite">
-          <strong>安裝方式</strong>
-          <p id="pwaInstallHelpText">瀏覽器支援安裝時，右上角會顯示「安裝遊戲」。</p>
-          <button id="closeInstallHelpBtn" class="secondary-btn" type="button">關閉說明</button>
-        </div>
-      </section>
-
-      <section class="acceptance-panel" aria-label="正式上線實機驗收中心">
-        <div class="panel-heading">
-          <div>
-            <h2>正式發布候選版實機驗收中心</h2>
-            <p class="hint small">自動測試只能檢查程式與瀏覽器環境；Android、iPhone、桌機安裝及 2～4 位真人對戰請在實機完成後勾選。</p>
-          </div>
-          <div class="button-row compact-actions">
-            <button id="runAcceptanceQuickCheckBtn" class="secondary-btn" type="button">執行快速檢查</button>
-            <button id="copyAcceptanceBtn" class="secondary-btn" type="button">複製驗收摘要</button>
-            <button id="resetAcceptanceBtn" class="secondary-btn" type="button">重設勾選</button>
-            <span id="acceptanceProgressBadge" class="pill">0/14</span>
-          </div>
-        </div>
-        <progress id="acceptanceProgress" class="acceptance-progress" max="14" value="0">0/14</progress>
-        <p id="acceptanceSummary" class="hint small" aria-live="polite">尚未開始實機驗收。</p>
-        <div class="acceptance-checklist">
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="android-pwa" /><span><strong>Android PWA</strong><small>Chrome 安裝、桌面啟動、更新與重新安裝正常。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="ios-pwa" /><span><strong>iPhone／iPad PWA</strong><small>Safari 加入主畫面、獨立視窗與安全區正常。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="desktop-pwa" /><span><strong>桌機 PWA</strong><small>Chrome／Edge 安裝、啟動與新版更新正常。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="pwa-update" /><span><strong>PWA 更新與離線</strong><small>新版提示、一鍵修復、離線單人模式正常。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="two-human" /><span><strong>2 真人＋2 AI</strong><small>連續 5 局，出牌、Pass、AI 接管及總分正常。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="three-human" /><span><strong>3 真人＋1 AI</strong><small>連續 3 局，回合與下一局同步正常。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="four-human" /><span><strong>4 真人</strong><small>連續 3 局，排名、玩家名稱與總分正常。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="disconnect-reconnect" /><span><strong>斷線與重連</strong><small>鎖螢幕、切換 App、斷網後可回到原座位。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="host-transfer" /><span><strong>房主轉移</strong><small>房主離線後由下一位真人接任，AI 不會停住。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="next-game" /><span><strong>下一局</strong><small>保留座位、名稱、總分與勝場，不殘留上一局牌面。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="mobile-ui" /><span><strong>手機 UI</strong><small>320～430px、直橫向、鍵盤、安全區與選牌裁切正常。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="firebase-health" /><span><strong>Firebase 讀寫</strong><small>只有一個房間 listener，離房後解除，讀寫量合理。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="rules-security" /><span><strong>Rules 安全檢查</strong><small>套用 v0.8.4 Rules，非房內成員無法修改房間。</small></span></label>
-          <label class="acceptance-item"><input type="checkbox" data-acceptance-id="rollback-drill" /><span><strong>回復演練</strong><small>測試回復上一版後可正常啟動，並能恢復最新版。</small></span></label>
-        </div>
-        <p class="hint small">完整步驟請看 <code>docs/RC_ACCEPTANCE_CHECKLIST.md</code>；歷史 v0.8.3 驗收說明仍保留。勾選紀錄只保存在本機瀏覽器。</p>
-      </section>
-
-      <section class="settings-panel" aria-label="正式規則與計分設定">
-        <div class="panel-heading">
-          <div>
-            <h2>正式規則與計分設定</h2>
-            <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
-          </div>
-          <span class="pill">v0.8.4</span>
-        </div>
-        <div class="settings-grid">
-          <label class="field full">
-            <span>玩法規則</span>
-            <select id="rulePresetSelect" aria-label="選擇大老二玩法規則">
-              <option value="taiwanC3">台灣常用：梅花 3 起手</option>
-              <option value="taiwanD3">台灣變體：方塊 3 起手</option>
-              <option value="friendlyWheel">朋友局：允許 A2345</option>
-              <option value="looseTwoStraight">寬鬆變體：順子可含 2</option>
-            </select>
-          </label>
-          <label class="field full">
-            <span>計分規則</span>
-            <select id="scoringPresetSelect" aria-label="選擇計分規則">
-              <option value="standard">標準：剩幾張扣幾分</option>
-              <option value="double8">8 張以上雙倍</option>
-              <option value="double10">10 張以上雙倍</option>
-              <option value="double8Triple10">8 張雙倍、10 張三倍</option>
-            </select>
-          </label>
-          <div class="settings-summary">
-            <strong>目前套用</strong>
-            <span id="settingsSummary">台灣常用規則；標準計分。</span>
-          </div>
-        </div>
-      </section>
-
-      <section class="room-panel" aria-label="Firebase 多人房間">
-        <div class="panel-heading">
-          <div>
-            <h2>Firebase 多人房間</h2>
-            <p class="hint small">v0.8.4 正式發布候選版（RC）：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
-          </div>
-          <span id="firebaseStatusBadge" class="pill">檢查中</span>
-        </div>
-
-        <div class="room-grid">
-          <div class="room-controls">
-            <label class="field full">
-              <span>你的暱稱</span>
-              <input id="playerNameInput" type="text" maxlength="18" placeholder="例如：Fox" autocomplete="nickname" />
-            </label>
-            <label class="field full">
-              <span>房號</span>
-              <input id="roomCodeInput" type="text" maxlength="6" placeholder="輸入 6 碼房號" inputmode="latin" autocomplete="off" />
-            </label>
-            <label class="field full">
-              <span>房間密碼（可空白）</span>
-              <input id="roomPasswordInput" type="password" maxlength="20" placeholder="建立房間時可設定；加入私人房需輸入" autocomplete="current-password" />
-            </label>
-            <div class="button-row">
-              <button id="createRoomBtn" class="primary-btn" type="button">建立房間</button>
-              <button id="joinRoomBtn" class="secondary-btn" type="button">加入房間</button>
-              <button id="fillAIBtn" class="secondary-btn" type="button" disabled>補 AI 空位</button>
-              <button id="startMultiplayerBtn" class="primary-btn" type="button" disabled>開始多人遊戲</button>
-              <button id="leaveRoomBtn" class="secondary-btn" type="button" disabled>離開房間</button>
-            </div>
-            <p id="roomMessage" class="hint small">尚未連線房間。若從邀請連結進入，系統會在 Firebase 初始化後自動加入；房主可開始多人遊戲。</p>
-          </div>
-
-          <div class="invite-card">
-            <div class="panel-heading compact">
-              <h3>邀請朋友</h3>
-              <span id="roomBadge" class="pill">尚未建立</span>
-            </div>
-            <input id="inviteLinkInput" class="copy-input" type="text" readonly placeholder="建立或加入房間後會出現邀請連結" />
-            <div class="button-row">
-              <button id="copyInviteBtn" class="secondary-btn" type="button" disabled>複製邀請連結</button>
-              <button id="showQrBtn" class="secondary-btn" type="button" disabled>顯示 QR Code</button>
-            </div>
-            <div id="qrBox" class="qr-box hidden">
-              <img id="qrCodeImage" alt="房間邀請 QR Code" />
-              <p id="qrStatusText" class="hint small">手機掃描後會開啟同一個房間，並自動加入。</p>
-              <a id="qrFallbackLink" class="secondary-link hidden" href="#" target="_blank" rel="noopener">QR Code 無法顯示時，點此開啟圖片</a>
-            </div>
-          </div>
-        </div>
-
-        <div class="seat-grid" id="roomSeatList" aria-label="房間座位">
-          <div class="seat-card empty">座位 1｜等待玩家</div>
-          <div class="seat-card empty">座位 2｜等待玩家</div>
-          <div class="seat-card empty">座位 3｜等待玩家</div>
-          <div class="seat-card empty">座位 4｜等待玩家</div>
-        </div>
-      </section>
-
-      <section class="room-management-panel" aria-label="房主管理">
-        <div class="panel-heading">
-          <div>
-            <h2>房主管理</h2>
-            <p class="hint small">房主可在等待中或本局結束時重新安排座位；牌局中踢除玩家會改由 AI 接管到本局結束。</p>
-          </div>
-          <span id="roomManageBadge" class="pill">尚未連線</span>
-        </div>
-        <div id="roomManagementList" class="management-list compact-list">建立或加入房間後會顯示座位管理。</div>
-      </section>
-
-      <section class="room-directory-panel" aria-label="房間列表與最近房號">
-        <div class="panel-heading">
-          <div>
-            <h2>房間列表 / 最近房號</h2>
-            <p class="hint small">可快速回到最近玩過的房間，也可刷新 Firestore 最近房間列表。若 Rules 不允許列表讀取，仍可用最近房號加入。</p>
-          </div>
-          <div class="button-row compact-actions">
-            <button id="refreshRoomsBtn" class="secondary-btn" type="button">刷新房間列表</button>
-            <button id="cleanupRoomsBtn" class="secondary-btn" type="button">清理我的過期房間</button>
-            <button id="clearRecentRoomsBtn" class="secondary-btn" type="button">清除最近房號</button>
-          </div>
-        </div>
-        <div class="room-directory-grid">
-          <article>
-            <h3>最近房號</h3>
-            <div id="recentRoomsList" class="room-list compact-list">尚無最近房號。</div>
-          </article>
-          <article>
-            <h3>Firestore 最近房間</h3>
-            <div id="publicRoomsList" class="room-list compact-list">按「刷新房間列表」讀取。</div>
-          </article>
-        </div>
-      </section>
-
-      <section class="firebase-check-panel" aria-label="Firebase 設定檢查面板">
-        <div class="panel-heading">
-          <div>
-            <h2>Firebase 設定檢查面板</h2>
-            <p class="hint small">用來確認 v0.8.4 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
-          </div>
-          <button id="runFirebaseCheckBtn" class="secondary-btn" type="button">執行 Firebase 檢查</button>
-        </div>
-        <p id="firebaseCheckSummary" class="hint small" data-level="info">尚未執行檢查。</p>
-        <div id="firebaseCheckGrid" class="firebase-check-grid">
-          <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
-          <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-          <div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v0.8.4。</p></div>
-          <div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v0.8.4 不需要 functions/，也不需要 Blaze。</p></div>
-        </div>
-      </section>
-
-      <section class="debug-panel" aria-label="多人同步偵錯面板">
-        <div class="panel-heading">
-          <div>
-            <h2>多人同步偵錯面板</h2>
-            <p class="hint small">回報問題時可按「複製偵錯資訊」，會包含房號、座位、回合、PWA／Service Worker、快取、Firebase 效能計數、裝置資訊與最近錯誤。</p>
-          </div>
-          <div class="button-row compact-actions">
-            <button id="copyDebugBtn" class="secondary-btn" type="button">複製問題回報</button>
-            <button id="downloadDebugBtn" class="secondary-btn" type="button">下載診斷檔</button>
-            <span class="pill">v0.8.4</span>
-          </div>
-        </div>
-        <div id="debugPanel" class="debug-grid">
-          <div><strong>版本</strong><span>v0.8.4</span></div>
-          <div><strong>房號</strong><span>—</span></div>
-          <div><strong>狀態</strong><span>尚未連線</span></div>
-          <div><strong>我的座位</strong><span>未入座</span></div>
-        </div>
-      </section>
-
-      <section class="error-center-panel" aria-label="錯誤紀錄中心">
-        <div class="panel-heading">
-          <div>
-            <h2>錯誤紀錄中心</h2>
-            <p id="errorLogSummary" class="hint small" data-level="ok">尚未記錄執行錯誤。</p>
-          </div>
-          <div class="button-row compact-actions">
-            <button id="retryListenerBtn" class="secondary-btn" type="button">重建房間同步</button>
-            <button id="copyErrorLogBtn" class="secondary-btn" type="button">複製錯誤紀錄</button>
-            <button id="downloadErrorLogBtn" class="secondary-btn" type="button">下載錯誤紀錄</button>
-            <button id="clearErrorLogBtn" class="secondary-btn" type="button">清除紀錄</button>
-            <span id="listenerHealthBadge" class="pill ok">監聽正常 0</span>
-            <span id="errorLogBadge" class="pill ok">無錯誤</span>
-          </div>
-        </div>
-        <div id="runtimeHealthGrid" class="debug-grid runtime-health-grid">
-          <div><strong>網路</strong><span>檢查中</span></div>
-          <div><strong>房間監聽</strong><span>檢查中</span></div>
-          <div><strong>監聽啟停</strong><span>0 / 0</span></div>
-          <div><strong>快照次數</strong><span>0</span></div>
-        </div>
-        <div id="errorLogRows" class="error-log-list" aria-live="polite">
-          <div class="error-log-empty">目前沒有錯誤紀錄。</div>
-        </div>
-        <p class="hint small">最多保留最近 20 筆，僅儲存在這台裝置；不會自動上傳到任何伺服器。</p>
-      </section>
-
-      <section class="info-grid" aria-label="AI 與主題資訊">
-        <article class="info-card">
-          <div class="panel-heading compact">
-            <h2>AI 難度</h2>
-            <span id="aiLevelBadge" class="pill">Lv.8</span>
-          </div>
-          <p id="aiLevelDescription" class="hint">AI 會依照難度選擇出牌策略。</p>
-        </article>
-        <article class="info-card">
-          <div class="panel-heading compact">
-            <h2>目前主題</h2>
-            <span class="pill">對比已檢查</span>
-          </div>
-          <p id="themeNote" class="hint">深色模式：黑底高對比。</p>
-        </article>
-      </section>
-
-      <section class="experience-panel" aria-label="音效與動畫設定">
-        <div class="panel-heading">
-          <div>
-            <h2>音效與動畫</h2>
-            <p class="hint small">可分別關閉選牌、出牌、Pass、發牌、勝利、錯誤提示音；手機覺得閃動太多時可關閉動畫。</p>
-          </div>
-          <span id="experienceBadge" class="pill">體驗設定</span>
-        </div>
-        <div class="experience-grid">
-          <label class="toggle-line"><input id="animationToggle" type="checkbox" checked /> <span>啟用動畫效果</span></label>
-          <label class="field volume-field"><span>音量</span><input id="soundVolumeInput" type="range" min="0" max="100" value="75" /></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="select" type="checkbox" checked /> <span>選牌音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="play" type="checkbox" checked /> <span>出牌音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="pass" type="checkbox" checked /> <span>Pass 音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="deal" type="checkbox" checked /> <span>發牌音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="win" type="checkbox" checked /> <span>勝利音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="error" type="checkbox" checked /> <span>錯誤提示音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="start" type="checkbox" checked /> <span>開局音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="join" type="checkbox" checked /> <span>加入房間音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="achievement" type="checkbox" checked /> <span>成就音</span></label>
-          <label class="toggle-line"><input class="sound-option" data-sound-type="move" type="checkbox" checked /> <span>座位調整音</span></label>
-        </div>
-      </section>
-
-      <section class="score-strip" aria-label="玩家狀態">
-        <article class="player-card" id="playerStatus0"></article>
-        <article class="player-card" id="playerStatus1"></article>
-        <article class="player-card" id="playerStatus2"></article>
-        <article class="player-card" id="playerStatus3"></article>
-      </section>
-
-      <section class="table-area" aria-label="牌桌與我的手牌">
-        <div class="last-play-panel">
-          <div class="panel-heading">
-            <h2>牌桌／上一手</h2>
-            <span id="lastPlayType" class="pill">尚未出牌</span>
-          </div>
-          <div id="lastPlayCards" class="card-row empty">等待梅花 3 起手</div>
-          <p id="lastPlayHint" class="hint small play-requirement">第一手依規則設定決定起手牌。</p>
-        </div>
-
-        <section class="hand-section" aria-label="我的手牌">
-          <div class="panel-heading hand-heading">
-            <div>
-              <h2>我的手牌</h2>
-              <p class="hint small">手機可左右滑動手牌；牌桌會緊鄰手牌，選中的牌會明顯上浮。</p>
-            </div>
-            <div class="hand-tools">
-              <label class="field compact-field">
-                <span>手牌排序</span>
-                <select id="handSortSelect" aria-label="選擇手牌排序">
-                  <option value="rank">依點數排序</option>
-                  <option value="suit">依花色排序</option>
-                  <option value="combo">依牌型建議排序</option>
-                </select>
-              </label>
-              <span id="handCount" class="pill">0 張</span>
-            </div>
-          </div>
-          <div id="humanHand" class="hand"></div>
-        </section>
-
-        <div class="action-panel compact-action-panel">
-          <div class="panel-heading">
-            <h2>操作</h2>
-            <span id="turnBadge" class="pill">等待中</span>
-          </div>
-          <p id="selectedInfo" class="hint selection-info" data-level="info">請選擇手牌後出牌。</p>
-          <div class="button-row main-actions">
-            <button id="playBtn" class="primary-btn" type="button">出牌</button>
-            <button id="passBtn" class="secondary-btn" type="button">Pass</button>
-          </div>
-          <details id="playAssistDetails" class="play-assist-details">
-            <summary>出牌輔助與 Pass 設定</summary>
-            <div class="play-assist-content">
-              <p id="selectionAdvice" class="hint small selection-advice" data-level="info">系統會即時提示目前牌型是否可出。</p>
-              <div class="button-row assist-actions">
-                <button id="recommendPlayBtn" class="secondary-btn" type="button">推薦出牌</button>
-                <button id="minPlayableBtn" class="secondary-btn" type="button">最小可出</button>
-                <button id="clearSelectionBtn" class="secondary-btn" type="button">清除選牌</button>
-              </div>
-              <label class="inline-toggle pass-reminder-row">
-                <input id="passReminderToggle" type="checkbox" checked />
-                <span>有牌可出時，Pass 前提醒我</span>
-              </label>
-              <p id="passHelp" class="hint small">第一手依規則設定決定起手牌。輪到你領出時不能 Pass。</p>
-            </div>
-          </details>
-        </div>
-      </section>
-
-      <section id="resultPanel" class="result-panel hidden" aria-label="本局結果"></section>
-
-      <section class="leaderboard-panel" aria-label="排行榜">
-        <div class="panel-heading">
-          <div>
-            <h2>排行榜</h2>
-            <p class="hint small">顯示目前房間累計總分；單人模式會顯示本機最近一局統計。</p>
-          </div>
-          <span id="leaderboardBadge" class="pill">等待資料</span>
-        </div>
-        <div id="leaderboardRows" class="leaderboard-list compact-list">完成一局或加入房間後會顯示排行榜。</div>
-      </section>
-
-      <section class="progress-panel" aria-label="成就徽章與每日戰績">
-        <div class="panel-heading">
-          <div>
-            <h2>成就徽章 / 每日戰績</h2>
-            <p class="hint small">本機保存個人戰績，不會上傳私人資料；更換瀏覽器或清除資料後會重新計算。</p>
-          </div>
-          <span id="dailyStatsBadge" class="pill">今日戰績</span>
-        </div>
-        <div id="dailyStatsGrid" class="stats-grid"></div>
-        <div id="achievementList" class="achievement-list compact-list"></div>
-      </section>
-
-      <section class="game-records-panel" aria-label="遊戲紀錄">
-        <div class="panel-heading">
-          <div>
-            <h2>遊戲紀錄</h2>
-            <p class="hint small">保留最近 40 局本機紀錄，可用來回顧排名與分數。</p>
-          </div>
-          <button id="clearGameRecordsBtn" class="secondary-btn" type="button">清除遊戲紀錄</button>
-        </div>
-        <div id="gameRecordsList" class="record-list compact-list">尚無遊戲紀錄。</div>
-      </section>
-
-      <section class="history-panel" aria-label="遊戲紀錄">
-        <div class="panel-heading">
-          <h2>遊戲紀錄</h2>
-          <span class="pill">最新在上</span>
-        </div>
-        <ol id="historyList"></ol>
-      </section>
-
-      <section class="rules-panel" aria-label="目前規則">
-        <h2>目前規則與計分</h2>
-        <div class="rules-grid">
-          <div><strong>起手</strong><span>梅花 3</span></div>
-          <div><strong>點數</strong><span>2 最大，3 最小</span></div>
-          <div><strong>花色</strong><span>黑桃 &gt; 紅心 &gt; 方塊 &gt; 梅花</span></div>
-          <div><strong>五張牌型</strong><span>順子 &lt; 同花 &lt; 葫蘆 &lt; 鐵支 &lt; 同花順</span></div>
-        </div>
-      </section>
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
+<meta content="#060b14" name="theme-color"/>
+<meta content="dark light" name="color-scheme"/>
+<title>台灣大老二 Big2 TW｜單人 AI 與好友連線 PWA</title>
+<meta content="台灣大老二 Big2 TW：支援單人 AI、Firebase 好友連線、手機安裝 PWA、13 種主題、排行榜與連續對戰；免 Cloud Functions、不需要 Blaze。" name="description"/>
+<meta content="台灣大老二 Big2 TW" name="application-name"/>
+<meta content="台灣大老二" name="apple-mobile-web-app-title"/>
+<meta content="yes" name="apple-mobile-web-app-capable"/>
+<meta content="black-translucent" name="apple-mobile-web-app-status-bar-style"/>
+<meta content="yes" name="mobile-web-app-capable"/>
+<meta content="telephone=no" name="format-detection"/>
+<meta content="index, follow" name="robots"/>
+<link href="https://fox520-sketch.github.io/big2/" rel="canonical"/>
+<link crossorigin="" href="https://www.gstatic.com" rel="preconnect"/>
+<link href="https://www.gstatic.com" rel="dns-prefetch"/>
+<link href="https://api.qrserver.com" rel="dns-prefetch"/>
+<meta content="website" property="og:type"/>
+<meta content="zh_TW" property="og:locale"/>
+<meta content="台灣大老二 Big2 TW" property="og:site_name"/>
+<meta content="台灣大老二｜單人 AI 與好友連線 PWA" property="og:title"/>
+<meta content="台灣大老二網頁遊戲：單人 AI、Firebase 好友連線、手機安裝、排行榜與連續對戰。" property="og:description"/>
+<meta content="https://fox520-sketch.github.io/big2/" property="og:url"/>
+<meta content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" property="og:image"/>
+<meta content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" property="og:image:secure_url"/>
+<meta content="image/png" property="og:image:type"/>
+<meta content="1200" property="og:image:width"/>
+<meta content="630" property="og:image:height"/>
+<meta content="台灣大老二 Big2 TW 遊戲預覽" property="og:image:alt"/>
+<meta content="summary_large_image" name="twitter:card"/>
+<meta content="台灣大老二｜單人 AI 與好友連線 PWA" name="twitter:title"/>
+<meta content="免安裝即可玩，也可加入手機桌面。支援單人 AI 與 Firebase 好友連線。" name="twitter:description"/>
+<meta content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" name="twitter:image"/>
+<link href="manifest.webmanifest?v=1.0.0" rel="manifest"/>
+<link href="assets/icons/favicon.svg" rel="icon" type="image/svg+xml"/>
+<link href="assets/icons/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
+<link href="assets/icons/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
+<link href="assets/splash/splash-portrait.png" media="(orientation: portrait)" rel="apple-touch-startup-image"/>
+<link href="assets/splash/splash-landscape.png" media="(orientation: landscape)" rel="apple-touch-startup-image"/>
+<link href="styles/base.css?v=1.0.0" rel="stylesheet"/>
+</head>
+<body data-theme="dark">
+<a class="skip-link" href="#mainContent">跳至主要內容</a>
+<div aria-label="台灣大老二載入中" class="pwa-splash" id="pwaSplash" role="status">
+<img alt="" decoding="async" fetchpriority="high" height="96" src="assets/icons/icon-192.png" width="96"/>
+<strong>台灣大老二</strong>
+<span>正在準備牌桌…</span>
+</div>
+<div aria-atomic="true" aria-live="polite" class="pwa-banner hidden" id="pwaUpdateBanner" role="status">
+<span><strong>發現新版本</strong>　<span id="pwaUpdateText">重新載入即可套用最新牌桌。</span></span>
+<div class="button-row compact">
+<button class="primary-btn" id="pwaUpdateBtn" type="button">立即更新</button>
+<button class="secondary-btn" id="pwaUpdateLaterBtn" type="button">稍後</button>
+</div>
+</div>
+<div aria-atomic="true" aria-live="assertive" class="pwa-offline-banner hidden" id="pwaOfflineBanner" role="status">
+<strong>目前離線</strong>
+<span>單人遊戲仍可使用；多人出牌請等網路恢復後再操作。</span>
+</div>
+<header class="app-header">
+<div>
+<p class="eyebrow">Big2 TW</p>
+<h1>台灣大老二</h1>
+<p class="subtitle">v1.0.0 正式穩定版｜單人 AI・好友連線・PWA</p>
+</div>
+<div aria-label="遊戲工具列" class="toolbar">
+<label class="field ai-level-field">
+<span>AI 難度</span>
+<select aria-label="選擇 AI 難度" id="aiLevelSelect">
+<option value="1">Lv.1 新手隨機</option>
+<option value="2">Lv.2 新手隨機</option>
+<option value="3">Lv.3 新手隨機</option>
+<option value="4">Lv.4 基礎保守</option>
+<option value="5">Lv.5 基礎保守</option>
+<option value="6">Lv.6 低牌優先</option>
+<option value="7">Lv.7 低牌優先</option>
+<option value="8">Lv.8 低牌優先</option>
+<option value="9">Lv.9 牌型保留</option>
+<option value="10">Lv.10 牌型保留</option>
+<option value="11">Lv.11 節奏控制</option>
+<option value="12">Lv.12 節奏控制</option>
+<option value="13">Lv.13 節奏控制</option>
+<option value="14">Lv.14 攔截防守</option>
+<option value="15">Lv.15 攔截防守</option>
+<option value="16">Lv.16 攔截防守</option>
+<option value="17">Lv.17 高手判斷</option>
+<option value="18">Lv.18 高手判斷</option>
+<option value="19">Lv.19 高手判斷</option>
+<option value="20">Lv.20 高手判斷</option>
+</select>
+</label>
+<label class="field theme-field">
+<span>顯示風格</span>
+<select aria-label="選擇顯示風格" id="themeSelect">
+<option value="dark">深色模式</option>
+<option value="epaper">電子紙模式</option>
+<option value="ocean">海洋風</option>
+<option value="eye">護眼風</option>
+<option value="twilight">暮光風</option>
+<option value="sakura">櫻花風</option>
+<option value="forest">森林風</option>
+<option value="grassland">草原風</option>
+<option value="night">夜航風</option>
+<option value="sunset">夕陽風</option>
+<option value="starry">星空風</option>
+<option value="candy">糖果風</option>
+<option value="neon">霓虹風</option>
+</select>
+</label>
+<button aria-pressed="true" class="secondary-btn" id="soundToggleBtn" type="button">音效：開</button>
+<button class="primary-btn hidden" id="installAppBtn" type="button">安裝遊戲</button>
+<button class="secondary-btn" id="shareGameBtn" type="button">分享遊戲</button>
+<button class="secondary-btn" id="openOnboardingBtn" type="button">使用導覽</button>
+<button aria-pressed="true" class="secondary-btn" id="focusModeToggleBtn" type="button">顯示設定</button>
+<button class="secondary-btn" id="newGameBtn" type="button">重新開局</button>
+</div>
+</header>
+<main class="game-shell" id="mainContent" tabindex="-1">
+<section aria-live="polite" class="focus-mode-note">
+<strong>牌局專注模式：</strong>
+<span>遊戲進行中已自動隱藏規則設定、房間列表、檢查面板、說明與紀錄等非必要區塊；需要查看時可按右上角「顯示設定」。</span>
+</section>
+<section aria-live="polite" class="notice">
+<strong>目前狀態：</strong>
+<span id="statusText">準備開始遊戲。</span>
+</section>
+<section aria-label="網路與同步狀態" aria-live="polite" class="network-status-bar" data-state="online" id="networkStatusBar">
+<strong id="networkStatusTitle">網路正常</strong>
+<span id="networkStatusText">已連線；多人房間會自動同步。</span>
+<button class="secondary-btn compact-network-btn hidden" id="retryConnectionBtn" type="button">重新連線</button>
+</section>
+<section aria-label="手機橫向提示" class="mobile-orientation-tip">
+<strong>手機提示：</strong>
+<span>若手牌或結果表太寬，可以把手機轉成橫向，手牌也可左右滑動。</span>
+</section>
+<section aria-label="首頁流程" class="home-panel">
+<div class="panel-heading">
+<div>
+<h2>開始遊戲</h2>
+<p class="hint small">正式穩定版支援單人 AI、Firebase 好友房間、手機安裝與離線單人模式。</p>
+</div>
+<span class="pill ok">v1.0.0 Stable</span>
+</div>
+<div class="home-actions">
+<button class="primary-btn" id="quickSingleBtn" type="button">單人遊戲</button>
+<button class="secondary-btn" id="quickCreateRoomBtn" type="button">建立房間</button>
+<button class="secondary-btn" id="quickJoinRoomBtn" type="button">加入房間</button>
+<button class="secondary-btn" id="quickRecentRoomBtn" type="button">最近房間</button>
+<button class="secondary-btn" id="quickRulesBtn" type="button">新手教學</button>
+<button class="secondary-btn" id="quickSettingsBtn" type="button">設定</button>
+</div>
+<div class="home-flow-grid">
+<div><strong>1. 單人練習</strong><span>先熟悉梅花 3 起手、壓牌、Pass 與結算。</span></div>
+<div><strong>2. 建立房間</strong><span>輸入暱稱，可設定密碼，再複製連結或 QR Code 邀請朋友。</span></div>
+<div><strong>3. 補 AI 空位</strong><span>不足四人時由 AI 補位，房主瀏覽器負責 AI 行動。</span></div>
+<div><strong>4. 開始多人</strong><span>遊戲中自動進入專注模式，只保留出牌需要的區塊。</span></div>
+</div>
+</section><section aria-label="正式版本資訊" class="stable-release-panel">
+<div class="panel-heading">
+<div>
+<p class="eyebrow">Stable Release</p>
+<h2>v1.0.0 正式穩定發布</h2>
+<p class="hint small">核心功能已凍結。本版本後續只接受錯誤修正、安全維護與相容性改善；大型新功能將另開後續版本。</p>
+</div>
+<span class="pill ok">功能凍結</span>
+</div>
+<div class="stable-release-grid">
+<div><strong>單人與多人</strong><span>1 位玩家對 3 家 AI，或建立 Firebase 房間與朋友連線。</span></div>
+<div><strong>手機與 PWA</strong><span>支援安裝到桌面、離線單人、版本更新與上一版回復。</span></div>
+<div><strong>正式文件</strong><span>提供發布、備份、回復、已知限制與疑難排解文件。</span></div>
+<div><strong>部署架構</strong><span>GitHub Pages + Firebase 匿名登入 + Firestore，不需要 Cloud Functions 或 Blaze。</span></div>
+</div>
+<div class="stable-release-links">
+<a href="privacy.html">隱私與資料使用</a>
+<a href="docs/KNOWN_LIMITATIONS.md">已知限制</a>
+<a href="docs/GITHUB_RELEASE.md">GitHub Release 說明</a>
+<a href="docs/FINAL_ACCEPTANCE_CHECKLIST.md">正式驗收清單</a>
+<a href="docs/BACKUP_AND_RECOVERY.md">備份與回復</a>
+</div>
+</section>
 
 
 
+<section aria-label="正式規則與計分設定" class="settings-panel">
+<div class="panel-heading">
+<div>
+<h2>正式規則與計分設定</h2>
+<p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
+</div>
+<span class="pill">v1.0.0</span>
+</div>
+<div class="settings-grid">
+<label class="field full">
+<span>玩法規則</span>
+<select aria-label="選擇大老二玩法規則" id="rulePresetSelect">
+<option value="taiwanC3">台灣常用：梅花 3 起手</option>
+<option value="taiwanD3">台灣變體：方塊 3 起手</option>
+<option value="friendlyWheel">朋友局：允許 A2345</option>
+<option value="looseTwoStraight">寬鬆變體：順子可含 2</option>
+</select>
+</label>
+<label class="field full">
+<span>計分規則</span>
+<select aria-label="選擇計分規則" id="scoringPresetSelect">
+<option value="standard">標準：剩幾張扣幾分</option>
+<option value="double8">8 張以上雙倍</option>
+<option value="double10">10 張以上雙倍</option>
+<option value="double8Triple10">8 張雙倍、10 張三倍</option>
+</select>
+</label>
+<div class="settings-summary">
+<strong>目前套用</strong>
+<span id="settingsSummary">台灣常用規則；標準計分。</span>
+</div>
+</div>
+</section>
+<section aria-label="Firebase 多人房間" class="room-panel">
+<div class="panel-heading">
+<div>
+<h2>Firebase 多人房間</h2>
+<p class="hint small">v1.0.0 正式穩定發布版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
+</div>
+<span class="pill" id="firebaseStatusBadge">檢查中</span>
+</div>
+<div class="room-grid">
+<div class="room-controls">
+<label class="field full">
+<span>你的暱稱</span>
+<input autocomplete="nickname" id="playerNameInput" maxlength="18" placeholder="例如：Fox" type="text"/>
+</label>
+<label class="field full">
+<span>房號</span>
+<input autocomplete="off" id="roomCodeInput" inputmode="latin" maxlength="6" placeholder="輸入 6 碼房號" type="text"/>
+</label>
+<label class="field full">
+<span>房間密碼（可空白）</span>
+<input autocomplete="current-password" id="roomPasswordInput" maxlength="20" placeholder="建立房間時可設定；加入私人房需輸入" type="password"/>
+</label>
+<div class="button-row">
+<button class="primary-btn" id="createRoomBtn" type="button">建立房間</button>
+<button class="secondary-btn" id="joinRoomBtn" type="button">加入房間</button>
+<button class="secondary-btn" disabled="" id="fillAIBtn" type="button">補 AI 空位</button>
+<button class="primary-btn" disabled="" id="startMultiplayerBtn" type="button">開始多人遊戲</button>
+<button class="secondary-btn" disabled="" id="leaveRoomBtn" type="button">離開房間</button>
+</div>
+<p class="hint small" id="roomMessage">尚未連線房間。若從邀請連結進入，系統會在 Firebase 初始化後自動加入；房主可開始多人遊戲。</p>
+</div>
+<div class="invite-card">
+<div class="panel-heading compact">
+<h3>邀請朋友</h3>
+<span class="pill" id="roomBadge">尚未建立</span>
+</div>
+<input class="copy-input" id="inviteLinkInput" placeholder="建立或加入房間後會出現邀請連結" readonly="" type="text"/>
+<div class="button-row">
+<button class="secondary-btn" disabled="" id="copyInviteBtn" type="button">複製邀請連結</button>
+<button class="secondary-btn" disabled="" id="showQrBtn" type="button">顯示 QR Code</button>
+</div>
+<div class="qr-box hidden" id="qrBox">
+<img alt="房間邀請 QR Code" id="qrCodeImage"/>
+<p class="hint small" id="qrStatusText">手機掃描後會開啟同一個房間，並自動加入。</p>
+<a class="secondary-link hidden" href="#" id="qrFallbackLink" rel="noopener" target="_blank">QR Code 無法顯示時，點此開啟圖片</a>
+</div>
+</div>
+</div>
+<div aria-label="房間座位" class="seat-grid" id="roomSeatList">
+<div class="seat-card empty">座位 1｜等待玩家</div>
+<div class="seat-card empty">座位 2｜等待玩家</div>
+<div class="seat-card empty">座位 3｜等待玩家</div>
+<div class="seat-card empty">座位 4｜等待玩家</div>
+</div>
+</section>
+<section aria-label="房主管理" class="room-management-panel">
+<div class="panel-heading">
+<div>
+<h2>房主管理</h2>
+<p class="hint small">房主可在等待中或本局結束時重新安排座位；牌局中踢除玩家會改由 AI 接管到本局結束。</p>
+</div>
+<span class="pill" id="roomManageBadge">尚未連線</span>
+</div>
+<div class="management-list compact-list" id="roomManagementList">建立或加入房間後會顯示座位管理。</div>
+</section>
+<section aria-label="房間列表與最近房號" class="room-directory-panel">
+<div class="panel-heading">
+<div>
+<h2>房間列表 / 最近房號</h2>
+<p class="hint small">可快速回到最近玩過的房間，也可刷新 Firestore 最近房間列表。若 Rules 不允許列表讀取，仍可用最近房號加入。</p>
+</div>
+<div class="button-row compact-actions">
+<button class="secondary-btn" id="refreshRoomsBtn" type="button">刷新房間列表</button>
+<button class="secondary-btn" id="cleanupRoomsBtn" type="button">清理我的過期房間</button>
+<button class="secondary-btn" id="clearRecentRoomsBtn" type="button">清除最近房號</button>
+</div>
+</div>
+<div class="room-directory-grid">
+<article>
+<h3>最近房號</h3>
+<div class="room-list compact-list" id="recentRoomsList">尚無最近房號。</div>
+</article>
+<article>
+<h3>Firestore 最近房間</h3>
+<div class="room-list compact-list" id="publicRoomsList">按「刷新房間列表」讀取。</div>
+</article>
+</div>
+</section><details aria-label="進階支援、驗收與診斷工具" class="advanced-support-panel" id="advancedSupportPanel"><summary>
+<span class="advanced-support-title">進階支援與診斷</span>
+<span class="advanced-support-subtitle">PWA 維護、Firebase 檢查、實機驗收、問題回報與發布工具</span>
+<span class="pill">需要時展開</span>
+</summary><div class="advanced-support-content"><p class="hint small advanced-support-note">一般遊玩不需要開啟此區。只有更新異常、Firebase 權限問題、多人同步故障或準備發布時才需使用。</p><section aria-label="手機牌桌 UI 優化" class="online-fix-panel">
+<div class="panel-heading">
+<div>
+<h2>手機實戰與同步穩定</h2>
+<p class="hint small">v1.0.0 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
+</div>
+<span class="pill ok">v1.0.0</span>
+</div>
+<div class="check-grid compact-check-grid">
+<div><strong>牌桌靠近手牌</strong><span>手機依序顯示牌桌、自己的手牌、操作按鈕，減少上下捲動。</span></div>
+<div><strong>玩家資訊壓縮</strong><span>手機玩家狀態改為橫向滑動卡片，座位資訊在牌局中改為雙欄。</span></div>
+<div><strong>牌面更集中</strong><span>上一手牌縮短留白並置中顯示，五張牌不再與自己的手牌距離過遠。</span></div>
+<div><strong>觸控更順手</strong><span>手牌保留橫向滑動，出牌與 Pass 按鈕維持大尺寸及底部黏附。</span></div>
+<div><strong>建議預設隱藏</strong><span>出牌建議與 Pass 細部設定改放在可展開的「出牌輔助」內，減少操作面板高度。</span></div>
+<div><strong>動態視窗高度</strong><span>網址列展開或收合時使用 visualViewport 更新高度，降低畫面跳動。</span></div>
+<div><strong>同步效能</strong><span>忽略只有心跳時間改變的快照，並只由房主執行離線狀態整理。</span></div>
+</div>
+</section><section aria-label="PWA 安裝、更新與離線驗證" class="pwa-release-panel">
+<div class="panel-heading">
+<div>
+<h2>PWA 安裝、更新與離線驗證</h2>
+<p class="hint small">加入一鍵修復、舊快取清理、診斷匯出與正式上線驗收工具；多人功能仍需要網路。</p>
+</div>
+<span class="pill ok" id="pwaStatusBadge">PWA 就緒</span>
+</div>
+<div class="check-grid compact-check-grid">
+<div><strong>安裝到桌面</strong><span>Android、Chrome、Edge 可使用「安裝遊戲」；iPhone 可由 Safari 分享選單加入主畫面。</span></div>
+<div><strong>GitHub Pages 路徑</strong><span>manifest、Service Worker 與離線頁全部使用相對路徑，可在 /big2/ 子目錄正常運作。</span></div>
+<div><strong>離線單人</strong><span>Service Worker 會快取首頁、規則引擎、AI、主題與牌面；多人房間需連線 Firebase。</span></div>
+<div><strong>版本更新</strong><span>JavaScript、CSS 採網路優先，避免新版首頁搭配舊版程式；更新仍由玩家確認後套用。</span></div>
+<div><strong>分享預覽</strong><span>加入 Open Graph 圖片、類型與絕對網址，分享至 LINE、Facebook 等平台時更容易辨識。</span></div>
+<div><strong>無障礙</strong><span>加入跳至主要內容、鍵盤焦點、降低動態效果、高對比與 200% 文字縮放支援。</span></div>
+<div><strong>版本回復</strong><span>保留最近一版 PWA 靜態快取，可在單一裝置回復上一版並再次恢復最新版。</span></div>
+</div>
+<div aria-label="PWA 維護與一鍵修復工具" class="pwa-health-actions">
+<button class="primary-btn" id="pwaRepairBtn" type="button">一鍵修復 PWA</button>
+<button class="secondary-btn" id="pwaCheckUpdateBtn" type="button">檢查新版</button>
+<button class="secondary-btn" id="pwaApplyUpdateBtn" type="button">立即套用新版</button>
+<button class="secondary-btn" id="pwaRefreshCacheBtn" type="button">重新下載離線檔案</button>
+<button class="secondary-btn" id="pwaClearCachesBtn" type="button">清除舊版快取</button>
+<button class="secondary-btn" id="pwaReloadBtn" type="button">重新載入遊戲</button>
+<button class="secondary-btn" id="pwaRollbackBtn" type="button">回復上一版</button>
+<button class="secondary-btn" disabled="" id="pwaRestoreCurrentBtn" type="button">恢復最新版</button>
+<span class="pwa-storage-status" id="pwaRollbackStatus">正在讀取版本回復狀態…</span>
+<span aria-live="polite" class="pwa-action-status" id="pwaActionStatus" role="status">正在檢查 PWA 狀態…</span>
+<span class="pwa-storage-status" id="pwaStorageStatus">正在讀取快取容量…</span>
+</div>
+<div aria-live="polite" class="pwa-install-help hidden" id="pwaInstallHelp">
+<strong>安裝方式</strong>
+<p id="pwaInstallHelpText">瀏覽器支援安裝時，右上角會顯示「安裝遊戲」。</p>
+<button class="secondary-btn" id="closeInstallHelpBtn" type="button">關閉說明</button>
+</div>
+</section><section aria-label="正式上線實機驗收中心" class="acceptance-panel">
+<div class="panel-heading">
+<div>
+<h2>實機驗收與支援檢查</h2>
+<p class="hint small">正式版已通過自動測試；不同手機、瀏覽器與多人組合仍可在需要時逐項記錄實機驗收結果。</p>
+</div>
+<div class="button-row compact-actions">
+<button class="secondary-btn" id="runAcceptanceQuickCheckBtn" type="button">執行快速檢查</button>
+<button class="secondary-btn" id="copyAcceptanceBtn" type="button">複製驗收摘要</button>
+<button class="secondary-btn" id="resetAcceptanceBtn" type="button">重設勾選</button>
+<span class="pill" id="acceptanceProgressBadge">0/14</span>
+</div>
+</div>
+<progress class="acceptance-progress" id="acceptanceProgress" max="14" value="0">0/14</progress>
+<p aria-live="polite" class="hint small" id="acceptanceSummary">尚未開始實機驗收。</p>
+<div class="acceptance-checklist">
+<label class="acceptance-item"><input data-acceptance-id="android-pwa" type="checkbox"/><span><strong>Android PWA</strong><small>Chrome 安裝、桌面啟動、更新與重新安裝正常。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="ios-pwa" type="checkbox"/><span><strong>iPhone／iPad PWA</strong><small>Safari 加入主畫面、獨立視窗與安全區正常。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="desktop-pwa" type="checkbox"/><span><strong>桌機 PWA</strong><small>Chrome／Edge 安裝、啟動與新版更新正常。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="pwa-update" type="checkbox"/><span><strong>PWA 更新與離線</strong><small>新版提示、一鍵修復、離線單人模式正常。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="two-human" type="checkbox"/><span><strong>2 真人＋2 AI</strong><small>連續 5 局，出牌、Pass、AI 接管及總分正常。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="three-human" type="checkbox"/><span><strong>3 真人＋1 AI</strong><small>連續 3 局，回合與下一局同步正常。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="four-human" type="checkbox"/><span><strong>4 真人</strong><small>連續 3 局，排名、玩家名稱與總分正常。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="disconnect-reconnect" type="checkbox"/><span><strong>斷線與重連</strong><small>鎖螢幕、切換 App、斷網後可回到原座位。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="host-transfer" type="checkbox"/><span><strong>房主轉移</strong><small>房主離線後由下一位真人接任，AI 不會停住。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="next-game" type="checkbox"/><span><strong>下一局</strong><small>保留座位、名稱、總分與勝場，不殘留上一局牌面。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="mobile-ui" type="checkbox"/><span><strong>手機 UI</strong><small>320～430px、直橫向、鍵盤、安全區與選牌裁切正常。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="firebase-health" type="checkbox"/><span><strong>Firebase 讀寫</strong><small>只有一個房間 listener，離房後解除，讀寫量合理。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="rules-security" type="checkbox"/><span><strong>Rules 安全檢查</strong><small>套用 v1.0.0 Rules，非房內成員無法修改房間。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="rollback-drill" type="checkbox"/><span><strong>回復演練</strong><small>測試回復上一版後可正常啟動，並能恢復最新版。</small></span></label>
+</div>
+<p class="hint small">完整步驟請看 <code>docs/RC_ACCEPTANCE_CHECKLIST.md</code>；歷史 v0.8.3 驗收說明仍保留。勾選紀錄只保存在本機瀏覽器。</p>
+</section><section aria-label="Firebase 設定檢查面板" class="firebase-check-panel">
+<div class="panel-heading">
+<div>
+<h2>Firebase 連線檢查</h2>
+<p class="hint small">用來確認 v1.0.0 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+</div>
+<button class="secondary-btn" id="runFirebaseCheckBtn" type="button">執行 Firebase 檢查</button>
+</div>
+<p class="hint small" data-level="info" id="firebaseCheckSummary">尚未執行檢查。</p>
+<div class="firebase-check-grid" id="firebaseCheckGrid">
+<div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
+<div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
+<div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v1.0.0。</p></div>
+<div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v1.0.0 不需要 functions/，也不需要 Blaze。</p></div>
+</div>
+</section><section aria-label="多人同步偵錯面板" class="debug-panel">
+<div class="panel-heading">
+<div>
+<h2>問題回報與診斷</h2>
+<p class="hint small">多人同步或 PWA 發生異常時，可複製問題回報或下載診斷檔，再提供給維護者分析。</p>
+</div>
+<div class="button-row compact-actions">
+<button class="secondary-btn" id="copyDebugBtn" type="button">複製問題回報</button>
+<button class="secondary-btn" id="downloadDebugBtn" type="button">下載診斷檔</button>
+<span class="pill">v1.0.0</span>
+</div>
+</div>
+<div class="debug-grid" id="debugPanel">
+<div><strong>版本</strong><span>v1.0.0</span></div>
+<div><strong>房號</strong><span>—</span></div>
+<div><strong>狀態</strong><span>尚未連線</span></div>
+<div><strong>我的座位</strong><span>未入座</span></div>
+</div>
+</section><section aria-label="錯誤紀錄中心" class="error-center-panel">
+<div class="panel-heading">
+<div>
+<h2>錯誤紀錄中心</h2>
+<p class="hint small" data-level="ok" id="errorLogSummary">尚未記錄執行錯誤。</p>
+</div>
+<div class="button-row compact-actions">
+<button class="secondary-btn" id="retryListenerBtn" type="button">重建房間同步</button>
+<button class="secondary-btn" id="copyErrorLogBtn" type="button">複製錯誤紀錄</button>
+<button class="secondary-btn" id="downloadErrorLogBtn" type="button">下載錯誤紀錄</button>
+<button class="secondary-btn" id="clearErrorLogBtn" type="button">清除紀錄</button>
+<span class="pill ok" id="listenerHealthBadge">監聽正常 0</span>
+<span class="pill ok" id="errorLogBadge">無錯誤</span>
+</div>
+</div>
+<div class="debug-grid runtime-health-grid" id="runtimeHealthGrid">
+<div><strong>網路</strong><span>檢查中</span></div>
+<div><strong>房間監聽</strong><span>檢查中</span></div>
+<div><strong>監聽啟停</strong><span>0 / 0</span></div>
+<div><strong>快照次數</strong><span>0</span></div>
+</div>
+<div aria-live="polite" class="error-log-list" id="errorLogRows">
+<div class="error-log-empty">目前沒有錯誤紀錄。</div>
+</div>
+<p class="hint small">最多保留最近 20 筆，僅儲存在這台裝置；不會自動上傳到任何伺服器。</p>
+</section><section aria-label="防作弊強化摘要" class="security-panel">
+<h2>防作弊強化摘要</h2>
+<div class="check-grid">
+<div><strong>回合交易</strong><span>所有多人出牌 / Pass 使用 Firestore transaction 寫入</span></div>
+<div><strong>座位驗證</strong><span>只有目前輪到的座位可操作，AI 接管座位禁止真人誤送</span></div>
+<div><strong>手牌驗證</strong><span>出牌前確認選牌存在於該座位手牌，阻擋異常選牌</span></div>
+<div><strong>版本戳記</strong><span>每次動作更新 revision 與 lastActionId，方便追查同步問題</span></div>
+</div>
+<p class="hint small">提醒：這版是 GitHub Pages + Firestore 朋友休閒版，不需要 Blaze。若未來要嚴格防作弊，才需要另行升級 Cloud Functions。</p>
+</section><section aria-label="發布檢查清單" class="release-panel">
+<div class="panel-heading">
+<div>
+<h2>發布維護檢查</h2>
+<p class="hint small">上傳 GitHub Pages 前請逐項確認。完整清單請看 docs/PWA_RELEASE_CHECKLIST.md。</p>
+</div>
+<span class="pill ok">免付費部署</span>
+</div>
+<div class="check-grid">
+<div><strong>GitHub Pages</strong><span>解壓後把 index.html、manifest、service-worker、assets、src 等根目錄內容完整上傳，不要多包一層資料夾。</span></div>
+<div><strong>Firebase</strong><span>保留你已設定好的 src/firebase-config.js，並確認匿名登入已啟用。</span></div>
+<div><strong>Firestore Rules</strong><span>貼上本版 firestore.rules 並 Publish，不要使用 Cloud Functions 版 Rules。</span></div>
+<div><strong>不要上傳</strong><span>要上傳 manifest.webmanifest、service-worker.js 與 assets/；不要上傳 functions/、node_modules/、.env 或任何私鑰。</span></div>
+</div>
+</section><section aria-label="UI 對比檢查摘要" class="contrast-panel">
+<h2>UI 對比檢查摘要</h2>
+<div class="check-grid">
+<div><strong>牌面</strong><span>紅黑花色固定高對比</span></div>
+<div><strong>按鈕</strong><span>主按鈕與次按鈕皆達 AA</span></div>
+<div><strong>房間區</strong><span>輸入框、座位卡、QR 區塊已檢查</span></div>
+<div><strong>主題</strong><span>13 個主題皆保留清楚文字</span></div>
+</div>
+</section></div></details>
 
-      <section class="tutorial-panel" aria-label="新手教學模式">
-        <div class="panel-heading">
-          <div>
-            <h2>新手教學模式</h2>
-            <p class="hint small">第一次玩大老二的朋友，可以照下面順序看；正式規則仍以「正式規則與計分設定」為準。</p>
-          </div>
-          <span class="pill">快速上手</span>
-        </div>
-        <div class="tutorial-steps">
-          <details open>
-            <summary>第一步：認識牌型</summary>
-            <p>可出單張、對子、三條，以及五張牌型：順子、同花、葫蘆、鐵支、同花順。四張牌不能單獨出，鐵支在本遊戲中是四張相同點數加一張雜牌的五張牌型。</p>
-          </details>
-          <details>
-            <summary>第二步：誰先出牌</summary>
-            <p>台灣常用規則為梅花 3 起手，第一手必須包含梅花 3；也可在設定中改成方塊 3 起手或朋友局變體。</p>
-          </details>
-          <details>
-            <summary>第三步：怎麼壓牌</summary>
-            <p>必須出相同張數與相同類型的牌，或用更大的五張牌型壓過上一手。單張、對子、三條比較點數與花色；五張牌型依順子 &lt; 同花 &lt; 葫蘆 &lt; 鐵支 &lt; 同花順。</p>
-          </details>
-          <details>
-            <summary>第四步：什麼時候可以 Pass</summary>
-            <p>你是領出者時不能 Pass；若上一手壓不過或想保留牌，可以 Pass。其他三家都 Pass 後，最後成功出牌的人取得下一輪領出權。</p>
-          </details>
-          <details>
-            <summary>第五步：邀請朋友一起玩</summary>
-            <p>房主建立房間後複製邀請連結或顯示 QR Code。朋友開啟連結會自動帶入房號並嘗試加入；若是密碼房，請先輸入密碼再加入。</p>
-          </details>
-        </div>
-      </section>
-
-      <section class="rules-help-panel" aria-label="規則說明頁">
-        <div class="panel-heading">
-          <div>
-            <h2>規則說明頁</h2>
-            <p class="hint small">快速查詢目前大老二常用規則；實際起手牌與順子設定仍以「正式規則與計分設定」為準。</p>
-          </div>
-          <span class="pill">台灣玩法</span>
-        </div>
-        <details open>
-          <summary>可出的牌型</summary>
-          <p>可出單張、對子、三條，以及五張牌型：順子、同花、葫蘆、鐵支、同花順。出牌時必須與上一手張數和牌型相同，或以更大的同類牌壓過上一手；五張牌型依設定比較大小。</p>
-        </details>
-        <details>
-          <summary>回合與 Pass</summary>
-          <p>輪到你時可以出牌或 Pass；若你是新一輪領出者，不能 Pass。其他三家都 Pass 後，最後成功出牌的玩家取得下一輪領出權。</p>
-        </details>
-        <details>
-          <summary>計分與排行榜</summary>
-          <p>一位玩家出完手牌後本局結束，輸家依剩餘張數扣分，贏家取得所有扣分總和。排行榜會以同一房間的累計總分、勝場與局數排序。</p>
-        </details>
-      </section>
-
-      <section class="security-panel" aria-label="防作弊強化摘要">
-        <h2>防作弊強化摘要</h2>
-        <div class="check-grid">
-          <div><strong>回合交易</strong><span>所有多人出牌 / Pass 使用 Firestore transaction 寫入</span></div>
-          <div><strong>座位驗證</strong><span>只有目前輪到的座位可操作，AI 接管座位禁止真人誤送</span></div>
-          <div><strong>手牌驗證</strong><span>出牌前確認選牌存在於該座位手牌，阻擋異常選牌</span></div>
-          <div><strong>版本戳記</strong><span>每次動作更新 revision 與 lastActionId，方便追查同步問題</span></div>
-        </div>
-        <p class="hint small">提醒：這版是 GitHub Pages + Firestore 朋友休閒版，不需要 Blaze。若未來要嚴格防作弊，才需要另行升級 Cloud Functions。</p>
-      </section>
-
-      <section class="release-panel" aria-label="發布檢查清單">
-        <div class="panel-heading">
-          <div>
-            <h2>發布檢查清單</h2>
-            <p class="hint small">上傳 GitHub Pages 前請逐項確認。完整清單請看 docs/PWA_RELEASE_CHECKLIST.md。</p>
-          </div>
-          <span class="pill ok">免付費部署</span>
-        </div>
-        <div class="check-grid">
-          <div><strong>GitHub Pages</strong><span>解壓後把 index.html、manifest、service-worker、assets、src 等根目錄內容完整上傳，不要多包一層資料夾。</span></div>
-          <div><strong>Firebase</strong><span>保留你已設定好的 src/firebase-config.js，並確認匿名登入已啟用。</span></div>
-          <div><strong>Firestore Rules</strong><span>貼上本版 firestore.rules 並 Publish，不要使用 Cloud Functions 版 Rules。</span></div>
-          <div><strong>不要上傳</strong><span>要上傳 manifest.webmanifest、service-worker.js 與 assets/；不要上傳 functions/、node_modules/、.env 或任何私鑰。</span></div>
-        </div>
-      </section>
-
-      <section class="contrast-panel" aria-label="UI 對比檢查摘要">
-        <h2>UI 對比檢查摘要</h2>
-        <div class="check-grid">
-          <div><strong>牌面</strong><span>紅黑花色固定高對比</span></div>
-          <div><strong>按鈕</strong><span>主按鈕與次按鈕皆達 AA</span></div>
-          <div><strong>房間區</strong><span>輸入框、座位卡、QR 區塊已檢查</span></div>
-          <div><strong>主題</strong><span>13 個主題皆保留清楚文字</span></div>
-        </div>
-      </section>
-    </main>
-
-    <footer class="app-footer">
-      <span>Big2 TW v<span data-app-version>0.8.4</span></span>
-      <span>GitHub Pages PWA｜免 Cloud Functions｜<a href="privacy.html">隱私與資料使用</a>｜驗收請看 docs/FINAL_ACCEPTANCE_CHECKLIST.md</span>
-    </footer>
 
 
-    <dialog id="onboardingDialog" class="onboarding-dialog" aria-labelledby="onboardingTitle">
-      <div class="onboarding-shell">
-        <div class="panel-heading compact">
-          <div>
-            <p class="eyebrow">Big2 TW v<span data-app-version>0.8.4</span></p>
-            <h2 id="onboardingTitle">第一次玩？四步快速上手</h2>
-          </div>
-          <button id="closeOnboardingBtn" class="icon-close-btn" type="button" aria-label="關閉使用導覽">×</button>
-        </div>
-        <div class="onboarding-progress" aria-hidden="true">
-          <span class="active"></span><span></span><span></span><span></span>
-        </div>
-        <div class="onboarding-step active" data-step="0">
-          <img src="assets/icons/icon-192.png" alt="台灣大老二圖示" width="112" height="112" decoding="async" />
-          <h3>選擇單人或多人</h3>
-          <p>單人模式可直接和 3 家 AI 對戰；多人模式建立房間後，可用連結或 QR Code 邀請朋友。</p>
-        </div>
-        <div class="onboarding-step" data-step="1">
-          <div class="onboarding-card-demo"><span>♣3</span><span>♥3</span></div>
-          <h3>選牌後按出牌</h3>
-          <p>點選手牌會向上浮起。第一手依預設規則必須包含梅花 3；出牌提示會告訴你牌型是否合法。</p>
-        </div>
-        <div class="onboarding-step" data-step="2">
-          <div class="onboarding-room-demo">房號 <strong>BIG2TW</strong></div>
-          <h3>分享房間給朋友</h3>
-          <p>建立房間後複製邀請連結或顯示 QR Code；不足四人可由房主補上 AI 空位。</p>
-        </div>
-        <div class="onboarding-step" data-step="3">
-          <div class="onboarding-install-demo">＋ 加入主畫面</div>
-          <h3>安裝到手機桌面</h3>
-          <p>支援的瀏覽器可直接按「安裝遊戲」。iPhone 請在 Safari 點分享，再選「加入主畫面」。</p>
-        </div>
-        <label class="onboarding-never-show"><input id="onboardingRememberCheck" type="checkbox" checked /> 完成或略過後不再自動顯示</label>
-        <div class="onboarding-actions">
-          <button id="onboardingSkipBtn" class="secondary-btn" type="button">略過教學</button>
-          <div class="button-row compact">
-            <button id="onboardingPrevBtn" class="secondary-btn" type="button" disabled>上一步</button>
-            <button id="onboardingNextBtn" class="primary-btn" type="button">下一步</button>
-          </div>
-        </div>
-      </div>
-    </dialog>
+<section aria-label="AI 與主題資訊" class="info-grid">
+<article class="info-card">
+<div class="panel-heading compact">
+<h2>AI 難度</h2>
+<span class="pill" id="aiLevelBadge">Lv.8</span>
+</div>
+<p class="hint" id="aiLevelDescription">AI 會依照難度選擇出牌策略。</p>
+</article>
+<article class="info-card">
+<div class="panel-heading compact">
+<h2>目前主題</h2>
+<span class="pill">對比已檢查</span>
+</div>
+<p class="hint" id="themeNote">深色模式：黑底高對比。</p>
+</article>
+</section>
+<section aria-label="音效與動畫設定" class="experience-panel">
+<div class="panel-heading">
+<div>
+<h2>音效與動畫</h2>
+<p class="hint small">可分別關閉選牌、出牌、Pass、發牌、勝利、錯誤提示音；手機覺得閃動太多時可關閉動畫。</p>
+</div>
+<span class="pill" id="experienceBadge">體驗設定</span>
+</div>
+<div class="experience-grid">
+<label class="toggle-line"><input checked="" id="animationToggle" type="checkbox"/> <span>啟用動畫效果</span></label>
+<label class="field volume-field"><span>音量</span><input id="soundVolumeInput" max="100" min="0" type="range" value="75"/></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="select" type="checkbox"/> <span>選牌音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="play" type="checkbox"/> <span>出牌音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="pass" type="checkbox"/> <span>Pass 音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="deal" type="checkbox"/> <span>發牌音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="win" type="checkbox"/> <span>勝利音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="error" type="checkbox"/> <span>錯誤提示音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="start" type="checkbox"/> <span>開局音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="join" type="checkbox"/> <span>加入房間音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="achievement" type="checkbox"/> <span>成就音</span></label>
+<label class="toggle-line"><input checked="" class="sound-option" data-sound-type="move" type="checkbox"/> <span>座位調整音</span></label>
+</div>
+</section>
+<section aria-label="玩家狀態" class="score-strip">
+<article class="player-card" id="playerStatus0"></article>
+<article class="player-card" id="playerStatus1"></article>
+<article class="player-card" id="playerStatus2"></article>
+<article class="player-card" id="playerStatus3"></article>
+</section>
+<section aria-label="牌桌與我的手牌" class="table-area">
+<div class="last-play-panel">
+<div class="panel-heading">
+<h2>牌桌／上一手</h2>
+<span class="pill" id="lastPlayType">尚未出牌</span>
+</div>
+<div class="card-row empty" id="lastPlayCards">等待梅花 3 起手</div>
+<p class="hint small play-requirement" id="lastPlayHint">第一手依規則設定決定起手牌。</p>
+</div>
+<section aria-label="我的手牌" class="hand-section">
+<div class="panel-heading hand-heading">
+<div>
+<h2>我的手牌</h2>
+<p class="hint small">手機可左右滑動手牌；牌桌會緊鄰手牌，選中的牌會明顯上浮。</p>
+</div>
+<div class="hand-tools">
+<label class="field compact-field">
+<span>手牌排序</span>
+<select aria-label="選擇手牌排序" id="handSortSelect">
+<option value="rank">依點數排序</option>
+<option value="suit">依花色排序</option>
+<option value="combo">依牌型建議排序</option>
+</select>
+</label>
+<span class="pill" id="handCount">0 張</span>
+</div>
+</div>
+<div class="hand" id="humanHand"></div>
+</section>
+<div class="action-panel compact-action-panel">
+<div class="panel-heading">
+<h2>操作</h2>
+<span class="pill" id="turnBadge">等待中</span>
+</div>
+<p class="hint selection-info" data-level="info" id="selectedInfo">請選擇手牌後出牌。</p>
+<div class="button-row main-actions">
+<button class="primary-btn" id="playBtn" type="button">出牌</button>
+<button class="secondary-btn" id="passBtn" type="button">Pass</button>
+</div>
+<details class="play-assist-details" id="playAssistDetails">
+<summary>出牌輔助與 Pass 設定</summary>
+<div class="play-assist-content">
+<p class="hint small selection-advice" data-level="info" id="selectionAdvice">系統會即時提示目前牌型是否可出。</p>
+<div class="button-row assist-actions">
+<button class="secondary-btn" id="recommendPlayBtn" type="button">推薦出牌</button>
+<button class="secondary-btn" id="minPlayableBtn" type="button">最小可出</button>
+<button class="secondary-btn" id="clearSelectionBtn" type="button">清除選牌</button>
+</div>
+<label class="inline-toggle pass-reminder-row">
+<input checked="" id="passReminderToggle" type="checkbox"/>
+<span>有牌可出時，Pass 前提醒我</span>
+</label>
+<p class="hint small" id="passHelp">第一手依規則設定決定起手牌。輪到你領出時不能 Pass。</p>
+</div>
+</details>
+</div>
+</section>
+<section aria-label="本局結果" class="result-panel hidden" id="resultPanel"></section>
+<section aria-label="排行榜" class="leaderboard-panel">
+<div class="panel-heading">
+<div>
+<h2>排行榜</h2>
+<p class="hint small">顯示目前房間累計總分；單人模式會顯示本機最近一局統計。</p>
+</div>
+<span class="pill" id="leaderboardBadge">等待資料</span>
+</div>
+<div class="leaderboard-list compact-list" id="leaderboardRows">完成一局或加入房間後會顯示排行榜。</div>
+</section>
+<section aria-label="成就徽章與每日戰績" class="progress-panel">
+<div class="panel-heading">
+<div>
+<h2>成就徽章 / 每日戰績</h2>
+<p class="hint small">本機保存個人戰績，不會上傳私人資料；更換瀏覽器或清除資料後會重新計算。</p>
+</div>
+<span class="pill" id="dailyStatsBadge">今日戰績</span>
+</div>
+<div class="stats-grid" id="dailyStatsGrid"></div>
+<div class="achievement-list compact-list" id="achievementList"></div>
+</section>
+<section aria-label="遊戲紀錄" class="game-records-panel">
+<div class="panel-heading">
+<div>
+<h2>遊戲紀錄</h2>
+<p class="hint small">保留最近 40 局本機紀錄，可用來回顧排名與分數。</p>
+</div>
+<button class="secondary-btn" id="clearGameRecordsBtn" type="button">清除遊戲紀錄</button>
+</div>
+<div class="record-list compact-list" id="gameRecordsList">尚無遊戲紀錄。</div>
+</section>
+<section aria-label="遊戲紀錄" class="history-panel">
+<div class="panel-heading">
+<h2>遊戲紀錄</h2>
+<span class="pill">最新在上</span>
+</div>
+<ol id="historyList"></ol>
+</section>
+<section aria-label="目前規則" class="rules-panel">
+<h2>目前規則與計分</h2>
+<div class="rules-grid">
+<div><strong>起手</strong><span>梅花 3</span></div>
+<div><strong>點數</strong><span>2 最大，3 最小</span></div>
+<div><strong>花色</strong><span>黑桃 &gt; 紅心 &gt; 方塊 &gt; 梅花</span></div>
+<div><strong>五張牌型</strong><span>順子 &lt; 同花 &lt; 葫蘆 &lt; 鐵支 &lt; 同花順</span></div>
+</div>
+</section>
+<section aria-label="新手教學模式" class="tutorial-panel">
+<div class="panel-heading">
+<div>
+<h2>新手教學模式</h2>
+<p class="hint small">第一次玩大老二的朋友，可以照下面順序看；正式規則仍以「正式規則與計分設定」為準。</p>
+</div>
+<span class="pill">快速上手</span>
+</div>
+<div class="tutorial-steps">
+<details open="">
+<summary>第一步：認識牌型</summary>
+<p>可出單張、對子、三條，以及五張牌型：順子、同花、葫蘆、鐵支、同花順。四張牌不能單獨出，鐵支在本遊戲中是四張相同點數加一張雜牌的五張牌型。</p>
+</details>
+<details>
+<summary>第二步：誰先出牌</summary>
+<p>台灣常用規則為梅花 3 起手，第一手必須包含梅花 3；也可在設定中改成方塊 3 起手或朋友局變體。</p>
+</details>
+<details>
+<summary>第三步：怎麼壓牌</summary>
+<p>必須出相同張數與相同類型的牌，或用更大的五張牌型壓過上一手。單張、對子、三條比較點數與花色；五張牌型依順子 &lt; 同花 &lt; 葫蘆 &lt; 鐵支 &lt; 同花順。</p>
+</details>
+<details>
+<summary>第四步：什麼時候可以 Pass</summary>
+<p>你是領出者時不能 Pass；若上一手壓不過或想保留牌，可以 Pass。其他三家都 Pass 後，最後成功出牌的人取得下一輪領出權。</p>
+</details>
+<details>
+<summary>第五步：邀請朋友一起玩</summary>
+<p>房主建立房間後複製邀請連結或顯示 QR Code。朋友開啟連結會自動帶入房號並嘗試加入；若是密碼房，請先輸入密碼再加入。</p>
+</details>
+</div>
+</section>
+<section aria-label="規則說明頁" class="rules-help-panel">
+<div class="panel-heading">
+<div>
+<h2>規則說明頁</h2>
+<p class="hint small">快速查詢目前大老二常用規則；實際起手牌與順子設定仍以「正式規則與計分設定」為準。</p>
+</div>
+<span class="pill">台灣玩法</span>
+</div>
+<details open="">
+<summary>可出的牌型</summary>
+<p>可出單張、對子、三條，以及五張牌型：順子、同花、葫蘆、鐵支、同花順。出牌時必須與上一手張數和牌型相同，或以更大的同類牌壓過上一手；五張牌型依設定比較大小。</p>
+</details>
+<details>
+<summary>回合與 Pass</summary>
+<p>輪到你時可以出牌或 Pass；若你是新一輪領出者，不能 Pass。其他三家都 Pass 後，最後成功出牌的玩家取得下一輪領出權。</p>
+</details>
+<details>
+<summary>計分與排行榜</summary>
+<p>一位玩家出完手牌後本局結束，輸家依剩餘張數扣分，贏家取得所有扣分總和。排行榜會以同一房間的累計總分、勝場與局數排序。</p>
+</details>
+</section>
 
-    <noscript>
-      <style>.pwa-splash{display:none!important}</style>
-      <div class="noscript-warning">台灣大老二需要 JavaScript 才能執行，請在瀏覽器設定中啟用 JavaScript。</div>
-    </noscript>
 
-    <script type="module" src="src/pwa.js?v=0.8.4"></script>
-    <script type="module" src="src/main.js?v=0.8.4"></script>
-  </body>
+
+</main>
+<footer class="app-footer">
+<span>Big2 TW v<span data-app-version="">1.0.0</span></span>
+<span>GitHub Pages PWA｜免 Cloud Functions｜<a href="privacy.html">隱私與資料使用</a>｜<a href="docs/KNOWN_LIMITATIONS.md">已知限制</a></span>
+</footer>
+<dialog aria-labelledby="onboardingTitle" class="onboarding-dialog" id="onboardingDialog">
+<div class="onboarding-shell">
+<div class="panel-heading compact">
+<div>
+<p class="eyebrow">Big2 TW v<span data-app-version="">1.0.0</span></p>
+<h2 id="onboardingTitle">第一次玩？四步快速上手</h2>
+</div>
+<button aria-label="關閉使用導覽" class="icon-close-btn" id="closeOnboardingBtn" type="button">×</button>
+</div>
+<div aria-hidden="true" class="onboarding-progress">
+<span class="active"></span><span></span><span></span><span></span>
+</div>
+<div class="onboarding-step active" data-step="0">
+<img alt="台灣大老二圖示" decoding="async" height="112" src="assets/icons/icon-192.png" width="112"/>
+<h3>選擇單人或多人</h3>
+<p>單人模式可直接和 3 家 AI 對戰；多人模式建立房間後，可用連結或 QR Code 邀請朋友。</p>
+</div>
+<div class="onboarding-step" data-step="1">
+<div class="onboarding-card-demo"><span>♣3</span><span>♥3</span></div>
+<h3>選牌後按出牌</h3>
+<p>點選手牌會向上浮起。第一手依預設規則必須包含梅花 3；出牌提示會告訴你牌型是否合法。</p>
+</div>
+<div class="onboarding-step" data-step="2">
+<div class="onboarding-room-demo">房號 <strong>BIG2TW</strong></div>
+<h3>分享房間給朋友</h3>
+<p>建立房間後複製邀請連結或顯示 QR Code；不足四人可由房主補上 AI 空位。</p>
+</div>
+<div class="onboarding-step" data-step="3">
+<div class="onboarding-install-demo">＋ 加入主畫面</div>
+<h3>安裝到手機桌面</h3>
+<p>支援的瀏覽器可直接按「安裝遊戲」。iPhone 請在 Safari 點分享，再選「加入主畫面」。</p>
+</div>
+<label class="onboarding-never-show"><input checked="" id="onboardingRememberCheck" type="checkbox"/> 完成或略過後不再自動顯示</label>
+<div class="onboarding-actions">
+<button class="secondary-btn" id="onboardingSkipBtn" type="button">略過教學</button>
+<div class="button-row compact">
+<button class="secondary-btn" disabled="" id="onboardingPrevBtn" type="button">上一步</button>
+<button class="primary-btn" id="onboardingNextBtn" type="button">下一步</button>
+</div>
+</div>
+</div>
+</dialog>
+<noscript>
+<style>.pwa-splash{display:none!important}</style>
+<div class="noscript-warning">台灣大老二需要 JavaScript 才能執行，請在瀏覽器設定中啟用 JavaScript。</div>
+</noscript>
+<script src="src/pwa.js?v=1.0.0" type="module"></script>
+<script src="src/main.js?v=1.0.0" type="module"></script>
+</body>
 </html>

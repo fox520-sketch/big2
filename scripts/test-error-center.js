@@ -18,4 +18,4 @@ for (const token of ['roomId', 'gameId', 'currentTurnSeat', 'online', 'visibilit
 
 if (!css.includes('.error-log-list') || !css.includes('.error-log-item')) throw new Error('缺少錯誤紀錄中心樣式');
 
-console.log('v0.8.4 error center tests passed.');
+console.log('v1.0.0 error center tests passed.');

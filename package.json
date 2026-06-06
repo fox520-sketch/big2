@@ -1,10 +1,10 @@
 {
   "name": "big2-tw",
-  "version": "0.8.4",
-  "description": "台灣大老二 v0.8.4 正式發布候選版：房主轉移、多分頁 AI 租約、PWA 上一版回復及 Firestore Rules 成員限制，免 Cloud Functions",
+  "version": "1.0.0",
+  "description": "台灣大老二 v1.0.0 正式穩定版：單人 AI、Firebase 好友房間、手機 PWA、免 Cloud Functions與 Blaze",
   "type": "module",
   "scripts": {
-    "test": "node scripts/test-rules.js && node scripts/test-rule-boundaries.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js && node scripts/test-release-readiness.js && node scripts/test-online-readiness.js && node scripts/test-mobile-table-layout.js && node scripts/test-compact-action-panel.js && node scripts/test-mobile-selected-card.js && node scripts/test-performance-stability.js && node scripts/test-pwa-release.js && node scripts/test-pwa-online-verification.js && node scripts/test-static-assets.js && node scripts/test-diagnostics-and-repair.js && node scripts/test-firebase-efficiency.js && node scripts/test-final-acceptance.js && node scripts/test-v083-acceptance.js && node scripts/test-error-center.js && node scripts/test-v084-rc.js && node scripts/test-firestore-rules-security.js",
+    "test": "node scripts/test-rules.js && node scripts/test-rule-boundaries.js && node scripts/test-ai.js && node scripts/test-multiplayer-state.js && node scripts/test-settings.js && node scripts/test-contrast.js && node scripts/test-release-readiness.js && node scripts/test-online-readiness.js && node scripts/test-mobile-table-layout.js && node scripts/test-compact-action-panel.js && node scripts/test-mobile-selected-card.js && node scripts/test-performance-stability.js && node scripts/test-pwa-release.js && node scripts/test-pwa-online-verification.js && node scripts/test-static-assets.js && node scripts/test-diagnostics-and-repair.js && node scripts/test-firebase-efficiency.js && node scripts/test-final-acceptance.js && node scripts/test-v083-acceptance.js && node scripts/test-error-center.js && node scripts/test-v084-rc.js && node scripts/test-firestore-rules-security.js && node scripts/test-v100-stable-release.js",
     "test:rules": "node scripts/test-rules.js",
     "test:ai": "node scripts/test-ai.js",
     "test:multiplayer": "node scripts/test-multiplayer-state.js",
@@ -24,7 +24,8 @@
     "test:firebase-efficiency": "node scripts/test-firebase-efficiency.js",
     "test:acceptance": "node scripts/test-final-acceptance.js",
     "test:v083": "node scripts/test-v083-acceptance.js && node scripts/test-error-center.js",
-    "test:v084": "node scripts/test-v084-rc.js && node scripts/test-firestore-rules-security.js"
+    "test:v084": "node scripts/test-v084-rc.js && node scripts/test-firestore-rules-security.js",
+    "test:stable-release": "node scripts/test-v100-stable-release.js"
   },
   "keywords": [
     "big-two",

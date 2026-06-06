@@ -2498,7 +2498,7 @@ body {
   }
 }
 
-/* v0.8.4 PWA 正式公開版 */
+/* v1.0.0 PWA 正式公開版 */
 .pwa-splash {
   position: fixed;
   inset: 0;
@@ -2828,7 +2828,7 @@ body[data-gameplay-focus='on'] #openOnboardingBtn {
   display: none !important;
 }
 
-/* v0.8.4 正式上線驗收：一鍵修復、診斷匯出與效能保護 */
+/* v1.0.0 正式上線驗收：一鍵修復、診斷匯出與效能保護 */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -2990,7 +2990,7 @@ a:focus-visible,
 }
 
 
-/* v0.8.4 正式驗收與問題回報 */
+/* v1.0.0 正式驗收與問題回報 */
 .acceptance-panel {
   border: 2px solid var(--border);
   border-radius: 1.35rem;
@@ -3031,7 +3031,7 @@ a:focus-visible,
   }
 }
 
-/* v0.8.4 實機驗收與錯誤紀錄中心 */
+/* v1.0.0 實機驗收與錯誤紀錄中心 */
 .acceptance-panel,
 .error-center-panel {
   border: 2px solid var(--border);
@@ -3204,9 +3204,146 @@ body[data-gameplay-focus='on'] .error-center-panel {
 }
 
 
-/* v0.8.4 RC rollback and release controls */
+/* v1.0.0 RC rollback and release controls */
 #pwaRollbackStatus { flex-basis: 100%; line-height: 1.55; }
 .pwa-health-actions button:disabled { opacity: .55; cursor: not-allowed; }
 @media (max-width: 680px) {
   #pwaRollbackBtn, #pwaRestoreCurrentBtn { min-height: 44px; }
+}
+
+
+/* v1.0.0 正式穩定版：正式首頁、功能凍結與進階支援收合 */
+.stable-release-panel,
+.advanced-support-panel {
+  border: 1px solid var(--border);
+  border-radius: 1.25rem;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.stable-release-panel {
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+}
+
+.stable-release-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: .75rem;
+}
+
+.stable-release-grid > div {
+  display: grid;
+  gap: .3rem;
+  min-height: 5.4rem;
+  padding: .9rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: var(--surface-2, var(--surface));
+}
+
+.stable-release-grid span,
+.advanced-support-subtitle {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.stable-release-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .65rem 1rem;
+  margin-top: 1rem;
+}
+
+.stable-release-links a {
+  color: var(--primary);
+  font-weight: 750;
+  text-underline-offset: .2em;
+}
+
+.advanced-support-panel {
+  overflow: clip;
+}
+
+.advanced-support-panel > summary {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: .65rem 1rem;
+  min-height: 3.8rem;
+  padding: .9rem 1rem;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+}
+
+.advanced-support-panel > summary::-webkit-details-marker { display: none; }
+
+.advanced-support-panel > summary::before {
+  content: '＋';
+  display: inline-grid;
+  place-items: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--primary);
+  font-weight: 900;
+}
+
+.advanced-support-panel[open] > summary::before { content: '－'; }
+
+.advanced-support-panel[open] > summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.advanced-support-title {
+  font-weight: 850;
+  font-size: 1.05rem;
+}
+
+.advanced-support-content {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.advanced-support-content > section {
+  margin: 0;
+}
+
+.advanced-support-note {
+  margin: 0;
+  padding: .75rem .9rem;
+  border-left: .28rem solid var(--primary);
+  background: var(--surface-2, var(--surface));
+  border-radius: .75rem;
+}
+
+body[data-gameplay-focus='on'] .advanced-support-panel {
+  display: none !important;
+}
+
+body[data-gameplay-focus='on'] .advanced-support-panel.force-visible {
+  display: block !important;
+}
+
+@media (max-width: 900px) {
+  .stable-release-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 620px) {
+  .stable-release-grid { grid-template-columns: 1fr; }
+  .stable-release-grid > div { min-height: auto; }
+  .advanced-support-panel > summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .advanced-support-panel > summary .pill {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .advanced-support-subtitle {
+    grid-column: 2;
+    font-size: .82rem;
+  }
+  .advanced-support-content { padding: .7rem; }
 }

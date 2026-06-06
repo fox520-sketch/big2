@@ -1,4 +1,6 @@
-export const VERSION = '0.8.4';
+export const VERSION = '1.0.0';
+export const RELEASE_CHANNEL = 'stable';
+export const FEATURE_FREEZE = true;
 
 export const SUITS = [
   { id: 'C', symbol: '♣', name: '梅花', value: 0, color: 'black' },

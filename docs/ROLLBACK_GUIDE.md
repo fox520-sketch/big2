@@ -1,21 +1,18 @@
-# v0.8.4 回復指南
+# v1.0.0 回復指南
 
-## 裝置內 PWA 快速回復
-1. 開啟「PWA 安裝、更新與離線驗證」。
-2. 按「回復上一版」。
-3. 頁面重新載入後確認版本號與基本功能。
-4. 問題排除後按「恢復最新版」。
+完整備份與回復步驟請看 [`BACKUP_AND_RECOVERY.md`](BACKUP_AND_RECOVERY.md)。
 
-此功能只切換該裝置的 PWA 靜態快取，不會改動 GitHub repository、Firebase 房間或本機戰績。
+## 快速回復
 
-## GitHub Pages 全站回復
-1. 在 GitHub repository 找到上一個正常 commit 或 v0.8.3 備份。
-2. 保留目前正式站的 `src/firebase-config.js`。
-3. 將上一版其他檔案覆蓋 repository 根目錄並 commit／push。
-4. 若曾發布 v0.8.4 Rules，回復程式時通常可保留較嚴格的 v0.8.4 Rules；若加入房間失敗，再依備份 Rules 回復。
-5. 開啟網站後按「檢查新版」或「一鍵修復 PWA」。
+1. 先使用遊戲內「進階支援與診斷」→「回復上一版」。
+2. 若只有單一裝置異常，使用「一鍵修復 PWA」。
+3. 若所有裝置皆異常，將 GitHub repository 回復到最後可用的 Commit 或 tag。
+4. 若建立／加入房間被拒絕，檢查並回復 Firebase Rules。
+5. 回復後建立新房間測試，不要只沿用舊房間。
 
-## 緊急處理
-- 網站空白：檢查 `index.html` 是否在 repository 根目錄。
-- 新舊程式混用：執行「一鍵修復 PWA」。
-- 多人完全無法寫入：檢查 Firebase 匿名登入及 Firestore Rules 發布狀態。
+## 建議保留
+
+- `v1.0.0` tag
+- 發布前的 `v0.8.4` 備份 tag
+- 每次正式發布的 zip
+- 對應版本的 `firestore.rules`

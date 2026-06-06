@@ -1,4 +1,4 @@
-const APP_VERSION = '0.8.4';
+const APP_VERSION = '1.0.0';
 const ONBOARDING_KEY = 'big2-onboarding-complete-v1';
 const LEGACY_ONBOARDING_PREFIX = 'big2-onboarding-';
 const INSTALL_HELP_KEY = 'big2-install-help-seen';
@@ -134,6 +134,11 @@ function showInstallHelp() {
   const panel = byId('pwaInstallHelp');
   const text = byId('pwaInstallHelpText');
   if (!panel || !text) return;
+  const advanced = byId('advancedSupportPanel');
+  if (advanced) {
+    advanced.open = true;
+    advanced.classList.add('force-visible');
+  }
   if (isIOS()) {
     text.textContent = isSafari()
       ? 'iPhone / iPad：點 Safari 下方或上方的「分享」圖示，再選「加入主畫面」，最後按「新增」。'
@@ -647,7 +652,10 @@ function bindPwaEvents() {
   byId('pwaReloadBtn')?.addEventListener('click', () => window.location.reload());
   byId('pwaRollbackBtn')?.addEventListener('click', rollbackToPreviousVersion);
   byId('pwaRestoreCurrentBtn')?.addEventListener('click', restoreCurrentVersion);
-  byId('closeInstallHelpBtn')?.addEventListener('click', () => byId('pwaInstallHelp')?.classList.add('hidden'));
+  byId('closeInstallHelpBtn')?.addEventListener('click', () => {
+    byId('pwaInstallHelp')?.classList.add('hidden');
+    byId('advancedSupportPanel')?.classList.remove('force-visible');
+  });
   byId('pwaUpdateBtn')?.addEventListener('click', () => {
     controllerReloadRequested = true;
     if (pendingWorker) pendingWorker.postMessage({ type: 'SKIP_WAITING' });
