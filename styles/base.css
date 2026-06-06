@@ -2498,7 +2498,7 @@ body {
   }
 }
 
-/* v0.8.2 PWA 正式公開版 */
+/* v0.8.3 PWA 正式公開版 */
 .pwa-splash {
   position: fixed;
   inset: 0;
@@ -2828,7 +2828,7 @@ body[data-gameplay-focus='on'] #openOnboardingBtn {
   display: none !important;
 }
 
-/* v0.8.2 正式上線驗收：一鍵修復、診斷匯出與效能保護 */
+/* v0.8.3 正式上線驗收：一鍵修復、診斷匯出與效能保護 */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -2990,7 +2990,7 @@ a:focus-visible,
 }
 
 
-/* v0.8.2 正式驗收與問題回報 */
+/* v0.8.3 正式驗收與問題回報 */
 .acceptance-panel {
   border: 2px solid var(--border);
   border-radius: 1.35rem;
@@ -3027,6 +3027,178 @@ a:focus-visible,
 @media (max-width: 420px) {
   .pwa-health-actions,
   .debug-panel .compact-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* v0.8.3 實機驗收與錯誤紀錄中心 */
+.acceptance-panel,
+.error-center-panel {
+  border: 2px solid var(--border);
+  border-radius: 1.35rem;
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+}
+
+.acceptance-progress {
+  width: 100%;
+  height: 0.85rem;
+  margin: 0.25rem 0 0.55rem;
+  accent-color: var(--primary);
+}
+
+.acceptance-checklist {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin-top: 0.8rem;
+}
+
+.acceptance-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  background: color-mix(in srgb, var(--surface-2, var(--surface)) 90%, transparent);
+  cursor: pointer;
+}
+
+.acceptance-item:hover,
+.acceptance-item:focus-within {
+  border-color: var(--primary);
+}
+
+.acceptance-item input {
+  flex: 0 0 auto;
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.1rem;
+  accent-color: var(--primary);
+}
+
+.acceptance-item span {
+  display: grid;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.acceptance-item strong,
+.acceptance-item small {
+  overflow-wrap: anywhere;
+}
+
+.acceptance-item small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.acceptance-item:has(input:checked) {
+  border-color: var(--success);
+  background: color-mix(in srgb, var(--success) 10%, var(--surface));
+}
+
+.runtime-health-grid {
+  margin-bottom: 0.85rem;
+}
+
+.error-log-list {
+  display: grid;
+  gap: 0.65rem;
+  max-height: 28rem;
+  overflow: auto;
+  padding-right: 0.15rem;
+  overscroll-behavior: contain;
+}
+
+.error-log-item,
+.error-log-empty {
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 0.75rem 0.85rem;
+  background: color-mix(in srgb, var(--surface-2, var(--surface)) 92%, transparent);
+}
+
+.error-log-empty {
+  color: var(--muted);
+  text-align: center;
+}
+
+.error-log-head,
+.error-log-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.75rem;
+}
+
+.error-log-head time,
+.error-log-meta {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.error-log-item p {
+  margin: 0.55rem 0;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.error-log-meta {
+  justify-content: flex-start;
+}
+
+.error-log-meta span {
+  padding: 0.2rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+}
+
+body[data-gameplay-focus='on'] .acceptance-panel,
+body[data-gameplay-focus='on'] .error-center-panel {
+  display: none;
+}
+
+@media (max-width: 980px) {
+  .acceptance-checklist {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .acceptance-panel,
+  .error-center-panel {
+    border-radius: 1rem;
+    padding: 0.75rem;
+  }
+
+  .acceptance-panel .compact-actions,
+  .error-center-panel .compact-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .acceptance-checklist {
+    grid-template-columns: 1fr;
+  }
+
+  .acceptance-item {
+    min-height: 54px;
+  }
+
+  .error-log-list {
+    max-height: 22rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .acceptance-panel .compact-actions,
+  .error-center-panel .compact-actions {
     grid-template-columns: 1fr;
   }
 }

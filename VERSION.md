@@ -1,5 +1,27 @@
 # 版本說明
 
+## v0.8.3 - 2026-06-06
+### 正式上線實機驗收中心
+- 新增 Android、iPhone／iPad、桌機 PWA、2～4 位真人、斷線重連、房主轉移、下一局、手機 UI 與 Firebase 讀寫等 12 項實機驗收清單。
+- 驗收進度保存在本機，可執行快速技術檢查、複製摘要與重設狀態。
+- 自動檢查只標記可由瀏覽器判斷的 PWA 與 listener 健康；真實裝置與多人對戰仍需手動確認。
+
+### 錯誤紀錄中心
+- 自動保留最近 20 筆 JavaScript error、unhandled rejection 與多人操作錯誤。
+- 每筆包含功能、錯誤代碼、房號、gameId、座位、目前回合、網路、頁面狀態與最近操作。
+- 支援複製、下載及清除；資料只儲存在本機，不會自動上傳。
+
+### Firebase 監聽恢復與效能驗證
+- 新增 listener 最後快照時間、監聽錯誤與恢復次數統計。
+- 網路恢復或 App 回到前景時，若 listener 發生錯誤、遺失或超過 150 秒未收到快照，會自動解除並重建。
+- 錯誤中心顯示 listener 啟停差額、快照、心跳、文件讀取與寫入數量。
+
+### 文件與測試
+- 新增 `docs/REAL_DEVICE_ACCEPTANCE_V083.md`、`docs/ERROR_LOG_CENTER.md`。
+- 新增 `scripts/test-v083-acceptance.js`、`scripts/test-error-center.js`。
+- 維持免 Cloud Functions、不需要 Blaze，未新增 Firestore 欄位。
+
+---
 ## v0.8.2 - 2026-06-06
 ### PWA 一鍵修復與更新工具
 - 新增「一鍵修復 PWA」，會檢查新版、清除 Big2 舊快取、重建離線 App Shell 並重新載入。

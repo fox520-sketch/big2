@@ -15,6 +15,7 @@ const RECONCILE_INTERVAL_MS = 30000;
 const STALE_PLAYER_MS = 180000;
 const STALE_ROOM_MS = 24 * 60 * 60 * 1000;
 const ROOM_LIST_CACHE_TTL_MS = 15000;
+const LISTENER_STALE_MS = 150000;
 
 let sdkPromise = null;
 let appInstance = null;
@@ -34,9 +35,12 @@ let latestRoomSignature = '';
 let latestRoomCallback = null;
 let latestRoomErrorCallback = null;
 let lastListenError = null;
+let lastListenerSnapshotAt = 0;
+let lastListenerStartedAt = 0;
 let roomDirectoryCache = { fetchedAt: 0, maxRooms: 0, rooms: [] };
 const firebaseMetrics = {
   listenerStarts: 0, listenerStops: 0, listenerSnapshots: 0,
+  listenerErrors: 0, listenerRecoveries: 0,
   heartbeatWrites: 0, heartbeatSkips: 0, presenceReconciles: 0,
   roomListQueries: 0, roomListCacheHits: 0, documentReads: 0, writeOperations: 0
 };
@@ -120,7 +124,7 @@ export function explainFirebaseError(error) {
   const code = error?.code || '';
   const message = error?.message || String(error || '未知錯誤');
   if (code.includes('permission-denied') || message.includes('Missing or insufficient permissions')) {
-    return 'Firestore 寫入被拒絕。通常是 Firebase Console 的 Rules 沒有套用本版 firestore.rules；請貼上 v0.8.2 的 firestore.rules 後 Publish。';
+    return 'Firestore 寫入被拒絕。通常是 Firebase Console 的 Rules 沒有套用本版 firestore.rules；請貼上 v0.8.3 的 firestore.rules 後 Publish。';
   }
   if (code.includes('unauthenticated') || message.includes('auth')) {
     return '匿名登入失敗。請到 Firebase Console → Authentication → Sign-in method 啟用 Anonymous。';
@@ -136,7 +140,7 @@ export function explainFirebaseError(error) {
 
 export async function runFirebaseDiagnostics() {
   const checks = [];
-  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.8.2 是免 Cloud Functions PWA 正式上線驗證版，不需要 Blaze。' });
+  checks.push({ label: 'Cloud Functions', ok: true, text: '未使用。v0.8.3 是免 Cloud Functions PWA 正式上線驗證版，不需要 Blaze。' });
 
   if (!hasFirebaseConfig()) {
     checks.push({ label: 'Firebase Config', ok: false, text: '尚未填入 src/firebase-config.js。' });
@@ -163,7 +167,7 @@ export async function runFirebaseDiagnostics() {
       aiLevel: 8,
       rules: normalizeRules(),
       scoringRules: normalizeScoringRules(),
-      securityVersion: 'client-validated-v0.8.2',
+      securityVersion: 'client-validated-v0.8.3',
       version: VERSION,
       passwordEnabled: false,
       passwordHash: '',
@@ -173,7 +177,7 @@ export async function runFirebaseDiagnostics() {
       presenceUpdatedAt: sdk.firestore.serverTimestamp(),
       invitePath: buildInviteUrl(testRoomId),
       gameNo: 0,
-      lastEvent: 'v0.8.2 Firebase 設定檢查用暫存房間。',
+      lastEvent: 'v0.8.3 Firebase 設定檢查用暫存房間。',
       totalScores: makeInitialTotalsFromSeats([hostSeat, null, null, null]),
       seats: { 0: hostSeat }
     };
@@ -185,7 +189,7 @@ export async function runFirebaseDiagnostics() {
     if (!snap.exists()) throw new Error('測試房間建立後讀取失敗。');
     await sdk.firestore.deleteDoc(ref);
     firebaseMetrics.writeOperations += 1;
-    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.8.2。' });
+    checks.push({ label: 'Firestore 寫入', ok: true, text: '建立 / 讀取 / 刪除暫存房間成功。Rules 可用於 v0.8.3。' });
     return { ok: true, checks, summary: 'Firebase 設定檢查通過，可以建立房間。' };
   } catch (error) {
     checks.push({ label: 'Firestore 寫入', ok: false, text: explainFirebaseError(error) });
@@ -548,7 +552,7 @@ export async function createRoom({ playerName, aiLevel, rules, scoringRules, roo
       aiLevel: Number(aiLevel) || 8,
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.8.2',
+      securityVersion: 'client-validated-v0.8.3',
       version: VERSION,
       passwordEnabled: Boolean(passwordHash),
       passwordHash,
@@ -729,7 +733,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       gameId: `${normalizedRoomId}-${nextGameNo}-${Date.now()}`
     });
     game.version = VERSION;
-    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.8.2' };
+    game.security = { ...(game.security || {}), revision: 0, lastActionId: null, version: 'client-validated-v0.8.3' };
     game.history.unshift(`多人第 ${nextGameNo} 局開始，房主已同步洗牌與發牌。${ruleSummary(normalizedRules)}；${scoringSummary(normalizedScoringRules)}`);
 
     const totalScores = { ...makeInitialTotalsFromSeats(filledSeats), ...(room.totalScores || {}) };
@@ -760,7 +764,7 @@ export async function startMultiplayerGame(roomId, { aiLevel, rules, scoringRule
       aiLevel: Number(aiLevel || room.aiLevel || 8),
       rules: normalizedRules,
       scoringRules: normalizedScoringRules,
-      securityVersion: 'client-validated-v0.8.2',
+      securityVersion: 'client-validated-v0.8.3',
       updatedAt: sdk.firestore.serverTimestamp(),
       lastEvent: `多人第 ${nextGameNo} 局開始：${game.message}`
     });
@@ -822,7 +826,7 @@ async function updateMultiplayerGame(roomId, action, options = {}) {
       lastActorUid: user.uid,
       lastActorSeat: Number.isInteger(seat) ? seat : null,
       updatedAtMs: Date.now(),
-      version: 'client-validated-v0.8.2'
+      version: 'client-validated-v0.8.3'
     };
     const justFinished = !wasFinished && Boolean(updatedGame.finished);
     const updates = {
@@ -1194,6 +1198,8 @@ export async function listenRoom(roomId, onRoom, onError) {
   startPresenceTimers(normalizedRoomId);
 
   firebaseMetrics.listenerStarts += 1;
+  lastListenerStartedAt = nowMs();
+  lastListenerSnapshotAt = 0;
   unsubscribeRoom = sdk.firestore.onSnapshot(
     ref,
     { includeMetadataChanges: true },
@@ -1205,6 +1211,7 @@ export async function listenRoom(roomId, onRoom, onError) {
         return;
       }
       firebaseMetrics.listenerSnapshots += 1;
+      lastListenerSnapshotAt = nowMs();
       const data = snap.data();
       lastListenError = null;
       latestRoomData = data;
@@ -1237,6 +1244,7 @@ export async function listenRoom(roomId, onRoom, onError) {
     },
     (error) => {
       lastListenError = error;
+      firebaseMetrics.listenerErrors += 1;
       if (typeof latestRoomErrorCallback === 'function') latestRoomErrorCallback(error);
     }
   );
@@ -1252,6 +1260,8 @@ export function stopListeningRoom({ preserveActive = false, preserveCallbacks = 
   latestRoomData = null;
   latestRoomSignature = '';
   lastListenError = null;
+  lastListenerSnapshotAt = 0;
+  lastListenerStartedAt = 0;
   stopPresenceTimers();
   if (!preserveActive) {
     activeRoomId = null;
@@ -1270,13 +1280,16 @@ export async function refreshActiveRoomConnection() {
   const { sdk, db } = await ensureFirebaseReady();
   await sdk.firestore.enableNetwork(db).catch(() => {});
 
-  // 權限或暫時性網路錯誤可能使監聽終止；網路恢復後用原 callback 重新掛上 listener。
-  if (lastListenError && typeof latestRoomCallback === 'function') {
+  // 權限、暫時性網路錯誤或手機背景休眠可能使監聽失效；恢復後自動重建。
+  const listenerAge = lastListenerSnapshotAt ? nowMs() - lastListenerSnapshotAt : null;
+  const listenerStale = Boolean(unsubscribeRoom && listenerAge !== null && listenerAge > LISTENER_STALE_MS);
+  if ((lastListenError || listenerStale || !unsubscribeRoom) && typeof latestRoomCallback === 'function') {
     const roomId = activeRoomId;
     const roomCallback = latestRoomCallback;
     const errorCallback = latestRoomErrorCallback;
     stopListeningRoom({ preserveActive: true, preserveCallbacks: true });
     await listenRoom(roomId, roomCallback, errorCallback);
+    firebaseMetrics.listenerRecoveries += 1;
   }
 
   lastHeartbeatAt = 0;
@@ -1345,11 +1358,15 @@ export function getPresenceDebugInfo() {
     reconcileMs: RECONCILE_INTERVAL_MS,
     stalePlayerMs: STALE_PLAYER_MS,
     roomListCacheTtlMs: ROOM_LIST_CACHE_TTL_MS,
+    listenerStaleMs: LISTENER_STALE_MS,
     roomListCacheAgeMs: roomDirectoryCache.fetchedAt ? nowMs() - roomDirectoryCache.fetchedAt : null,
     activeRoomId,
     activeSeat,
     listeningRoomId,
     listenerActive: Boolean(unsubscribeRoom),
+    lastListenerSnapshotAt: lastListenerSnapshotAt || null,
+    lastListenerStartedAt: lastListenerStartedAt || null,
+    listenerSnapshotAgeMs: lastListenerSnapshotAt ? nowMs() - lastListenerSnapshotAt : null,
     documentVisibility: typeof document === 'undefined' ? null : document.visibilityState,
     lastHeartbeatAt: lastHeartbeatAt || null,
     lastReconcileAt: lastReconcileAt || null,

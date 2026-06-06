@@ -1,20 +1,19 @@
-# 台灣大老二 Big2 TW v0.8.2
+# 台灣大老二 Big2 TW v0.8.3
 
 台灣大老二網頁遊戲，支援單人與 3 家 AI 對戰、Firebase 好友房間、AI 難度 1～20 級、13 種主題、連續對戰、排行榜、手機牌桌與 PWA 安裝。
 
 本版維持 **免 Cloud Functions、不需要 Blaze** 的 GitHub Pages + Firebase 休閒版架構。
 
-## v0.8.2 正式上線驗收與問題回報修正版
+## v0.8.3 正式上線實機驗收修正版
 
-- 新增「一鍵修復 PWA」：檢查新版、清除 Big2 舊快取、重建離線檔案並重新載入。
-- 新增「立即套用新版」、「清除舊版快取」與「重新載入遊戲」獨立工具。
-- 問題回報可複製或下載診斷文字檔，包含裝置、PWA、Service Worker、快取、Firebase listener／心跳、房間與最近錯誤。
-- Firebase 房間列表加入 15 秒本機查詢快取，降低連續刷新造成的讀取。
-- 頁面在背景時將心跳降為 75 秒，離線判定放寬為 180 秒；回到前景後立即恢復 25 秒心跳與房主狀態整理。
-- 離開房間或切換 listener 時會解除監聽與計時器，並在診斷資料中顯示讀寫與監聽計數。
-- 過期房間清理會回報刪除數量，以及略過目前房間、進行中、近期與時間未知房間的數量。
-- 新增 `docs/FINAL_ACCEPTANCE_CHECKLIST.md`、`docs/TROUBLESHOOTING.md` 與 `docs/DIAGNOSTIC_REPORT.md`。
-- 維持免 Cloud Functions、不需要 Blaze。
+- 新增「正式上線實機驗收中心」，可逐項記錄 Android、iPhone／iPad、桌機 PWA、2～4 位真人對戰、斷線重連、房主轉移、下一局、手機 UI 與 Firebase 讀寫驗收結果。
+- 驗收進度保存在本機，可執行快速技術檢查、複製驗收摘要或重設勾選狀態。
+- 新增「錯誤紀錄中心」，自動保留最近 20 筆 JavaScript、非同步與多人操作錯誤，包含時間、功能、錯誤代碼、房號、gameId、回合、網路及頁面狀態。
+- 錯誤紀錄可複製、下載或清除，且只儲存在使用者裝置，不會自動上傳。
+- Firebase listener 新增失效偵測：若手機背景休眠、網路切換或監聽錯誤造成快照長時間未更新，恢復連線時會自動重建 listener。
+- 錯誤中心會顯示 listener 啟停差額、快照、心跳與 Firestore 讀寫計數，方便辨識重複監聽與異常讀寫。
+- 新增 `docs/REAL_DEVICE_ACCEPTANCE_V083.md`、`docs/ERROR_LOG_CENTER.md` 與 v0.8.3 專用自動測試。
+- 維持免 Cloud Functions、不需要 Blaze，沒有新增 Firestore 文件欄位。
 
 ## 核心功能
 
@@ -100,7 +99,7 @@ VERSION.md
 不要多包一層：
 
 ```txt
-big2/big2-tw-v0.8.2/index.html   ← 錯誤
+big2/big2-tw-v0.8.3/index.html   ← 錯誤
 big2/index.html                  ← 正確
 ```
 
@@ -123,6 +122,8 @@ firebase-adminsdk.json
 - 正式上線驗收：`docs/FINAL_ACCEPTANCE_CHECKLIST.md`
 - 疑難排解：`docs/TROUBLESHOOTING.md`
 - 診斷資訊說明：`docs/DIAGNOSTIC_REPORT.md`
+- v0.8.3 實機驗收：`docs/REAL_DEVICE_ACCEPTANCE_V083.md`
+- 錯誤紀錄中心：`docs/ERROR_LOG_CENTER.md`
 - 隱私與資料使用：`docs/PRIVACY_AND_DATA.md`
 - Firebase 設定：`docs/FIREBASE_SETUP.md`
 - 規則與計分：`docs/RULES_AND_SCORING.md`
@@ -137,4 +138,4 @@ firebase-adminsdk.json
 npm test
 ```
 
-測試包含規則、AI、多人狀態、計分、主題對比、手機 UI、PWA 修復與診斷匯出、Firebase 查詢快取與背景心跳、GitHub Pages scope、Service Worker 更新策略、SEO、無障礙與正式驗收檔案完整性。
+測試包含規則、AI、多人狀態、計分、主題對比、手機 UI、PWA 修復、診斷匯出、Firebase listener 自動恢復、錯誤紀錄中心、實機驗收中心、GitHub Pages scope、Service Worker 更新策略、SEO、無障礙與檔案完整性。

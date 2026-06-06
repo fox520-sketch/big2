@@ -37,8 +37,8 @@ for (const text of cssNeeds) {
   }
 }
 
-if (!index.includes('styles/base.css?v=0.8.2') || !index.includes('src/main.js?v=0.8.2')) {
-  throw new Error('GitHub Pages 快取版本參數未更新為 v0.8.2。');
+if (!index.includes('styles/base.css?v=0.8.3') || !index.includes('src/main.js?v=0.8.3')) {
+  throw new Error('GitHub Pages 快取版本參數未更新為 v0.8.3。');
 }
 
 console.log('Mobile table layout tests passed.');

@@ -1,4 +1,4 @@
-const APP_VERSION = '0.8.2';
+const APP_VERSION = '0.8.3';
 const ONBOARDING_KEY = 'big2-onboarding-complete-v1';
 const LEGACY_ONBOARDING_PREFIX = 'big2-onboarding-';
 const INSTALL_HELP_KEY = 'big2-install-help-seen';
@@ -27,6 +27,16 @@ function serializeError(error) {
     stack: error.stack ? String(error.stack).slice(0, 2400) : null,
     at: new Date().toISOString()
   };
+}
+
+function capturePwaError(error, feature = 'PWA') {
+  lastPwaError = serializeError(error);
+  try {
+    window.dispatchEvent(new CustomEvent('big2-pwa-error', {
+      detail: { ...lastPwaError, feature }
+    }));
+  } catch { /* older browser */ }
+  return lastPwaError;
 }
 
 async function postWorkerMessage(worker, type, payload = {}, timeoutMs = 15000) {
@@ -332,6 +342,7 @@ async function checkForUpdates(manual = false) {
       setPwaActionStatus(`目前已是最新版本 v${APP_VERSION}。`, 'ok');
     }
   } catch (error) {
+    capturePwaError(error, 'PWA 檢查更新');
     if (manual) setPwaActionStatus(`檢查更新失敗：${error?.message || error}`, 'warn');
   }
 }
@@ -356,7 +367,7 @@ async function refreshOfflineFiles() {
     await updateStorageStatus();
     return result;
   } catch (error) {
-    lastPwaError = serializeError(error);
+    capturePwaError(error, '重新下載離線檔案');
     setPwaActionStatus(`離線檔案更新失敗：${error?.message || error}`, 'warn');
     return { ok: false, message: error?.message || String(error) };
   } finally {
@@ -391,7 +402,7 @@ async function applyAvailableUpdate() {
     setPwaActionStatus(`目前已是最新版本 v${APP_VERSION}，正在重新載入。`, 'ok');
     window.setTimeout(() => window.location.reload(), 350);
   } catch (error) {
-    lastPwaError = serializeError(error);
+    capturePwaError(error, '套用 PWA 新版');
     setPwaActionStatus(`套用新版失敗：${error?.message || error}`, 'warn');
     if (button) button.disabled = false;
   }
@@ -420,7 +431,7 @@ async function repairPwa() {
     setPwaActionStatus(`PWA 已修復並重建為 v${result.version || APP_VERSION}，即將重新載入。`, 'ok');
     window.setTimeout(() => window.location.reload(), 700);
   } catch (error) {
-    lastPwaError = serializeError(error);
+    capturePwaError(error, 'PWA 一鍵修復');
     setPwaActionStatus(`一鍵修復失敗：${error?.message || error}`, 'warn');
     repairInProgress = false;
     if (button) button.disabled = false;
@@ -515,7 +526,7 @@ async function registerServiceWorker() {
     setPwaActionStatus(`Service Worker v${APP_VERSION} 已就緒。`, 'ok');
     await updateStorageStatus();
   } catch (error) {
-    lastPwaError = serializeError(error);
+    capturePwaError(error, 'Service Worker 註冊');
     console.warn('PWA 註冊失敗', error);
     setPwaStatus('PWA 快取失敗', 'warn');
     setPwaActionStatus(`Service Worker 註冊失敗：${error?.message || error}`, 'warn');

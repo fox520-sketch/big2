@@ -58,17 +58,92 @@ let lastFocusGameKey = null;
 let lastRoomMessage = '尚未連線房間。';
 let reconnectInProgress = false;
 let viewportRaf = null;
-const runtimeErrors = [];
 const RUNTIME_ERROR_LIMIT = 20;
+const ERROR_LOG_KEY = 'big2-runtime-errors-v083';
+const ACCEPTANCE_KEY = 'big2-acceptance-v083';
+const ACCEPTANCE_ITEMS = [
+  'android-pwa', 'ios-pwa', 'desktop-pwa', 'pwa-update',
+  'two-human', 'three-human', 'four-human', 'disconnect-reconnect',
+  'host-transfer', 'next-game', 'mobile-ui', 'firebase-health'
+];
+let lastUserAction = '啟動遊戲';
+let errorCenterTimer = null;
 
-function recordRuntimeError(kind, value) {
-  const error = value instanceof Error ? value : new Error(typeof value === 'string' ? value : JSON.stringify(value));
-  runtimeErrors.unshift({ kind, name: error.name, message: error.message, stack: error.stack?.slice(0, 2400) || null, at: new Date().toISOString() });
-  runtimeErrors.splice(RUNTIME_ERROR_LIMIT);
+function readJsonStorage(key, fallback) {
+  try {
+    const value = JSON.parse(localStorage.getItem(key) || 'null');
+    return value ?? fallback;
+  } catch {
+    return fallback;
+  }
 }
 
-window.addEventListener('error', (event) => recordRuntimeError('error', event.error || event.message));
-window.addEventListener('unhandledrejection', (event) => recordRuntimeError('unhandledrejection', event.reason));
+const storedRuntimeErrors = readJsonStorage(ERROR_LOG_KEY, []);
+const runtimeErrors = Array.isArray(storedRuntimeErrors) ? storedRuntimeErrors : [];
+runtimeErrors.splice(RUNTIME_ERROR_LIMIT);
+
+function persistRuntimeErrors() {
+  try { localStorage.setItem(ERROR_LOG_KEY, JSON.stringify(runtimeErrors)); } catch { /* private mode / quota */ }
+}
+
+function getRuntimeContext(extra = {}) {
+  const room = latestRoom || {};
+  const game = gameState || room.game || {};
+  return {
+    feature: extra.feature || lastUserAction || '執行階段',
+    code: extra.code || null,
+    roomId: room.roomId || currentRoomId || null,
+    roomStatus: room.status || null,
+    gameId: game.gameId || null,
+    gameNo: room.gameNo || game.gameNo || 0,
+    localSeat: Number.isInteger(room.localSeat) ? room.localSeat : game.localSeat,
+    currentTurnSeat: game.currentTurnSeat,
+    online: navigator.onLine !== false,
+    visibility: document.visibilityState,
+    action: lastUserAction,
+    ...extra
+  };
+}
+
+function recordRuntimeError(kind, value, context = {}) {
+  let message = '';
+  if (value instanceof Error) message = value.message;
+  else if (typeof value === 'string') message = value;
+  else {
+    try { message = JSON.stringify(value); } catch { message = String(value); }
+  }
+  const error = value instanceof Error ? value : new Error(message || '未知錯誤');
+  const now = Date.now();
+  const issue = {
+    id: `${now.toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+    kind,
+    name: error.name || 'Error',
+    message: error.message || String(error),
+    stack: error.stack?.slice(0, 2400) || null,
+    at: new Date(now).toISOString(),
+    ...getRuntimeContext(context)
+  };
+  const duplicate = runtimeErrors.find((item) => item.kind === issue.kind
+    && item.message === issue.message
+    && item.feature === issue.feature
+    && now - Date.parse(item.at || 0) < 5000);
+  if (!duplicate) runtimeErrors.unshift(issue);
+  runtimeErrors.splice(RUNTIME_ERROR_LIMIT);
+  persistRuntimeErrors();
+  window.clearTimeout(errorCenterTimer);
+  errorCenterTimer = window.setTimeout(renderErrorCenter, 0);
+  return issue;
+}
+
+window.addEventListener('error', (event) => recordRuntimeError('JavaScript error', event.error || event.message, { feature: '全域錯誤' }));
+window.addEventListener('unhandledrejection', (event) => recordRuntimeError('Unhandled rejection', event.reason, { feature: '非同步操作' }));
+window.addEventListener('big2-pwa-error', (event) => {
+  const detail = event.detail || {};
+  const error = new Error(detail.message || 'PWA 發生錯誤');
+  error.name = detail.name || 'PwaError';
+  error.stack = detail.stack || error.stack;
+  recordRuntimeError('PWA error', error, { feature: detail.feature || 'PWA', code: 'pwa-error' });
+});
 
 function el(id) {
   return document.getElementById(id);
@@ -117,6 +192,7 @@ function renderNetworkStatus(state = navigator.onLine ? 'online' : 'offline', de
 }
 
 async function reconnectActiveRoom() {
+  lastUserAction = '重新連線與重建房間同步';
   if (reconnectInProgress || navigator.onLine === false) return;
   reconnectInProgress = true;
   renderNetworkStatus('syncing');
@@ -485,6 +561,7 @@ function renderRoomDirectory(publicRooms = null, message = '') {
 }
 
 async function refreshPublicRooms() {
+  lastUserAction = '刷新房間列表';
   const button = el('refreshRoomsBtn');
   if (button) {
     button.disabled = true;
@@ -522,6 +599,8 @@ function formatDebugValue(value) {
 
 function renderDebugPanel(room = latestRoom) {
   const panel = el('debugPanel');
+  window.clearTimeout(errorCenterTimer);
+  errorCenterTimer = window.setTimeout(renderErrorCenter, 0);
   if (!panel) return;
   const localSeatText = Number.isInteger(room?.localSeat) ? `座位 ${room.localSeat + 1}` : '未入座';
   const hostSeat = room?.seatList?.findIndex((seat) => seat?.uid === room?.hostUid);
@@ -605,6 +684,7 @@ async function buildDebugReport() {
     userAgent: navigator.userAgent,
     firebasePresence: getPresenceDebugInfo(),
     pwa: pwaDiagnostics,
+    acceptance: readAcceptanceState(),
     runtimeErrors: [...runtimeErrors]
   };
   return JSON.stringify(report, null, 2);
@@ -637,6 +717,215 @@ async function downloadDebugReport() {
 }
 
 
+function escapeIssueText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[character]);
+}
+
+function issueTimeText(value) {
+  const time = new Date(value);
+  return Number.isNaN(time.getTime()) ? '時間未知' : time.toLocaleString('zh-TW', { hour12: false });
+}
+
+function renderErrorCenter() {
+  const rows = el('errorLogRows');
+  const badge = el('errorLogBadge');
+  const summary = el('errorLogSummary');
+  const listenerBadge = el('listenerHealthBadge');
+  const metricsBox = el('runtimeHealthGrid');
+  const presence = getPresenceDebugInfo();
+  const activeListenerCount = presence.listenerActive ? 1 : 0;
+  const listenerBalance = (presence.metrics?.listenerStarts || 0) - (presence.metrics?.listenerStops || 0);
+  const listenerHealthy = activeListenerCount <= 1 && listenerBalance <= 1;
+
+  if (badge) {
+    badge.textContent = runtimeErrors.length ? `${runtimeErrors.length} 筆` : '無錯誤';
+    badge.classList.toggle('ok', runtimeErrors.length === 0);
+    badge.classList.toggle('warn', runtimeErrors.length > 0);
+  }
+  if (listenerBadge) {
+    listenerBadge.textContent = listenerHealthy ? `監聽正常 ${activeListenerCount}` : `監聽警告 ${listenerBalance}`;
+    listenerBadge.classList.toggle('ok', listenerHealthy);
+    listenerBadge.classList.toggle('warn', !listenerHealthy);
+  }
+  if (summary) {
+    summary.textContent = runtimeErrors.length
+      ? `保留最近 ${runtimeErrors.length} 筆本機錯誤；可複製、下載或清除。資料只存在這個瀏覽器。`
+      : '尚未記錄執行錯誤。遇到 Firebase、斷線或 PWA 問題時會自動保留最近 20 筆。';
+    summary.dataset.level = runtimeErrors.length ? 'warn' : 'ok';
+  }
+  if (metricsBox) {
+    const metrics = presence.metrics || {};
+    metricsBox.innerHTML = [
+      ['網路', navigator.onLine === false ? '離線' : '正常'],
+      ['房間監聽', activeListenerCount ? `啟用（${presence.listeningRoomId || '房間'}）` : '未啟用'],
+      ['監聽啟停', `${metrics.listenerStarts || 0} / ${metrics.listenerStops || 0}`],
+      ['快照次數', metrics.listenerSnapshots || 0],
+      ['心跳寫入', metrics.heartbeatWrites || 0],
+      ['Firestore 讀 / 寫', `${metrics.documentReads || 0} / ${metrics.writeOperations || 0}`]
+    ].map(([label, value]) => `<div><strong>${escapeIssueText(label)}</strong><span>${escapeIssueText(value)}</span></div>`).join('');
+  }
+  if (!rows) return;
+  if (!runtimeErrors.length) {
+    rows.innerHTML = '<div class="error-log-empty">目前沒有錯誤紀錄。</div>';
+    return;
+  }
+  rows.innerHTML = runtimeErrors.map((issue) => `
+    <article class="error-log-item">
+      <div class="error-log-head">
+        <strong>${escapeIssueText(issue.feature || issue.kind || '未分類')}</strong>
+        <time datetime="${escapeIssueText(issue.at)}">${escapeIssueText(issueTimeText(issue.at))}</time>
+      </div>
+      <p>${escapeIssueText(issue.message)}</p>
+      <div class="error-log-meta">
+        <span>${escapeIssueText(issue.name || issue.kind)}</span>
+        ${issue.code ? `<span>代碼：${escapeIssueText(issue.code)}</span>` : ''}
+        ${issue.roomId ? `<span>房號：${escapeIssueText(issue.roomId)}</span>` : ''}
+        <span>${issue.online === false ? '離線' : '線上'}</span>
+      </div>
+    </article>`).join('');
+}
+
+function errorLogText() {
+  const payload = {
+    generatedAt: new Date().toISOString(),
+    version: `v${VERSION}`,
+    issueCount: runtimeErrors.length,
+    currentContext: getRuntimeContext(),
+    firebasePresence: getPresenceDebugInfo(),
+    issues: runtimeErrors
+  };
+  return JSON.stringify(payload, null, 2);
+}
+
+async function copyErrorLog() {
+  const text = errorLogText();
+  try {
+    await navigator.clipboard.writeText(text);
+    setRoomMessage('已複製錯誤紀錄中心內容。', 'ok');
+  } catch {
+    window.prompt('請手動複製錯誤紀錄：', text);
+  }
+}
+
+function downloadErrorLog() {
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const blob = new Blob([errorLogText()], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `big2-error-log-v${VERSION}-${stamp}.txt`;
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+  setRoomMessage('已下載錯誤紀錄文字檔。', 'ok');
+}
+
+function clearErrorLog() {
+  if (runtimeErrors.length && !window.confirm('確定清除這台裝置上的錯誤紀錄嗎？')) return;
+  runtimeErrors.length = 0;
+  persistRuntimeErrors();
+  renderErrorCenter();
+  setRoomMessage('已清除本機錯誤紀錄。', 'ok');
+}
+
+function readAcceptanceState() {
+  const saved = readJsonStorage(ACCEPTANCE_KEY, {});
+  return Object.fromEntries(ACCEPTANCE_ITEMS.map((id) => [id, Boolean(saved[id])]));
+}
+
+function writeAcceptanceState(state) {
+  try { localStorage.setItem(ACCEPTANCE_KEY, JSON.stringify(state)); } catch { /* ignore */ }
+}
+
+function renderAcceptanceCenter() {
+  const state = readAcceptanceState();
+  const checked = ACCEPTANCE_ITEMS.filter((id) => state[id]).length;
+  document.querySelectorAll('[data-acceptance-id]').forEach((input) => {
+    input.checked = Boolean(state[input.dataset.acceptanceId]);
+  });
+  const badge = el('acceptanceProgressBadge');
+  const progress = el('acceptanceProgress');
+  const summary = el('acceptanceSummary');
+  if (badge) {
+    badge.textContent = `${checked}/${ACCEPTANCE_ITEMS.length}`;
+    badge.classList.toggle('ok', checked === ACCEPTANCE_ITEMS.length);
+    badge.classList.toggle('warn', checked > 0 && checked < ACCEPTANCE_ITEMS.length);
+  }
+  if (progress) {
+    progress.max = ACCEPTANCE_ITEMS.length;
+    progress.value = checked;
+  }
+  if (summary) {
+    const presence = getPresenceDebugInfo();
+    const listenerBalance = (presence.metrics?.listenerStarts || 0) - (presence.metrics?.listenerStops || 0);
+    summary.textContent = checked === ACCEPTANCE_ITEMS.length
+      ? '實機驗收項目已全部勾選，可進入正式公開與後續功能開發。'
+      : `已完成 ${checked} 項，尚有 ${ACCEPTANCE_ITEMS.length - checked} 項。現在：${navigator.onLine === false ? '離線' : '線上'}、Firestore listener 差額 ${listenerBalance}。`;
+  }
+}
+
+function acceptanceSummaryText() {
+  const state = readAcceptanceState();
+  const lines = [...document.querySelectorAll('[data-acceptance-id]')].map((input) => {
+    const label = input.closest('label')?.querySelector('strong')?.textContent?.trim() || input.dataset.acceptanceId;
+    return `${state[input.dataset.acceptanceId] ? '✅' : '⬜'} ${label}`;
+  });
+  return [`Big2 TW v${VERSION} 實機驗收`, `產生時間：${new Date().toLocaleString('zh-TW')}`, '', ...lines].join('\n');
+}
+
+async function copyAcceptanceSummary() {
+  const text = acceptanceSummaryText();
+  try {
+    await navigator.clipboard.writeText(text);
+    setRoomMessage('已複製實機驗收摘要。', 'ok');
+  } catch {
+    window.prompt('請手動複製驗收摘要：', text);
+  }
+}
+
+async function runAcceptanceQuickCheck() {
+  const state = readAcceptanceState();
+  const presence = getPresenceDebugInfo();
+  const listenerBalance = (presence.metrics?.listenerStarts || 0) - (presence.metrics?.listenerStops || 0);
+  if ('serviceWorker' in navigator && window.isSecureContext) state['pwa-update'] = true;
+  if (listenerBalance <= 1 && (presence.listenerActive ? presence.listeningRoomId : true)) state['firebase-health'] = true;
+  writeAcceptanceState(state);
+  renderAcceptanceCenter();
+  setRoomMessage('已完成可自動判斷的 PWA 與 Firebase listener 健康檢查；真實裝置與多人局仍請手動勾選。', 'ok');
+}
+
+function bindAcceptanceAndErrorCenter() {
+  document.querySelectorAll('[data-acceptance-id]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const state = readAcceptanceState();
+      state[input.dataset.acceptanceId] = input.checked;
+      writeAcceptanceState(state);
+      renderAcceptanceCenter();
+    });
+  });
+  el('runAcceptanceQuickCheckBtn')?.addEventListener('click', runAcceptanceQuickCheck);
+  el('copyAcceptanceBtn')?.addEventListener('click', copyAcceptanceSummary);
+  el('resetAcceptanceBtn')?.addEventListener('click', () => {
+    if (!window.confirm('確定重設所有實機驗收勾選狀態嗎？')) return;
+    localStorage.removeItem(ACCEPTANCE_KEY);
+    renderAcceptanceCenter();
+  });
+  el('copyErrorLogBtn')?.addEventListener('click', copyErrorLog);
+  el('downloadErrorLogBtn')?.addEventListener('click', downloadErrorLog);
+  el('clearErrorLogBtn')?.addEventListener('click', clearErrorLog);
+  el('retryListenerBtn')?.addEventListener('click', reconnectActiveRoom);
+  renderAcceptanceCenter();
+  renderErrorCenter();
+  window.setInterval(() => {
+    renderAcceptanceCenter();
+    renderErrorCenter();
+  }, 10000);
+}
+
+
 function setMultiplayerActionSubmitting(locked, label = '同步中') {
   multiplayerActionSubmitting = Boolean(locked);
   setActionLock(multiplayerActionSubmitting, label);
@@ -645,6 +934,7 @@ function setMultiplayerActionSubmitting(locked, label = '同步中') {
 }
 
 async function runLockedMultiplayerAction(label, action) {
+  lastUserAction = label || '多人操作';
   const now = Date.now();
   if (multiplayerActionSubmitting || now - lastSubmitStartedAt < ACTION_COOLDOWN_MS) {
     gameState.message = '上一個動作仍在同步或剛送出，請稍候再按。';
@@ -697,7 +987,7 @@ function scheduleMultiplayerAIIfNeeded(room = latestRoom) {
     try {
       await runMultiplayerAITurn(room.roomId);
     } catch (error) {
-      setRoomMessage(makeFriendlyError(error) || 'AI 接管出牌失敗。', 'warn');
+      setRoomMessage(makeFriendlyError(error, 'AI 接管出牌') || 'AI 接管出牌失敗。', 'warn');
     }
   }, 680);
 }
@@ -740,6 +1030,7 @@ function focusRoomPasswordForRetry() {
 
 async function runButtonLocked(buttonId, busyText, action) {
   const button = el(buttonId);
+  lastUserAction = button?.textContent?.trim() || busyText || buttonId;
   const originalText = button?.textContent || '';
   if (button?.disabled) return;
   if (button) {
@@ -758,7 +1049,8 @@ async function runButtonLocked(buttonId, busyText, action) {
   }
 }
 
-function makeFriendlyError(error) {
+function makeFriendlyError(error, feature = lastUserAction || '多人操作') {
+  recordRuntimeError('操作失敗', error, { feature, code: error?.code || null });
   const text = explainFirebaseError(error);
   if (/密碼/.test(text)) {
     window.setTimeout(focusRoomPasswordForRetry, 60);
@@ -929,6 +1221,7 @@ function renderRoom(room) {
 }
 
 async function connectRoom(roomId, mode = 'join') {
+  lastUserAction = mode === 'auto' ? '邀請連結自動加入房間' : '加入房間';
   const normalized = normalizeRoomId(roomId);
   if (!normalized) {
     setRoomMessage('請先輸入房號。', 'warn');
@@ -1400,6 +1693,7 @@ bindViewportAndNetworkEvents();
 bindHomeFlowEvents();
 bindGameEvents();
 bindRoomEvents();
+bindAcceptanceAndErrorCenter();
 updateSettingsSummary();
 renderDebugPanel(null);
 renderGameAndFocus();

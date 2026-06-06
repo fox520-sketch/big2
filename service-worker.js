@@ -1,4 +1,4 @@
-const APP_VERSION = '0.8.2';
+const APP_VERSION = '0.8.3';
 const CACHE_PREFIX = 'big2-tw-';
 const STATIC_CACHE = `${CACHE_PREFIX}static-v${APP_VERSION}`;
 const RUNTIME_CACHE = `${CACHE_PREFIX}runtime-v${APP_VERSION}`;

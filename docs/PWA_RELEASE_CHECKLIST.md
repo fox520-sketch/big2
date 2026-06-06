@@ -1,4 +1,4 @@
-# v0.8.2 PWA 正式發布檢查清單
+# v0.8.3 PWA 正式發布檢查清單
 
 ## 必須上傳到 repository 根目錄
 
@@ -20,14 +20,14 @@
 - `README.md`
 - `VERSION.md`
 
-不要把整個 `big2-tw-v0.8.2` 資料夾再包在 repository 裡。
+不要把整個 `big2-tw-v0.8.3` 資料夾再包在 repository 裡。
 
 ## Firebase
 
 - 保留已設定好的 `src/firebase-config.js`，不要被 `PASTE_...` 範例覆蓋。
 - Authentication 必須啟用 Anonymous。
 - 首次部署或權限錯誤時，把本版 `firestore.rules` 貼到 Firestore Rules 並 Publish。
-- v0.8.2 沒有新增 Firestore 欄位；v0.7.5 之後多人正常時通常不用重貼 Rules。
+- v0.8.3 沒有新增 Firestore 欄位；v0.7.5 之後多人正常時通常不用重貼 Rules。
 - 不使用 Cloud Functions，不需要 Blaze。
 
 ## PWA
