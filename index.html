@@ -34,13 +34,13 @@
 <meta content="台灣大老二｜單人 AI 與好友連線 PWA" name="twitter:title"/>
 <meta content="免安裝即可玩，也可加入手機桌面。支援單人 AI 與 Firebase 好友連線。" name="twitter:description"/>
 <meta content="https://fox520-sketch.github.io/big2/assets/social/og-big2.png" name="twitter:image"/>
-<link href="manifest.webmanifest?v=1.0.0" rel="manifest"/>
+<link href="manifest.webmanifest?v=1.0.1" rel="manifest"/>
 <link href="assets/icons/favicon.svg" rel="icon" type="image/svg+xml"/>
 <link href="assets/icons/favicon-32.png" rel="icon" sizes="32x32" type="image/png"/>
 <link href="assets/icons/apple-touch-icon.png" rel="apple-touch-icon" sizes="180x180"/>
 <link href="assets/splash/splash-portrait.png" media="(orientation: portrait)" rel="apple-touch-startup-image"/>
 <link href="assets/splash/splash-landscape.png" media="(orientation: landscape)" rel="apple-touch-startup-image"/>
-<link href="styles/base.css?v=1.0.0" rel="stylesheet"/>
+<link href="styles/base.css?v=1.0.1" rel="stylesheet"/>
 </head>
 <body data-theme="dark">
 <a class="skip-link" href="#mainContent">跳至主要內容</a>
@@ -64,7 +64,7 @@
 <div>
 <p class="eyebrow">Big2 TW</p>
 <h1>台灣大老二</h1>
-<p class="subtitle">v1.0.0 正式穩定版｜單人 AI・好友連線・PWA</p>
+<p class="subtitle">v1.0.1 正式穩定版｜單人 AI・好友連線・PWA</p>
 </div>
 <div aria-label="遊戲工具列" class="toolbar">
 <label class="field ai-level-field">
@@ -142,7 +142,7 @@
 <h2>開始遊戲</h2>
 <p class="hint small">正式穩定版支援單人 AI、Firebase 好友房間、手機安裝與離線單人模式。</p>
 </div>
-<span class="pill ok">v1.0.0 Stable</span>
+<span class="pill ok">v1.0.1 Stable</span>
 </div>
 <div class="home-actions">
 <button class="primary-btn" id="quickSingleBtn" type="button">單人遊戲</button>
@@ -162,7 +162,7 @@
 <div class="panel-heading">
 <div>
 <p class="eyebrow">Stable Release</p>
-<h2>v1.0.0 正式穩定發布</h2>
+<h2>v1.0.1 正式穩定發布</h2>
 <p class="hint small">核心功能已凍結。本版本後續只接受錯誤修正、安全維護與相容性改善；大型新功能將另開後續版本。</p>
 </div>
 <span class="pill ok">功能凍結</span>
@@ -190,7 +190,7 @@
 <h2>正式規則與計分設定</h2>
 <p class="hint small">單人重新開局會立即套用；多人房間會在「開始多人遊戲 / 下一局」時套用房主目前設定。</p>
 </div>
-<span class="pill">v1.0.0</span>
+<span class="pill">v1.0.1</span>
 </div>
 <div class="settings-grid">
 <label class="field full">
@@ -221,7 +221,7 @@
 <div class="panel-heading">
 <div>
 <h2>Firebase 多人房間</h2>
-<p class="hint small">v1.0.0 正式穩定發布版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
+<p class="hint small">v1.0.1 正式穩定發布版：免 Cloud Functions、不需要 Blaze；建立房間、加入房間、補 AI 與多人同步皆走 Firestore 休閒版流程。</p>
 </div>
 <span class="pill" id="firebaseStatusBadge">檢查中</span>
 </div>
@@ -312,9 +312,9 @@
 <div class="panel-heading">
 <div>
 <h2>手機實戰與同步穩定</h2>
-<p class="hint small">v1.0.0 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
+<p class="hint small">v1.0.1 強化 Android、iPhone、平板與桌機回歸配置，使用動態視窗高度與安全區，並改善手牌滑動、斷線提示與 Firebase 效能。</p>
 </div>
-<span class="pill ok">v1.0.0</span>
+<span class="pill ok">v1.0.1</span>
 </div>
 <div class="check-grid compact-check-grid">
 <div><strong>牌桌靠近手牌</strong><span>手機依序顯示牌桌、自己的手牌、操作按鈕，減少上下捲動。</span></div>
@@ -388,7 +388,7 @@
 <label class="acceptance-item"><input data-acceptance-id="next-game" type="checkbox"/><span><strong>下一局</strong><small>保留座位、名稱、總分與勝場，不殘留上一局牌面。</small></span></label>
 <label class="acceptance-item"><input data-acceptance-id="mobile-ui" type="checkbox"/><span><strong>手機 UI</strong><small>320～430px、直橫向、鍵盤、安全區與選牌裁切正常。</small></span></label>
 <label class="acceptance-item"><input data-acceptance-id="firebase-health" type="checkbox"/><span><strong>Firebase 讀寫</strong><small>只有一個房間 listener，離房後解除，讀寫量合理。</small></span></label>
-<label class="acceptance-item"><input data-acceptance-id="rules-security" type="checkbox"/><span><strong>Rules 安全檢查</strong><small>套用 v1.0.0 Rules，非房內成員無法修改房間。</small></span></label>
+<label class="acceptance-item"><input data-acceptance-id="rules-security" type="checkbox"/><span><strong>Rules 安全檢查</strong><small>套用 v1.0.1 Rules，非房內成員無法修改房間。</small></span></label>
 <label class="acceptance-item"><input data-acceptance-id="rollback-drill" type="checkbox"/><span><strong>回復演練</strong><small>測試回復上一版後可正常啟動，並能恢復最新版。</small></span></label>
 </div>
 <p class="hint small">完整步驟請看 <code>docs/RC_ACCEPTANCE_CHECKLIST.md</code>；歷史 v0.8.3 驗收說明仍保留。勾選紀錄只保存在本機瀏覽器。</p>
@@ -396,7 +396,7 @@
 <div class="panel-heading">
 <div>
 <h2>Firebase 連線檢查</h2>
-<p class="hint small">用來確認 v1.0.0 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
+<p class="hint small">用來確認 v1.0.1 免 Cloud Functions 版是否可用：只需要 Firebase Config、匿名登入、Firestore Rules，不需要 functions/ 與 Blaze。</p>
 </div>
 <button class="secondary-btn" id="runFirebaseCheckBtn" type="button">執行 Firebase 檢查</button>
 </div>
@@ -404,8 +404,8 @@
 <div class="firebase-check-grid" id="firebaseCheckGrid">
 <div class="firebase-check-item neutral"><strong>Firebase Config</strong><span class="pill">未檢查</span><p>啟動後會先檢查 src/firebase-config.js 是否已填入。</p></div>
 <div class="firebase-check-item neutral"><strong>匿名登入</strong><span class="pill">未檢查</span><p>按「執行 Firebase 檢查」後確認。</p></div>
-<div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v1.0.0。</p></div>
-<div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v1.0.0 不需要 functions/，也不需要 Blaze。</p></div>
+<div class="firebase-check-item neutral"><strong>Firestore 寫入</strong><span class="pill">未檢查</span><p>會建立並刪除暫存房間，確認 Rules 是否仍支援 v1.0.1。</p></div>
+<div class="firebase-check-item ok"><strong>Cloud Functions</strong><span class="pill ok">未使用</span><p>v1.0.1 不需要 functions/，也不需要 Blaze。</p></div>
 </div>
 </section><section aria-label="多人同步偵錯面板" class="debug-panel">
 <div class="panel-heading">
@@ -416,11 +416,11 @@
 <div class="button-row compact-actions">
 <button class="secondary-btn" id="copyDebugBtn" type="button">複製問題回報</button>
 <button class="secondary-btn" id="downloadDebugBtn" type="button">下載診斷檔</button>
-<span class="pill">v1.0.0</span>
+<span class="pill">v1.0.1</span>
 </div>
 </div>
 <div class="debug-grid" id="debugPanel">
-<div><strong>版本</strong><span>v1.0.0</span></div>
+<div><strong>版本</strong><span>v1.0.1</span></div>
 <div><strong>房號</strong><span>—</span></div>
 <div><strong>狀態</strong><span>尚未連線</span></div>
 <div><strong>我的座位</strong><span>未入座</span></div>
@@ -692,14 +692,14 @@
 
 </main>
 <footer class="app-footer">
-<span>Big2 TW v<span data-app-version="">1.0.0</span></span>
+<span>Big2 TW v<span data-app-version="">1.0.1</span></span>
 <span>GitHub Pages PWA｜免 Cloud Functions｜<a href="privacy.html">隱私與資料使用</a>｜<a href="docs/KNOWN_LIMITATIONS.md">已知限制</a></span>
 </footer>
 <dialog aria-labelledby="onboardingTitle" class="onboarding-dialog" id="onboardingDialog">
 <div class="onboarding-shell">
 <div class="panel-heading compact">
 <div>
-<p class="eyebrow">Big2 TW v<span data-app-version="">1.0.0</span></p>
+<p class="eyebrow">Big2 TW v<span data-app-version="">1.0.1</span></p>
 <h2 id="onboardingTitle">第一次玩？四步快速上手</h2>
 </div>
 <button aria-label="關閉使用導覽" class="icon-close-btn" id="closeOnboardingBtn" type="button">×</button>
@@ -741,7 +741,7 @@
 <style>.pwa-splash{display:none!important}</style>
 <div class="noscript-warning">台灣大老二需要 JavaScript 才能執行，請在瀏覽器設定中啟用 JavaScript。</div>
 </noscript>
-<script src="src/pwa.js?v=1.0.0" type="module"></script>
-<script src="src/main.js?v=1.0.0" type="module"></script>
+<script src="src/pwa.js?v=1.0.1" type="module"></script>
+<script src="src/main.js?v=1.0.1" type="module"></script>
 </body>
 </html>

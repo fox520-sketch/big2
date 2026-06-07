@@ -1,10 +1,10 @@
-# v1.0.0 正式發布候選版驗收清單
+# v1.0.1 正式發布候選版驗收清單
 
 > 自動測試不能取代真實裝置與真人連線。完成後再將版本標記為正式公開版。
 
 ## 發布前
 - [ ] 保留正式站已填好的 `src/firebase-config.js`
-- [ ] 將 v1.0.0 `firestore.rules` 貼到 Firebase Console 並 Publish
+- [ ] 將 v1.0.1 `firestore.rules` 貼到 Firebase Console 並 Publish
 - [ ] 確認 GitHub Pages 根目錄可看到 `index.html`、`service-worker.js`、`manifest.webmanifest`
 - [ ] 使用無痕視窗確認首頁、隱私頁、離線頁、圖示與分享圖皆可讀取
 

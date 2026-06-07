@@ -39,11 +39,12 @@ service cloud.firestore {
         && request.resource.data.version == resource.data.version
         && request.resource.data.createdAt == resource.data.createdAt
         && request.resource.data.invitePath == resource.data.invitePath
-        && request.resource.data.gameNo == resource.data.gameNo
-        && request.resource.data.passwordEnabled == resource.data.passwordEnabled
-        && request.resource.data.passwordHash == resource.data.passwordHash
-        && request.resource.data.passwordHint == resource.data.passwordHint
-        && request.resource.data.game == resource.data.game;
+        && request.resource.data.get('gameNo', 0) == resource.data.get('gameNo', 0)
+        && request.resource.data.get('passwordEnabled', false) == resource.data.get('passwordEnabled', false)
+        && request.resource.data.get('passwordHash', '') == resource.data.get('passwordHash', '')
+        && request.resource.data.get('passwordHint', '') == resource.data.get('passwordHint', '')
+        // 等待中的房間可能尚未建立 game 欄位；使用 get() 避免讀取不存在欄位時拒絕加入。
+        && request.resource.data.get('game', null) == resource.data.get('game', null);
     }
 
     function validNewMemberJoin() {

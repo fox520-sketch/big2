@@ -1,4 +1,4 @@
-# v1.0.0 回復指南
+# v1.0.1 回復指南
 
 完整備份與回復步驟請看 [`BACKUP_AND_RECOVERY.md`](BACKUP_AND_RECOVERY.md)。
 
@@ -12,7 +12,7 @@
 
 ## 建議保留
 
-- `v1.0.0` tag
+- `v1.0.1` tag
 - 發布前的 `v0.8.4` 備份 tag
 - 每次正式發布的 zip
 - 對應版本的 `firestore.rules`

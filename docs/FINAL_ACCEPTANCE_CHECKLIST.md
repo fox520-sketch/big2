@@ -1,4 +1,4 @@
-# v1.0.0 正式上線驗收清單
+# v1.0.1 正式上線驗收清單
 
 ## 一、發布前
 - [ ] GitHub Pages 根目錄有 `index.html`、`service-worker.js`、`manifest.webmanifest`、`.nojekyll`。

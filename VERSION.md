@@ -1,5 +1,14 @@
 # 版本說明
 
+## v1.0.1 - 2026-06-07
+### Firestore 加入房間權限修正版
+- 修正等待中房間尚未建立 `game` 欄位時，Firestore Rules 直接讀取不存在欄位而拒絕新玩家加入的問題。
+- `joinKeepsProtectedFields()` 改用 `get()` 安全比較 `game`、`gameNo` 與房間密碼相關選用欄位。
+- 維持建立房間、既有成員更新、房主刪除及新玩家只能加入單一座位的安全限制。
+- 更新 PWA、Service Worker、靜態資源與 Firebase 房間版本戳記為 1.0.1。
+- 新增 Firestore Rules 選用欄位回歸測試與 v1.0.1 發布說明。
+- 維持免 Cloud Functions、不需要 Blaze。
+
 ## v1.0.0 - 2026-06-06
 ### 正式穩定發布版
 - 凍結單人、AI、Firebase 多人、PWA、手機牌桌、排行榜、診斷與回復等核心功能。

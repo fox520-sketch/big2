@@ -1,4 +1,4 @@
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 const ONBOARDING_KEY = 'big2-onboarding-complete-v1';
 const LEGACY_ONBOARDING_PREFIX = 'big2-onboarding-';
 const INSTALL_HELP_KEY = 'big2-install-help-seen';

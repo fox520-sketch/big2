@@ -22,4 +22,4 @@ assert.match(rules, /validNewMemberJoin/);
 for (const file of ['docs/RC_ACCEPTANCE_CHECKLIST.md','docs/KNOWN_LIMITATIONS.md','docs/ROLLBACK_GUIDE.md','docs/FIREBASE_USAGE_GUIDE.md','docs/FIRESTORE_RULES_SECURITY_REVIEW.md']) {
   assert.ok(fs.existsSync(file), `${file} missing`);
 }
-console.log('v1.0.0 release candidate tests passed.');
+console.log('v1.0.1 release candidate tests passed.');

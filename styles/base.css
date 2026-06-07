@@ -2498,7 +2498,7 @@ body {
   }
 }
 
-/* v1.0.0 PWA 正式公開版 */
+/* v1.0.1 PWA 正式公開版 */
 .pwa-splash {
   position: fixed;
   inset: 0;
@@ -2828,7 +2828,7 @@ body[data-gameplay-focus='on'] #openOnboardingBtn {
   display: none !important;
 }
 
-/* v1.0.0 正式上線驗收：一鍵修復、診斷匯出與效能保護 */
+/* v1.0.1 正式上線驗收：一鍵修復、診斷匯出與效能保護 */
 html {
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
@@ -2990,7 +2990,7 @@ a:focus-visible,
 }
 
 
-/* v1.0.0 正式驗收與問題回報 */
+/* v1.0.1 正式驗收與問題回報 */
 .acceptance-panel {
   border: 2px solid var(--border);
   border-radius: 1.35rem;
@@ -3031,7 +3031,7 @@ a:focus-visible,
   }
 }
 
-/* v1.0.0 實機驗收與錯誤紀錄中心 */
+/* v1.0.1 實機驗收與錯誤紀錄中心 */
 .acceptance-panel,
 .error-center-panel {
   border: 2px solid var(--border);
@@ -3204,7 +3204,7 @@ body[data-gameplay-focus='on'] .error-center-panel {
 }
 
 
-/* v1.0.0 RC rollback and release controls */
+/* v1.0.1 RC rollback and release controls */
 #pwaRollbackStatus { flex-basis: 100%; line-height: 1.55; }
 .pwa-health-actions button:disabled { opacity: .55; cursor: not-allowed; }
 @media (max-width: 680px) {
@@ -3212,7 +3212,7 @@ body[data-gameplay-focus='on'] .error-center-panel {
 }
 
 
-/* v1.0.0 正式穩定版：正式首頁、功能凍結與進階支援收合 */
+/* v1.0.1 正式穩定版：正式首頁、功能凍結與進階支援收合 */
 .stable-release-panel,
 .advanced-support-panel {
   border: 1px solid var(--border);
